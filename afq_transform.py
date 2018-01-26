@@ -1,6 +1,8 @@
+import collections
 import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
+from sklearn.base import BaseEstimator, TransformerMixin
 
 
 class AFQFeatureTransformer(object):
@@ -104,14 +106,82 @@ class AFQFeatureTransformer(object):
 
         features = features.loc[:, new_columns]
 
+        # Lastly, there may still be some nan values. After interpolating
+        # above, the only NaN values left should be the one created after
+        # stacking and unstacking due to a subject missing an entire tract.
+        # In this case, for each missing column, we take the median value
+        # of all other subjects as the fillna value
+        features.fillna(features.median(), inplace=True)
+
         # Construct bundle group membership
         metric_level = features.columns.names.index('metric')
         tract_level = features.columns.names.index('tractID')
         n_tracts = len(features.columns.levels[tract_level])
         bundle_group_membership = np.array(
-            features.columns.labels[metric_level] * n_tracts
-            + features.columns.labels[tract_level],
+            features.columns.labels[metric_level].astype(np.int64) * n_tracts
+            + features.columns.labels[tract_level].astype(np.int64),
             dtype=np.int64
         )
 
         return features.values, bundle_group_membership, features.columns
+
+
+def isiterable(obj):
+    """Return True if obj is an iterable, False otherwise."""
+    try:
+        _ = iter(obj)
+    except TypeError:
+        return False
+    else:
+        return True
+
+
+class GroupExtractor(BaseEstimator, TransformerMixin):
+    """An sklearn-compatible group extractor
+
+    Given a sequence of all group indices and a subsequence of desired
+    group indices, this transformer returns the columns of the feature
+    matrix, `X`, that are in the desired subgroups.
+
+    Parameters
+    ----------
+    extract : numpy.ndarray or int, optional
+        subsequence of desired groups to extract from feature matrix
+
+    groups : numpy.ndarray or int, optional
+        all group indices for feature matrix
+
+    Note
+    ----
+    Following
+    http://scikit-learn.org/dev/developers/contributing.html
+    We do not do any parameter validation in __init__. All logic behind
+    estimator parameters is done in transform.
+    """
+    def __init__(self, extract=None, groups=None):
+        self.extract = extract
+        self.groups = groups
+
+    def transform(self, X, *_):
+        if self.groups is not None and self.extract is not None:
+            if isiterable(self.extract):
+                extract = np.array(self.extract)
+            else:
+                extract = np.array([self.extract])
+
+            if isiterable(self.groups):
+                groups = np.array(self.groups)
+            else:
+                groups = np.array([self.groups])
+
+            try:
+                mask = np.isin(groups, extract)
+            except AttributeError:
+                mask = np.array([item in extract for item in groups])
+
+            return X[:, mask]
+        else:
+            return X
+
+    def fit(self, *_):
+        return self
