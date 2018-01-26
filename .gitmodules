@@ -1,0 +1,3 @@
+[submodule "sgl"]
+	path = sgl
+	url = git@github.com:richford/SparseGroupLasso.git
