@@ -1,3 +1,3 @@
 [submodule "sgl"]
 	path = sgl
-	url = git@github.com:richford/SparseGroupLasso.git
+	url = https://github.com/rtavenar/keras_ssg_lasso.git
