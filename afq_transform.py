@@ -365,7 +365,7 @@ def get_random_forest_group_scores(
         type='classifier',
         n_splits=100, test_size=0.3,
         ss_random_state=None, rf_random_state=None,
-        rf_n_estimators=100, rf_criterion=None, rf_max_depth=None
+        rf_n_estimators=1000, rf_criterion=None, rf_max_depth=None
 ):
     """Get scores for each group using a form of feature elimination
 
@@ -454,8 +454,10 @@ def get_random_forest_group_scores(
 
     # crossvalidate the scores on a number of different random splits of the data
     for train_idx, test_idx in tqdm(ss.split(x), total=ss.get_n_splits()):
-        x_train, x_test = x[train_idx], x[test_idx]
-        y_train, y_test = y[train_idx], y[test_idx]
+        train_idx_bs = np.random.choice(train_idx, size=len(train_idx))
+        test_idx_bs = np.random.choice(test_idx, size=len(test_idx))
+        x_train, x_test = x[train_idx_bs], x[test_idx_bs]
+        y_train, y_test = y[train_idx_bs], y[test_idx_bs]
         rf.fit(x_train, y_train)
         score = get_score(y_test, rf.predict(x_test))
         for label in group_labels:
