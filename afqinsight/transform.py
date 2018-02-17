@@ -2,10 +2,8 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 import pandas as pd
-from collections import defaultdict
 from scipy.interpolate import interp1d
 from sklearn.base import BaseEstimator, TransformerMixin
-from tqdm import tqdm
 
 __all__ = []
 
@@ -140,7 +138,7 @@ class AFQFeatureTransformer(object):
 def isiterable(obj):
     """Return True if obj is an iterable, False otherwise."""
     try:
-        _ = iter(obj)
+        _ = iter(obj)  # noqa F841
     except TypeError:
         return False
     else:
@@ -219,7 +217,7 @@ def remove_group(x, remove_label, label_sets):
     ndarray
         new feature matrix with group represented by `remove_label` removed
     """
-    mask = not set(remove_label) <= label_sets
+    mask = np.logical_not(set(remove_label) <= label_sets)
     return np.copy(x[:, mask])
 
 
@@ -245,7 +243,7 @@ def remove_groups(x, remove_labels, label_sets):
     """
     mask = np.zeros_like(label_sets, dtype=np.bool)
     for label in remove_labels:
-        mask = np.logical_or(mask, not set(label) <= label_sets)
+        mask = np.logical_or(mask, np.logical_not(set(label) <= label_sets))
 
     return np.copy(x[:, mask])
 
@@ -302,7 +300,7 @@ def select_groups(x, select_labels, label_sets):
 
 
 @registered
-def shuffle_group(x, label, label_sets):
+def shuffle_group(x, label, label_sets, random_seed=None):
     """Shuffle all elements for group `remove_idx`
 
     Parameters
@@ -316,6 +314,10 @@ def shuffle_group(x, label, label_sets):
     label_sets : ndarray of sets
         Array of sets of labels for each column of `x`
 
+    random_seed : int, optional
+        Random seed for group shuffling
+        Default: None
+
     Returns
     -------
     ndarray
@@ -326,7 +328,20 @@ def shuffle_group(x, label, label_sets):
     section = out[:, mask]
     section_shape = section.shape
     section = section.flatten()
+
+    random_state = None
+    if random_seed is not None:
+        # Save random state to restore later
+        random_state = np.random.get_state()
+        # Set the random seed
+        np.random.seed(random_seed)
+
     np.random.shuffle(section)
+
+    if random_seed is not None:
+        # Restore random state after shuffling
+        np.random.set_state(random_state)
+
     out[:, mask] = section.reshape(section_shape)
     return out
 

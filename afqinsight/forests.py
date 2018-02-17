@@ -1,10 +1,13 @@
 from __future__ import absolute_import, division, print_function
 
 import numpy as np
+from collections import defaultdict
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.metrics import roc_auc_score, mean_squared_error
 from sklearn.model_selection import ShuffleSplit
 from tqdm import tqdm
+
+from .transform import shuffle_group
 
 __all__ = []
 
@@ -106,7 +109,7 @@ def get_random_forest_group_scores(
 
     scores = defaultdict(list)
 
-    # crossvalidate the scores on a number of different random splits of the data
+    # crossvalidate the scores on a number of different random splits of data
     for train_idx, test_idx in tqdm(ss.split(x), total=ss.get_n_splits()):
         train_idx_bs = np.random.choice(train_idx, size=len(train_idx))
         test_idx_bs = np.random.choice(test_idx, size=len(test_idx))
