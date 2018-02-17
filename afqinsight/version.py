@@ -62,7 +62,7 @@ MAJOR = _version_major
 MINOR = _version_minor
 MICRO = _version_micro
 VERSION = __version__
-PACKAGE_DATA = {'afqinsight': [pjoin('data', '*'), ]}
+PACKAGE_DATA = {'afqinsight': [pjoin('data', '*', '*'), ]}
 REQUIRES = [
     "numpy>=1.11.3", "pandas>=0.22.0", "scipy>=1.0.0",
     "sklearn>=0.19.1", "tqdm>=4.19.4",
