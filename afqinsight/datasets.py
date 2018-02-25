@@ -255,7 +255,7 @@ def make_classification(n_samples=100, n_features=20, n_informative=2,
 
     if useful_indices:
         n_useful = n_informative + n_redundant + n_repeated
-        return X, y, indices # < n_useful
+        return X, y, indices < n_useful
     else:
         return X, y
 
