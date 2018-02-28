@@ -4,7 +4,7 @@ import numpy as np
 from collections import defaultdict
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.metrics import roc_auc_score, mean_squared_error
-from sklearn.model_selection import ShuffleSplit
+from sklearn.model_selection import StratifiedShuffleSplit
 from tqdm import tqdm
 
 from .transform import shuffle_group
@@ -17,6 +17,7 @@ def registered(fn):
     return fn
 
 
+@registered
 def get_random_forest_group_scores(
         x, y, group_labels, all_label_sets,
         type='classifier',
@@ -25,6 +26,19 @@ def get_random_forest_group_scores(
         rf_n_estimators=100, rf_criterion=None, rf_max_depth=None
 ):
     """Get scores for each group using a form of feature elimination
+
+    For `n_split` trials, we will train a random forest on all features.
+    We will record a "score" based on this fit. Then, we will shuffle each
+    feature group and record the relative difference in score between the
+    shuffled and un-shuffled feature matrices. A larger difference in score
+    indicates that the group has a larger importance. For regression, "score"
+    is the MSE and an increase in score after shuffling indicates that a
+    feature group was more important. For classification, "score" is the
+    ROC AUC and a decrease in score after shuffling indicates that a feature
+    group was more important.
+
+    After all trials, the relative differences in scores are averaged and
+    sorted before output.
 
     Parameters
     ----------
@@ -101,7 +115,7 @@ def get_random_forest_group_scores(
     else:
         raise ValueError('`type` must be either "classifier" or "regressor".')
 
-    ss = ShuffleSplit(
+    ss = StratifiedShuffleSplit(
         n_splits=n_splits,
         test_size=test_size,
         random_state=ss_random_state
@@ -110,7 +124,7 @@ def get_random_forest_group_scores(
     scores = defaultdict(list)
 
     # crossvalidate the scores on a number of different random splits of data
-    for train_idx, test_idx in tqdm(ss.split(x), total=ss.get_n_splits()):
+    for train_idx, test_idx in tqdm(ss.split(x, y), total=ss.get_n_splits()):
         train_idx_bs = np.random.choice(train_idx, size=len(train_idx))
         test_idx_bs = np.random.choice(test_idx, size=len(test_idx))
         x_train, x_test = x[train_idx_bs], x[test_idx_bs]
