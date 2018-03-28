@@ -1,3 +1,0 @@
-[submodule "sgl"]
-	path = sgl
-	url = https://github.com/richford/keras_ssg_lasso.git
