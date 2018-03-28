@@ -128,7 +128,7 @@ def inner_cv_classify(x_train, y_train, x_test, y_test,
     )
 
     model = KerasClassifier(
-        build_fn=create_classification_model(),
+        build_fn=create_classification_model,
         verbose=0
     )
 
