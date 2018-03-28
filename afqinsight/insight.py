@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+import ksgl
 import numpy as np
 import pandas as pd
 from collections import namedtuple
@@ -106,14 +107,14 @@ def inner_cv_classify(x_train, y_train, x_test, y_test,
 
     def create_classification_model(alpha=0.1, lambda_=0.1, n_epochs=1000):
         if hidden_layers is None or len(list(hidden_layers)) == 0:
-            clf = sgl.SGLClassifier(
+            clf = ksgl.SGLClassifier(
                 dim_input=d, n_classes=n_classes,
                 groups=groups, alpha=alpha, lambda_=lambda_, n_epochs=n_epochs,
                 optimizer='adam', lr=0.001, validation_split=validation_split,
                 early_stopping_patience=0, verbose=False,
             )
         else:
-            clf = sgl.SGLMultiLayerPerceptronClassifier(
+            clf = ksgl.SGLMultiLayerPerceptronClassifier(
                 dim_input=d, n_classes=n_classes, hidden_layers=hidden_layers,
                 groups=groups, alpha=alpha, lambda_=lambda_, n_epochs=n_epochs,
                 optimizer='adam', lr=0.001, validation_split=validation_split,
