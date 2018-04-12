@@ -68,8 +68,8 @@ REQUIRES = [
     "scikit-learn>=0.19.1", "tqdm>=4.19.4",
     "keras_sgl",
 ]
-DEPENDENCY_LINKS = [
-    "git+ssh://git@github.com/richford/keras_sgl.git",
-]
+#DEPENDENCY_LINKS = [
+    #"git+ssh://git@github.com/richford/keras_sgl.git",
+#]
 EXTRAS_REQUIRE = {}
 ENTRY_POINTS = {}
