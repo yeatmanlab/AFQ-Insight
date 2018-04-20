@@ -2,7 +2,6 @@ from __future__ import absolute_import, division, print_function
 
 import copt as cp
 import numpy as np
-
 from collections import namedtuple
 from functools import partial
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
