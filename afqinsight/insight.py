@@ -1,16 +1,20 @@
 from __future__ import absolute_import, division, print_function
 
-import ksgl
+import copt as cp
 import numpy as np
+import os.path as op
 import pandas as pd
-from collections import namedtuple
-from keras.callbacks import EarlyStopping
-from keras.wrappers.scikit_learn import KerasClassifier
-from sklearn.metrics import accuracy_score, roc_auc_score
-from sklearn.model_selection import GridSearchCV, RepeatedStratifiedKFold, \
-    StratifiedShuffleSplit, ShuffleSplit
-from sklearn.preprocessing import StandardScaler
 
+from collections import namedtuple
+from functools import partial
+from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
+from hyperopt.mongoexp import MongoTrials
+from sklearn.metrics import accuracy_score, roc_auc_score
+from sklearn.model_selection import RepeatedStratifiedKFold
+from sklearn.preprocessing import StandardScaler
+from tqdm import tqdm
+
+from .prox import SparseGroupL1
 from .transform import AFQFeatureTransformer
 
 __all__ = []
@@ -21,366 +25,358 @@ def registered(fn):
     return fn
 
 
-# fn_nodes = '../AFQ-Insight/afqinsight/data/nodes.csv'
-# fn_subjects = '../AFQ-Insight/afqinsight/data/subjects.csv'
-# target_col = 'class'
-# binary_positive = 'ALS'
-# scale_x = True
-#
-#
-# nodes = pd.read_csv(fn_nodes)
-# targets = pd.read_csv(fn_subjects, index_col='subjectID').drop(['Unnamed: 0'], axis='columns')
-#
-# y = targets[target_col]
-# y = y.map(lambda c: int(c == binary_positive)).values
-#
-# transformer = AFQFeatureTransformer()
-# x, groups, cols = transformer.transform(nodes)
-#
-# if scale_x:
-#     scaler = StandardScaler()
-#     x = scaler.fit_transform(x)
-#
-# progress = TQDMNotebookCallback(leave_inner=False)
+def load_afq_data(workdir, target_col, binary_positive=None,
+                  fn_nodes='nodes.csv', fn_subjects='subjects.csv',
+                  scale_x=True):
+    """Load AFQ data from CSV, transform it, return feature matrix and target
+
+    Parameters
+    ----------
+    workdir : str
+        Directory in which to find the AFQ csv files
+
+    target_col : str
+        Name of column in the subjects csv file to use as the target variable
+
+    binary_positive : str or None, default=None
+        If supplied, use this value as the positive value in a binary
+        classification problem. If None, do not use a binary mapping (e.g. for
+        a regression problem).
+
+    fn_nodes : str, default='nodes.csv'
+        Filename for the nodes csv file.
+
+    fn_subjects : str, default='subjects.csv'
+        Filename for the subjects csv file.
+
+    scale_x : bool, default=True
+        If True, center each feature to have zero mean and scale it to have
+        unit variance.
+
+    Returns
+    -------
+    collections.namedtuple
+        namedtuple with field:
+        x - the feature matrix
+        y - the target array
+        groups - group indices for each feature group
+        cols - multi-indexed columns of x
+
+    See Also
+    --------
+    transform.FeatureTransformer
+    """
+    workdir = op.abspath(workdir)
+    fn_nodes = op.join(workdir, fn_nodes)
+    fn_subjects = op.join(workdir, fn_subjects)
+
+    nodes = pd.read_csv(fn_nodes)
+    targets = pd.read_csv(
+        fn_subjects, index_col='subjectID'
+    ).drop(['Unnamed: 0'], axis='columns')
+
+    y = targets[target_col]
+
+    if binary_positive is not None:
+        y = y.map(lambda c: int(c == binary_positive)).values
+
+    transformer = AFQFeatureTransformer()
+    x, groups, cols = transformer.transform(nodes)
+
+    if scale_x:
+        scaler = StandardScaler()
+        x = scaler.fit_transform(x)
+
+    AFQData = namedtuple('AFQData', 'x y groups cols')
+
+    return AFQData(x=x, y=y, groups=groups, cols=cols)
 
 
 @registered
-def outer_cv_classify(x, y, groups, hidden_layers=None, n_classes=2,
-                      n_splits_outer=10, test_size=0.15,
-                      n_splits_inner=3, n_repeats_inner=2,
-                      save_models=False, save_results=False,
-                      validation_split=0.2):
-    outer_cv = StratifiedShuffleSplit(
-        n_splits=n_splits_outer, test_size=test_size
-    )
+def pgd_classifier(x_train, y_train, x_test, y_test, groups,
+                   beta0=None, alpha1=0.0, alpha2=0.0, max_iter=5000,
+                   tol=1e-6, verbose=0, cb_trace=False, accelerate=False):
+    """Find solution to sparse group lasso problem by proximal gradient descent
 
-    cv_results = []
+    Solve sparse group lasso [1]_ problem for feature matrix `x_train` and
+    target vector `y_train` with features partitioned into groups. Solve using
+    the proximal gradient descent (PGD) algorithm. Compute accuracy and ROC AUC
+    using `x_test` and `y_test`.
 
-    for split_idx, (train_idx, test_idx) in enumerate(outer_cv.split(x, y)):
-        x_train = x[train_idx, :]
-        y_train = y[train_idx]
-        x_test = x[test_idx, :]
-        y_test = y[test_idx]
+    Parameters
+    ----------
+    x_train : numpy.ndarray
+        Training feature matrix
 
-        cv_results.append(inner_cv_classify(
-            x_train=x_train, y_train=y_train, x_test=x_test, y_test=y_test,
-            groups=groups, hidden_layers=hidden_layers, n_classes=n_classes,
-            n_splits=n_splits_inner, n_repeats=n_repeats_inner,
-            save_model=save_models, save_results=save_results,
-            save_suffix=split_idx, validation_split=validation_split
-        ))
+    y_train : numpy.ndarray
+        Training target array
 
-    return cv_results
+    x_test : numpy.ndarray
+        Testing feature matrix
+
+    y_test : numpy.ndarray
+        Testing target array
+
+    groups : numpy.ndarray
+        Array of non-overlapping indices for each group. For example, if nine
+        features are grouped into equal contiguous groups of three, then groups
+        would be an nd.array like [[0, 1, 2], [3, 4, 5], [6, 7, 8]].
+
+    beta0 : numpy.ndarray
+        Initial guess for coefficient array
+
+    alpha1 : float, default=0.0
+        Group lasso regularization parameter. This encourages groupwise
+        sparsity.
+
+    alpha2 : float, default=0.0
+        Lasso regularization parameter. This encourages within group sparsity.
+
+    max_iter : int, default=5000
+        Maximum number of iterations for PGD algorithm.
+
+    tol : float, default=1e-6
+        Convergence tolerance for PGD algorithm.
+
+    verbose : int, default=0
+        Verbosity flag for PGD algorithm.
+
+    cb_trace : bool, default=False
+        If True, include copt.utils.Trace() object in return
+
+    accelerate : bool, default=False
+        If True, use accelerated PGD algorithm, otherwise use standard PGD.
+
+    Returns
+    -------
+    collections.namedtuple
+        namedtuple with fields:
+        beta_hat - estimate of the optimal beta,
+        accuracy - test set accuracy,
+        roc_auc - test set ROC AUC,
+        trace - copt.utils.Trace object if cv_trace is True, None otherwise
+
+    References
+    ----------
+    .. [1]  Noah Simon, Jerome Friedman, Trevor Hastie & Robert Tibshirani,
+        "A Sparse-Group Lasso," Journal of Computational and Graphical
+        Statistics, vol. 22:2, pp. 231-245, 2012
+        DOI: 10.1080/10618600.2012.681250
+    """
+    n_features = x_train.shape[1]
+
+    if beta0 is None:
+        beta0 = np.zeros(n_features)
+
+    sg1 = SparseGroupL1(alpha1, alpha2, groups)
+
+    step_size = 1. / cp.utils.get_lipschitz(x_train, 'logloss')
+    f_grad = cp.utils.LogLoss(x_train, y_train).func_grad
+
+    if cb_trace:
+        cb_tos = cp.utils.Trace()
+        cb_tos(beta0)
+    else:
+        cb_tos = None
+
+    if accelerate:
+        minimizer = cp.minimize_APGD
+    else:
+        minimizer = cp.minimize_PGD
+
+    pgd = minimizer(
+        f_grad, beta0, sg1.prox, step_size=step_size,
+        max_iter=max_iter, tol=tol, verbose=verbose,
+        callback=cb_tos)
+
+    beta_hat = np.copy(pgd.x)
+    y_pred = 1.0 / (1.0 - np.exp(-x_test.dot(beta_hat)))
+    y_pred = y_pred > 0.5
+
+    acc = accuracy_score(y_test, y_pred > 0.5)
+    auc = roc_auc_score(y_test, y_pred > 0.5)
+
+    Result = namedtuple('Result',
+                        'beta_hat accuracy roc_auc trace')
+    return Result(beta_hat=beta_hat, accuracy=acc,
+                  roc_auc=auc, trace=cb_tos)
 
 
 @registered
-def inner_cv_classify(x_train, y_train, x_test, y_test,
-                      groups, hidden_layers=None, n_classes=2,
-                      n_splits=3, n_repeats=2,
-                      save_model=False, save_results=False,
-                      save_suffix=None, validation_split=0.2):
-    if (save_model or save_results) and save_suffix is None:
-        raise ValueError('if save_best_model is True, you '
-                         'must supply a model_save_suffix.')
+def pgd_classifier_cv(x, y, groups, beta0=None, alpha1=0.0, alpha2=0.0,
+                      max_iter=5000, tol=1e-6, verbose=0, cb_trace=False,
+                      accelerate=False, n_splits=3, n_repeats=1,
+                      random_state=None):
+    """Find solution to sparse group lasso problem by proximal gradient descent
 
-    if n_classes != 2:
-        raise ValueError('n_classes > 2 is not yet supported.')
+    Solve sparse group lasso [1]_ problem for feature matrix `x_train` and
+    target vector `y_train` with features partitioned into groups. Solve using
+    the proximal gradient descent (PGD) algorithm. Compute accuracy and ROC AUC
+    using `x_test` and `y_test`.
 
-    if x_train.shape[0] != y_train.shape[0]:
-        raise ValueError('training x and y do not have same length.')
+    Parameters
+    ----------
+    x : numpy.ndarray
+        Feature matrix
 
-    if x_test.shape[0] != y_test.shape[0]:
-        raise ValueError('training x and y do not have same length.')
+    y : numpy.ndarray
+        Target array
 
-    if x_train.shape[1] != x_test.shape[1]:
-        raise ValueError('training and test x arrays have inconsistent '
-                         'number of features.')
+    groups : numpy.ndarray
+        Array of non-overlapping indices for each group. For example, if nine
+        features are grouped into equal contiguous groups of three, then groups
+        would be an nd.array like [[0, 1, 2], [3, 4, 5], [6, 7, 8]].
 
-    # Define the named tuple for the return type
-    CVResults = namedtuple(
-        'CVResults',
-        ['grid_results_df', 'best_params', 'best_model',
-         'best_beta_hat', 'best_scores']
+    beta0 : numpy.ndarray
+        Initial guess for coefficient array
+
+    alpha1 : float, default=0.0
+        Group lasso regularization parameter. This encourages group-wise
+        sparsity.
+
+    alpha2 : float, default=0.0
+        Lasso regularization parameter. This encourages within group sparsity.
+
+    max_iter : int, default=5000
+        Maximum number of iterations for PGD algorithm.
+
+    tol : float, default=1e-6
+        Convergence tolerance for PGD algorithm.
+
+    verbose : int, default=0
+        Verbosity flag for PGD algorithm.
+
+    cb_trace : bool, default=False
+        If True, include copt.utils.Trace() object in return.
+
+    accelerate : bool, default=False
+        If True, use accelerated PGD algorithm, otherwise use standard PGD.
+
+    n_splits : int, default=3
+        Number of folds. Must be at least 2.
+
+    n_repeats : int, default=1
+        Number of times cross-validator needs to be repeated.
+
+    random_state : None, int or RandomState, default=None
+        Random state to be used to generate random state for each repetition.
+
+
+    Returns
+    -------
+    collections.namedtuple
+        namedtuple with fields:
+        beta_hat - list of estimates of the optimal beta,
+        accuracy - list of test set accuracies,
+        roc_auc - list of test set ROC AUCs,
+        trace - list of copt.utils.Trace objects if cv_trace is True
+
+    See Also
+    --------
+    pgd_classify
+    """
+    rskf = RepeatedStratifiedKFold(
+        n_splits=n_splits, n_repeats=n_repeats, random_state=random_state
     )
 
-    d = x_train.shape[1]
+    clf_results = []
 
-    def create_classification_model(alpha=0.1, lambda_=0.1, n_epochs=1000):
-        if hidden_layers is None or len(list(hidden_layers)) == 0:
-            clf = ksgl.SGLClassifier(
-                dim_input=d, n_classes=n_classes,
-                groups=groups, alpha=alpha, lambda_=lambda_, n_epochs=n_epochs,
-                optimizer='adam', lr=0.001, validation_split=validation_split,
-                early_stopping_patience=0, verbose=False,
-            )
-        else:
-            clf = ksgl.SGLMultiLayerPerceptronClassifier(
-                dim_input=d, n_classes=n_classes, hidden_layers=hidden_layers,
-                groups=groups, alpha=alpha, lambda_=lambda_, n_epochs=n_epochs,
-                optimizer='adam', lr=0.001, validation_split=validation_split,
-                early_stopping_patience=0, verbose=False,
-            )
-
-        return clf.model
-
-    inner_cv_generator = RepeatedStratifiedKFold(
-        n_splits=n_splits, n_repeats=n_repeats
-    )
-
-    model = KerasClassifier(
-        build_fn=create_classification_model,
-        verbose=0
-    )
-
-    if validation_split == 0.0:
-        monitor = EarlyStopping(
-            monitor='loss', min_delta=1e-3, patience=5, verbose=0, mode='auto'
-        )
+    if verbose:
+        verbose -= 1
+        splitter = tqdm(rskf.split(x, y), total=rskf.get_n_splits())
     else:
-        monitor = EarlyStopping(
-            monitor='val_loss', min_delta=1e-3, patience=5, verbose=0, mode='auto'
+        splitter = rskf.split(x, y)
+
+    for train_idx, test_idx in splitter:
+        x_train, x_test = x[train_idx], x[test_idx]
+        y_train, y_test = y[train_idx], y[test_idx]
+
+        res = pgd_classifier(
+            x_train=x_train, y_train=y_train,
+            x_test=x_test, y_test=y_test,
+            groups=groups,
+            beta0=beta0, alpha1=alpha1, alpha2=alpha2,
+            max_iter=max_iter, tol=tol,
+            verbose=verbose, cb_trace=cb_trace,
+            accelerate=accelerate
         )
 
-    # define the grid search parameters
-    batch_size = [32]
-    alphas = np.array([0.05, 0.5, 0.95])
-    lambdas = np.logspace(-4, 4, 20)
-    callbacks = [[monitor]]
-    validation_splits = [validation_split]
-    param_grid = dict(
-        callbacks=callbacks,
-        validation_split=validation_splits,
-        batch_size=batch_size,
-        alpha=alphas,
-        lambda_=lambdas
-    )
+        clf_results.append(res)
+        beta0 = res.beta_hat
 
-    scoring = {'AUC': 'roc_auc', 'Accuracy': 'accuracy'}
-
-    grid = GridSearchCV(
-        estimator=model,
-        param_grid=param_grid,
-        cv=inner_cv_generator,
-        scoring=scoring,
-        refit='AUC',
-        n_jobs=1,
-        verbose=1
-    )
-
-    grid.fit(x_train, y_train)
-
-    cv_df = pd.DataFrame(grid.cv_results_)
-
-    cv_df.drop(
-        ['param_callbacks', 'param_validation_split'],
-        axis='columns', inplace=True
-    )
-
-    best_model = grid.best_estimator_.model
-
-    if save_results:
-        # Save grid results DataFrame to disk
-        cv_df.to_pickle('grid_results_{s:s}.pkl'.format(s=save_suffix))
-
-    if save_model:
-        # serialize model to JSON
-        model_json = best_model.to_json()
-        with open('model_{s:s}.json'.format(s=save_suffix), "w") as json_file:
-            json_file.write(model_json)
-
-        # serialize weights to HDF5
-        best_model.save_weights('model_weights_{s:s}.hdf5'.format(s=save_suffix))
-
-    beta_hat = best_model.get_weights()[0]
-
-    if n_classes == 2:
-        y_pred_train = best_model.predict(x_train) > 0.5
-        y_pred_test = best_model.predict(x_test) > 0.5
-    else:
-        raise ValueError('n_classes > 2 is not yet supported.')
-
-    scores = {
-        'train_accuracy': accuracy_score(y_train, y_pred_train),
-        'test_accuracy': accuracy_score(y_test, y_pred_test),
-        'train_AUC': roc_auc_score(y_train, y_pred_train),
-        'test_AUC': roc_auc_score(y_test, y_pred_test),
-    }
+    CVResults = namedtuple('CVResults',
+                           'beta_hat accuracy roc_auc trace')
 
     return CVResults(
-        grid_results_df=cv_df,
-        best_params=grid.best_params_,
-        best_model=best_model,
-        best_beta_hat=beta_hat,
-        best_scores=scores,
+        beta_hat=[res.beta_hat for res in clf_results],
+        accuracy=[res.accuracy for res in clf_results],
+        roc_auc=[res.roc_auc for res in clf_results],
+        trace=[res.trace for res in clf_results]
     )
 
 
 @registered
-def outer_cv_regressor(x, y, groups, hidden_layers=None,
-                      n_splits_outer=10, test_size=0.15,
-                      n_splits_inner=3, n_repeats_inner=2,
-                      save_models=False, save_results=False,
-                      validation_split=0.2):
-    outer_cv = ShuffleSplit(
-        n_splits=n_splits_outer, test_size=test_size
-    )
+def fit_hyperparams(x, y, groups, max_evals=100,
+                    mongo_handle=None, mongo_exp_key=None):
+    """Find the best hyperparameters for sparse group lasso using hyperopt.fmin
 
-    cv_results = []
+    Parameters
+    ----------
+    x : numpy.ndarray
+        Feature matrix
 
-    for split_idx, (train_idx, test_idx) in enumerate(outer_cv.split(x, y)):
-        x_train = x[train_idx, :]
-        y_train = y[train_idx]
-        x_test = x[test_idx, :]
-        y_test = y[test_idx]
+    y : numpy.ndarray
+        Target array
 
-        cv_results.append(inner_cv_classify(
-            x_train=x_train, y_train=y_train, x_test=x_test, y_test=y_test,
-            groups=groups, hidden_layers=hidden_layers, n_classes=n_classes,
-            n_splits=n_splits_inner, n_repeats=n_repeats_inner,
-            save_model=save_models, save_results=save_results,
-            save_suffix=split_idx, validation_split=validation_split
-        ))
+    groups : numpy.ndarray
+        Array of non-overlapping indices for each group. For example, if nine
+        features are grouped into equal contiguous groups of three, then groups
+        would be an nd.array like [[0, 1, 2], [3, 4, 5], [6, 7, 8]].
 
-    return cv_results
+    max_evals : int, default=100
+        Maximum allowed function evaluations for fmin
 
+    mongo_handle : str, hyperopt.mongoexp.MongoJobs, or None, default=None
+        If not None, the connection string for the mongodb jobs database or a
+        MongoJobs instance. If None, fmin will not parallelize its search
+        using mongodb.
 
-@registered
-def inner_cv_classify(x_train, y_train, x_test, y_test,
-                      groups, hidden_layers=None, n_classes=2,
-                      n_splits=3, n_repeats=2,
-                      save_model=False, save_results=False,
-                      save_suffix=None, validation_split=0.2):
-    if (save_model or save_results) and save_suffix is None:
-        raise ValueError('if save_best_model is True, you '
-                         'must supply a model_save_suffix.')
+    mongo_exp_key : str or None, default=None
+        Experiment key for this search if using mongodb to parallelize fmin.
 
-    if n_classes != 2:
-        raise ValueError('n_classes > 2 is not yet supported.')
-
-    if x_train.shape[0] != y_train.shape[0]:
-        raise ValueError('training x and y do not have same length.')
-
-    if x_test.shape[0] != y_test.shape[0]:
-        raise ValueError('training x and y do not have same length.')
-
-    if x_train.shape[1] != x_test.shape[1]:
-        raise ValueError('training and test x arrays have inconsistent '
-                         'number of features.')
-
-    # Define the named tuple for the return type
-    CVResults = namedtuple(
-        'CVResults',
-        ['grid_results_df', 'best_params', 'best_model',
-         'best_beta_hat', 'best_scores']
-    )
-
-    d = x_train.shape[1]
-
-    def create_classification_model(alpha=0.1, lambda_=0.1, n_epochs=1000):
-        if hidden_layers is None or len(list(hidden_layers)) == 0:
-            clf = ksgl.SGLClassifier(
-                dim_input=d, n_classes=n_classes,
-                groups=groups, alpha=alpha, lambda_=lambda_, n_epochs=n_epochs,
-                optimizer='adam', lr=0.001, validation_split=validation_split,
-                early_stopping_patience=0, verbose=False,
-            )
-        else:
-            clf = ksgl.SGLMultiLayerPerceptronClassifier(
-                dim_input=d, n_classes=n_classes, hidden_layers=hidden_layers,
-                groups=groups, alpha=alpha, lambda_=lambda_, n_epochs=n_epochs,
-                optimizer='adam', lr=0.001, validation_split=validation_split,
-                early_stopping_patience=0, verbose=False,
-            )
-
-        return clf.model
-
-    inner_cv_generator = RepeatedStratifiedKFold(
-        n_splits=n_splits, n_repeats=n_repeats
-    )
-
-    model = KerasClassifier(
-        build_fn=create_classification_model,
-        verbose=0
-    )
-
-    if validation_split == 0.0:
-        monitor = EarlyStopping(
-            monitor='loss', min_delta=1e-3, patience=5, verbose=0, mode='auto'
-        )
-    else:
-        monitor = EarlyStopping(
-            monitor='val_loss', min_delta=1e-3, patience=5, verbose=0, mode='auto'
-        )
-
-    # define the grid search parameters
-    batch_size = [32]
-    alphas = np.array([0.05, 0.5, 0.95])
-    lambdas = np.logspace(-4, 4, 20)
-    callbacks = [[monitor]]
-    validation_splits = [validation_split]
-    param_grid = dict(
-        callbacks=callbacks,
-        validation_split=validation_splits,
-        batch_size=batch_size,
-        alpha=alphas,
-        lambda_=lambdas
-    )
-
-    scoring = {'AUC': 'roc_auc', 'Accuracy': 'accuracy'}
-
-    grid = GridSearchCV(
-        estimator=model,
-        param_grid=param_grid,
-        cv=inner_cv_generator,
-        scoring=scoring,
-        refit='AUC',
-        n_jobs=1,
-        verbose=1
-    )
-
-    grid.fit(x_train, y_train)
-
-    cv_df = pd.DataFrame(grid.cv_results_)
-
-    cv_df.drop(
-        ['param_callbacks', 'param_validation_split'],
-        axis='columns', inplace=True
-    )
-
-    best_model = grid.best_estimator_.model
-
-    if save_results:
-        # Save grid results DataFrame to disk
-        cv_df.to_pickle('grid_results_{s:s}.pkl'.format(s=save_suffix))
-
-    if save_model:
-        # serialize model to JSON
-        model_json = best_model.to_json()
-        with open('model_{s:s}.json'.format(s=save_suffix), "w") as json_file:
-            json_file.write(model_json)
-
-        # serialize weights to HDF5
-        best_model.save_weights('model_weights_{s:s}.hdf5'.format(s=save_suffix))
-
-    beta_hat = best_model.get_weights()[0]
-
-    if n_classes == 2:
-        y_pred_train = best_model.predict(x_train) > 0.5
-        y_pred_test = best_model.predict(x_test) > 0.5
-    else:
-        raise ValueError('n_classes > 2 is not yet supported.')
-
-    scores = {
-        'train_accuracy': accuracy_score(y_train, y_pred_train),
-        'test_accuracy': accuracy_score(y_test, y_pred_test),
-        'train_AUC': roc_auc_score(y_train, y_pred_train),
-        'test_AUC': roc_auc_score(y_test, y_pred_test),
+    Returns
+    -------
+    collections.namedtuple
+        namedtuple with fields:
+        best_fit - the best fit from hyperopt.fmin
+        trials - trials object from hyperopt.fmin
+    """
+    hp_space = {
+        'alpha1': hp.loguniform('alpha1', -4, 2),
+        'alpha2': hp.loguniform('alpha2', -4, 2),
     }
 
-    return CVResults(
-        grid_results_df=cv_df,
-        best_params=grid.best_params_,
-        best_model=best_model,
-        best_beta_hat=beta_hat,
-        best_scores=scores,
+    def hp_objective(params):
+        hp_cv_partial = partial(pgd_classifier_cv, x=x, y=y, groups=groups)
+        cv_results = hp_cv_partial(**params)
+        auc = np.array(cv_results.roc_auc)
+        return {
+            'loss': -np.mean(auc),
+            'loss_variance': np.var(auc),
+            'status': STATUS_OK
+        }
+
+    if mongo_handle is not None:
+        trials = MongoTrials(mongo_handle, exp_key=mongo_exp_key)
+    else:
+        trials = Trials()
+
+    best = fmin(hp_objective, hp_space, algo=tpe.suggest,
+                max_evals=max_evals, trials=trials)
+
+    HPResults = namedtuple('HPResults', 'best_fit trials')
+
+    return HPResults(
+        best_fit=best,
+        trials=trials,
     )
