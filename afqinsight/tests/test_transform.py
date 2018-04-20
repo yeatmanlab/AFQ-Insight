@@ -17,7 +17,8 @@ def test_AFQFeatureTransformer():
 
     x_ref = np.load(op.join(test_data_path, 'test_transform_x.npy'))
     groups_ref = np.load(op.join(test_data_path, 'test_transform_groups.npy'))
-    cols_ref = pd.read_pickle(op.join(test_data_path, 'test_transform_cols.pkl'))
+    cols_ref = pd.read_pickle(op.join(test_data_path,
+                                      'test_transform_cols.pkl'))
 
     assert np.all(x == x_ref)
     assert np.all(groups == groups_ref)

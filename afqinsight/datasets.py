@@ -4,7 +4,7 @@ Generate samples of synthetic data sets.
 
 import numpy as np
 
-from sklearn.utils import check_array, check_random_state
+from sklearn.utils import check_random_state
 from sklearn.utils import shuffle as util_shuffle
 from sklearn.utils.random import sample_without_replacement
 
@@ -420,9 +420,9 @@ def make_sparse_group_classification(
         # Randomly permute samples
         X, y = util_shuffle(X, y, random_state=generator)
 
-        # Permute the groups, maintaining the order within them
-        # group_idx_map maps feature indices to group indices. The group order is
-        # random but all features in a single group are adjacent
+        # Permute the groups, maintaining the order within them group_idx_map
+        # maps feature indices to group indices. The group order is random
+        # but all features in a single group are adjacent
         group_idx_map = np.concatenate([
             np.ones(n_features_per_group, dtype=np.int32) * i
             for i in np.random.choice(
