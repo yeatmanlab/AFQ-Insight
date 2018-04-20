@@ -1,16 +1,16 @@
 """
-Generate samples of synthetic data sets.
+Generate samples of synthetic data sets or extract AFQ data
 """
+from __future__ import absolute_import, division, print_function
 
 import numpy as np
 import os.path as op
 import pandas as pd
-
 from collections import namedtuple
+from sklearn.datasets.samples_generator import _generate_hypercube
+from sklearn.preprocessing import StandardScaler
 from sklearn.utils import check_random_state
 from sklearn.utils import shuffle as util_shuffle
-from sklearn.utils.random import sample_without_replacement
-from sklearn.preprocessing import StandardScaler
 
 from .transform import AFQFeatureTransformer
 
@@ -88,19 +88,6 @@ def load_afq_data(workdir, target_col, binary_positive=None,
     AFQData = namedtuple('AFQData', 'x y groups cols')
 
     return AFQData(x=x, y=y, groups=groups, cols=cols)
-
-
-def _generate_hypercube(samples, dimensions, rng):
-    """Returns distinct binary samples of length dimensions
-    """
-    if dimensions > 30:
-        return np.hstack([rng.randint(2, size=(samples, dimensions - 30)),
-                          _generate_hypercube(samples, 30, rng)])
-    out = sample_without_replacement(2 ** dimensions, samples,
-                                     random_state=rng).astype(dtype='>u4',
-                                                              copy=False)
-    out = np.unpackbits(out.view('>u1')).reshape((-1, 32))[:, -dimensions:]
-    return out
 
 
 @registered
