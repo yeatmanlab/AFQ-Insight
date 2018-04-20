@@ -42,7 +42,9 @@ class AFQFeatureTransformer(object):
             feature matrix
 
         groups : numpy.ndarray
-            group membership for each feature (column) of X
+            array of indices for each group. For example, if nine features are
+            grouped into equal contiguous groups of three, then groups would
+            be an nd.array like [[0, 1, 2], [3, 4, 5], [6, 7, 8]].
 
         columns : pandas.MultiIndex
             multi-indexed columns of X
@@ -132,7 +134,10 @@ class AFQFeatureTransformer(object):
             dtype=np.int64
         )
 
-        return features.values, bundle_group_membership, features.columns
+        groups = [np.where(bundle_group_membership == gid)[0]
+                  for gid in np.unique(bundle_group_membership)]
+
+        return features.values, groups, features.columns
 
 
 def isiterable(obj):
