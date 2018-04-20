@@ -20,6 +20,10 @@ def registered(fn):
     return fn
 
 
+def _sigmoid(z):
+    return 1.0 / (1.0 + np.exp(-z))
+
+
 @registered
 def pgd_classifier(x_train, y_train, x_test, y_test, groups,
                    beta0=None, alpha1=0.0, alpha2=0.0, max_iter=5000,
@@ -118,11 +122,11 @@ def pgd_classifier(x_train, y_train, x_test, y_test, groups,
         callback=cb_tos)
 
     beta_hat = np.copy(pgd.x)
-    y_pred = 1.0 / (1.0 - np.exp(-x_test.dot(beta_hat)))
+    y_pred = _sigmoid(x_test.dot(beta_hat))
     y_pred = y_pred > 0.5
 
-    acc = accuracy_score(y_test, y_pred > 0.5)
-    auc = roc_auc_score(y_test, y_pred > 0.5)
+    acc = accuracy_score(y_test, y_pred)
+    auc = roc_auc_score(y_test, y_pred)
 
     Result = namedtuple('Result',
                         'beta_hat accuracy roc_auc trace')
@@ -244,7 +248,7 @@ def pgd_classifier_cv(x, y, groups, beta0=None, alpha1=0.0, alpha2=0.0,
 
 
 @registered
-def fit_hyperparams(x, y, groups, max_evals=100,
+def fit_hyperparams(x, y, groups, max_evals=100, trials=None,
                     mongo_handle=None, mongo_exp_key=None):
     """Find the best hyperparameters for sparse group lasso using hyperopt.fmin
 
@@ -263,6 +267,10 @@ def fit_hyperparams(x, y, groups, max_evals=100,
 
     max_evals : int, default=100
         Maximum allowed function evaluations for fmin
+
+    trials : hyperopt Trials or MongoTrials object or None, default=None
+        Pre-existing Trials or MongoTrials object to continue a previous
+        hyperopt search.
 
     mongo_handle : str, hyperopt.mongoexp.MongoJobs, or None, default=None
         If not None, the connection string for the mongodb jobs database or a
@@ -288,16 +296,20 @@ def fit_hyperparams(x, y, groups, max_evals=100,
         hp_cv_partial = partial(pgd_classifier_cv, x=x, y=y, groups=groups)
         cv_results = hp_cv_partial(**params)
         auc = np.array(cv_results.roc_auc)
+        acc = np.array(cv_results.accuracy)
         return {
             'loss': -np.mean(auc),
             'loss_variance': np.var(auc),
-            'status': STATUS_OK
+            'status': STATUS_OK,
+            'accuracy_mean': np.mean(acc),
+            'accuracy_variance': np.var(acc),
         }
 
-    if mongo_handle is not None:
-        trials = MongoTrials(mongo_handle, exp_key=mongo_exp_key)
-    else:
-        trials = Trials()
+    if trials is None:
+        if mongo_handle is not None:
+            trials = MongoTrials(mongo_handle, exp_key=mongo_exp_key)
+        else:
+            trials = Trials()
 
     best = fmin(hp_objective, hp_space, algo=tpe.suggest,
                 max_evals=max_evals, trials=trials)
