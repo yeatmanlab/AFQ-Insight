@@ -10,9 +10,9 @@ flake:
 
 test:
     # Unit testing using pytest
-	py.test --pyargs afqinsight --cov-report term-missing --cov=afqinsight
+	py.test --pyargs afqinsight --cov-report term-missing --cov-config .coveragerc --cov=afqinsight
 
 devtest:
     # Unit testing with the -x option, aborts testing after first failure
     # Useful for development when tests are long
-	py.test -x --pyargs afqinsight --cov-report term-missing --cov=afqinsight
+	py.test -x --pyargs afqinsight --cov-report term-missing --cov-config .coveragerc --cov=afqinsight

@@ -1,0 +1,4 @@
+[run]
+omit = 
+    afqinsight/tests/*
+    afqinsight/version.py

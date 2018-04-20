@@ -31,10 +31,6 @@ def test_isiterable():
     assert afqi.transform.isiterable(np.arange(10))
 
 
-def test_GroupsExtractor():
-    pass
-
-
 def test_remove_group():
     x_ref = np.load(op.join(test_data_path, 'test_transform_x.npy'))
     label_sets_ref = np.load(op.join(
@@ -147,6 +143,3 @@ def test_multicol2sets():
 
     assert np.all(label_sets == label_sets_ref)
 
-
-def test_TopNGroupsExtractor():
-    pass
