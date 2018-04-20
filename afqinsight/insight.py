@@ -2,8 +2,6 @@ from __future__ import absolute_import, division, print_function
 
 import copt as cp
 import numpy as np
-import os.path as op
-import pandas as pd
 
 from collections import namedtuple
 from functools import partial
@@ -11,11 +9,9 @@ from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 from hyperopt.mongoexp import MongoTrials
 from sklearn.metrics import accuracy_score, roc_auc_score
 from sklearn.model_selection import RepeatedStratifiedKFold
-from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 
 from .prox import SparseGroupL1
-from .transform import AFQFeatureTransformer
 
 __all__ = []
 
@@ -23,73 +19,6 @@ __all__ = []
 def registered(fn):
     __all__.append(fn.__name__)
     return fn
-
-
-def load_afq_data(workdir, target_col, binary_positive=None,
-                  fn_nodes='nodes.csv', fn_subjects='subjects.csv',
-                  scale_x=True):
-    """Load AFQ data from CSV, transform it, return feature matrix and target
-
-    Parameters
-    ----------
-    workdir : str
-        Directory in which to find the AFQ csv files
-
-    target_col : str
-        Name of column in the subjects csv file to use as the target variable
-
-    binary_positive : str or None, default=None
-        If supplied, use this value as the positive value in a binary
-        classification problem. If None, do not use a binary mapping (e.g. for
-        a regression problem).
-
-    fn_nodes : str, default='nodes.csv'
-        Filename for the nodes csv file.
-
-    fn_subjects : str, default='subjects.csv'
-        Filename for the subjects csv file.
-
-    scale_x : bool, default=True
-        If True, center each feature to have zero mean and scale it to have
-        unit variance.
-
-    Returns
-    -------
-    collections.namedtuple
-        namedtuple with field:
-        x - the feature matrix
-        y - the target array
-        groups - group indices for each feature group
-        cols - multi-indexed columns of x
-
-    See Also
-    --------
-    transform.FeatureTransformer
-    """
-    workdir = op.abspath(workdir)
-    fn_nodes = op.join(workdir, fn_nodes)
-    fn_subjects = op.join(workdir, fn_subjects)
-
-    nodes = pd.read_csv(fn_nodes)
-    targets = pd.read_csv(
-        fn_subjects, index_col='subjectID'
-    ).drop(['Unnamed: 0'], axis='columns')
-
-    y = targets[target_col]
-
-    if binary_positive is not None:
-        y = y.map(lambda c: int(c == binary_positive)).values
-
-    transformer = AFQFeatureTransformer()
-    x, groups, cols = transformer.transform(nodes)
-
-    if scale_x:
-        scaler = StandardScaler()
-        x = scaler.fit_transform(x)
-
-    AFQData = namedtuple('AFQData', 'x y groups cols')
-
-    return AFQData(x=x, y=y, groups=groups, cols=cols)
 
 
 @registered
