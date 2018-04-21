@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import copt as cp
 import numpy as np
+import pickle
 from collections import namedtuple
 from functools import partial
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
@@ -249,7 +250,8 @@ def pgd_classifier_cv(x, y, groups, beta0=None, alpha1=0.0, alpha2=0.0,
 
 @registered
 def fit_hyperparams(x, y, groups, max_evals=100, trials=None,
-                    mongo_handle=None, mongo_exp_key=None):
+                    mongo_handle=None, mongo_exp_key=None,
+                    save_trials_pickle=None):
     """Find the best hyperparameters for sparse group lasso using hyperopt.fmin
 
     Parameters
@@ -279,6 +281,9 @@ def fit_hyperparams(x, y, groups, max_evals=100, trials=None,
 
     mongo_exp_key : str or None, default=None
         Experiment key for this search if using mongodb to parallelize fmin.
+
+    save_trials_pickle : str or None, default=None
+        If not None, save trials dictionary to pickle file using this filename.
 
     Returns
     -------
@@ -313,6 +318,10 @@ def fit_hyperparams(x, y, groups, max_evals=100, trials=None,
 
     best = fmin(hp_objective, hp_space, algo=tpe.suggest,
                 max_evals=max_evals, trials=trials)
+
+    if mongo_handle is None and save_trials_pickle is not None:
+        with open(save_trials_pickle, 'wb') as fp:
+            pickle.dump(trials, fp)
 
     HPResults = namedtuple('HPResults', 'best_fit trials')
 
