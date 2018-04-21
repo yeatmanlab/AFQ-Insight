@@ -142,4 +142,3 @@ def test_multicol2sets():
     ))
 
     assert np.all(label_sets == label_sets_ref)
-
