@@ -1,14 +1,17 @@
 from __future__ import absolute_import, division, print_function
 
+import configparser
 import copt as cp
 import numpy as np
+import os.path as op
 import pickle
 from collections import namedtuple
 from functools import partial
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 from hyperopt.mongoexp import MongoTrials
-from sklearn.metrics import accuracy_score, roc_auc_score
-from sklearn.model_selection import RepeatedStratifiedKFold
+from sklearn.metrics import accuracy_score, average_precision_score
+from sklearn.metrics import roc_auc_score
+from sklearn.model_selection import RepeatedStratifiedKFold, StratifiedKFold
 from tqdm import tqdm
 
 from .prox import SparseGroupL1
@@ -26,9 +29,52 @@ def _sigmoid(z):
 
 
 @registered
+def classification_scores(x, y, beta_hat, clf_threshold=0.5):
+    """Return classification accuracy and ROC AUC scores
+
+    Parameters
+    ----------
+    x : np.ndarray
+        Feature matrix
+
+    y : np.ndarray
+        Target array
+
+    beta_hat : np.ndarray
+        Estimate of coefficient array
+
+    clf_threshold : float, default=0.5
+        Decision threshold for binary classification
+
+    Returns
+    -------
+    collections.namedtuple
+        namedtuple with field:
+        accuracy - accuracy score
+        auc - ROC AUC
+    """
+    y_pred = _sigmoid(x.dot(beta_hat))
+
+    acc = accuracy_score(y, y_pred > clf_threshold)
+    auc = roc_auc_score(y, y_pred)
+    aps = average_precision_score(y, y_pred)
+
+    Scores = namedtuple('Scores', 'accuracy auc average_precision')
+
+    return Scores(accuracy=acc, auc=auc, average_precision=aps)
+
+
+PGDResult = namedtuple(
+    'PGDResult',
+    ['alpha1', 'alpha2', 'beta_hat', 'test', 'train', 'trace']
+)
+
+
+@registered
 def pgd_classifier(x_train, y_train, x_test, y_test, groups,
                    beta0=None, alpha1=0.0, alpha2=0.0, max_iter=5000,
-                   tol=1e-6, verbose=0, cb_trace=False, accelerate=False):
+                   tol=1e-6, verbose=0, cb_trace=False, accelerate=False,
+                   clf_threshold=0.5):
     """Find solution to sparse group lasso problem by proximal gradient descent
 
     Solve sparse group lasso [1]_ problem for feature matrix `x_train` and
@@ -80,13 +126,18 @@ def pgd_classifier(x_train, y_train, x_test, y_test, groups,
     accelerate : bool, default=False
         If True, use accelerated PGD algorithm, otherwise use standard PGD.
 
+    clf_threshold : float, default=0.5
+        Decision threshold for binary classification
+
     Returns
     -------
     collections.namedtuple
         namedtuple with fields:
+        alpha1 - group lasso regularization parameter,
+        alpha2 - lasso regularization parameter,
         beta_hat - estimate of the optimal beta,
-        accuracy - test set accuracy,
-        roc_auc - test set ROC AUC,
+        test - scores namedtuple for test set,
+        train - scores namedtuple for train set,
         trace - copt.utils.Trace object if cv_trace is True, None otherwise
 
     References
@@ -123,16 +174,16 @@ def pgd_classifier(x_train, y_train, x_test, y_test, groups,
         callback=cb_tos)
 
     beta_hat = np.copy(pgd.x)
-    y_pred = _sigmoid(x_test.dot(beta_hat))
-    y_pred = y_pred > 0.5
 
-    acc = accuracy_score(y_test, y_pred)
-    auc = roc_auc_score(y_test, y_pred)
+    train = classification_scores(x=x_train, y=y_train, beta_hat=beta_hat,
+                                  clf_threshold=clf_threshold)
+    test = classification_scores(x=x_test, y=y_test, beta_hat=beta_hat,
+                                 clf_threshold=clf_threshold)
 
-    Result = namedtuple('Result',
-                        'beta_hat accuracy roc_auc trace')
-    return Result(beta_hat=beta_hat, accuracy=acc,
-                  roc_auc=auc, trace=cb_tos)
+    return PGDResult(
+        alpha1=alpha1, alpha2=alpha2, beta_hat=beta_hat,
+        test=test, train=train, trace=cb_tos
+    )
 
 
 @registered
@@ -144,8 +195,8 @@ def pgd_classifier_cv(x, y, groups, beta0=None, alpha1=0.0, alpha2=0.0,
 
     Solve sparse group lasso [1]_ problem for feature matrix `x_train` and
     target vector `y_train` with features partitioned into groups. Solve using
-    the proximal gradient descent (PGD) algorithm. Compute accuracy and ROC AUC
-    using `x_test` and `y_test`.
+    the proximal gradient descent (PGD) algorithm. Compute accuracy, ROC AUC,
+    and average precision using `x_test` and `y_test`.
 
     Parameters
     ----------
@@ -199,9 +250,11 @@ def pgd_classifier_cv(x, y, groups, beta0=None, alpha1=0.0, alpha2=0.0,
     -------
     collections.namedtuple
         namedtuple with fields:
+        alpha1 - group lasso regularization parameter,
+        alpha2 - lasso regularization parameter,
         beta_hat - list of estimates of the optimal beta,
-        accuracy - list of test set accuracies,
-        roc_auc - list of test set ROC AUCs,
+        test - list of scores namedtuples for test set,
+        train - list of scores namedtuples for train set,
         trace - list of copt.utils.Trace objects if cv_trace is True
 
     See Also
@@ -237,19 +290,18 @@ def pgd_classifier_cv(x, y, groups, beta0=None, alpha1=0.0, alpha2=0.0,
         clf_results.append(res)
         beta0 = res.beta_hat
 
-    CVResults = namedtuple('CVResults',
-                           'beta_hat accuracy roc_auc trace')
-
-    return CVResults(
+    return PGDResult(
+        alpha1=alpha1,
+        alpha2=alpha2,
         beta_hat=[res.beta_hat for res in clf_results],
-        accuracy=[res.accuracy for res in clf_results],
-        roc_auc=[res.roc_auc for res in clf_results],
+        test=[res.test for res in clf_results],
+        train=[res.train for res in clf_results],
         trace=[res.trace for res in clf_results]
     )
 
 
 @registered
-def fit_hyperparams(x, y, groups, max_evals=100, trials=None,
+def fit_hyperparams(x, y, groups, max_evals=100, score='roc_auc', trials=None,
                     mongo_handle=None, mongo_exp_key=None,
                     save_trials_pickle=None):
     """Find the best hyperparameters for sparse group lasso using hyperopt.fmin
@@ -269,6 +321,9 @@ def fit_hyperparams(x, y, groups, max_evals=100, trials=None,
 
     max_evals : int, default=100
         Maximum allowed function evaluations for fmin
+
+    score : 'roc_auc', 'accuracy', or 'average_precision', default='roc_auc'
+        scoring metric to be optimized
 
     trials : hyperopt Trials or MongoTrials object or None, default=None
         Pre-existing Trials or MongoTrials object to continue a previous
@@ -292,6 +347,10 @@ def fit_hyperparams(x, y, groups, max_evals=100, trials=None,
         best_fit - the best fit from hyperopt.fmin
         trials - trials object from hyperopt.fmin
     """
+    if score not in ['roc_auc', 'accuracy', 'average_precision']:
+        raise ValueError("`score` must be one of ['roc_auc', 'accuracy', "
+                         "'average_precision].")
+
     hp_space = {
         'alpha1': hp.loguniform('alpha1', -4, 2),
         'alpha2': hp.loguniform('alpha2', -4, 2),
@@ -300,14 +359,26 @@ def fit_hyperparams(x, y, groups, max_evals=100, trials=None,
     def hp_objective(params):
         hp_cv_partial = partial(pgd_classifier_cv, x=x, y=y, groups=groups)
         cv_results = hp_cv_partial(**params)
-        auc = np.array(cv_results.roc_auc)
-        acc = np.array(cv_results.accuracy)
+        auc = np.array([test.auc for test in cv_results.test])
+        acc = np.array([test.accuracy for test in cv_results.test])
+        aps = np.array([test.average_precision for test in cv_results.test])
+        if score == 'roc_auc':
+            loss = -auc
+        elif score == 'accuracy':
+            loss = -acc
+        else:
+            loss = -aps
+
         return {
-            'loss': -np.mean(auc),
-            'loss_variance': np.var(auc),
+            'loss': np.mean(loss),
+            'loss_variance': np.var(loss),
             'status': STATUS_OK,
             'accuracy_mean': np.mean(acc),
             'accuracy_variance': np.var(acc),
+            'roc_auc_mean': np.mean(auc),
+            'roc_auc_variance': np.var(auc),
+            'average_precision_mean': np.mean(aps),
+            'average_precision_variance': np.var(aps),
         }
 
     if trials is None:
@@ -329,3 +400,148 @@ def fit_hyperparams(x, y, groups, max_evals=100, trials=None,
         best_fit=best,
         trials=trials,
     )
+
+
+@registered
+def fit_hyperparams_cv(x, y, groups,
+                       n_splits=10, max_evals_per_cv=100, score='roc_auc',
+                       trials_pickle_dir=None,
+                       mongo_handle=None,
+                       random_state=None, verbose=0,
+                       clf_threshold=0.5):
+    """Run fit_hyperparams over K-fold cross validation
+
+    Parameters
+    ----------
+    x : numpy.ndarray
+        Feature matrix
+
+    y : numpy.ndarray
+        Target array
+
+    groups : numpy.ndarray
+        Array of non-overlapping indices for each group. For example, if nine
+        features are grouped into equal contiguous groups of three, then groups
+        would be an nd.array like [[0, 1, 2], [3, 4, 5], [6, 7, 8]].
+
+    n_splits : int, default=10
+        Number of folds. Must be at least 2.
+
+    max_evals_per_cv : int, default=100
+        Maximum allowed function evaluations for fmin
+
+    score : 'roc_auc', 'accuracy', or 'average_precision', default='roc_auc'
+        scoring metric to be optimized
+
+    trials_pickle_dir : str or None, default=None
+        Directory to store/retrieve pickled trials
+
+    mongo_handle : str, hyperopt.mongoexp.MongoJobs, or None, default=None
+        If not None, the connection string for the mongodb jobs database or a
+        MongoJobs instance. If None, fmin will not parallelize its search
+        using mongodb.
+
+    random_state : None, int or RandomState, default=None
+        Random state to be used to generate random state for each repetition.
+
+    verbose : int, default=0
+        Verbosity flag for CV loop
+
+    clf_threshold : float, default=0.5
+        Decision threshold for binary classification
+
+    Returns
+    -------
+    """
+    if score not in ['roc_auc', 'accuracy', 'average_precision']:
+        raise ValueError("`score` must be one of ['roc_auc', 'accuracy', "
+                         "'average_precision].")
+
+    if trials_pickle_dir is not None:
+        configfile = op.join(op.abspath(trials_pickle_dir), 'params.ini')
+        config = configparser.ConfigParser()
+        if op.isfile(configfile):
+            # Check that existing params equal input params
+            config.read(configfile)
+            params = config['params']
+            if not all([
+                params.getint('n_splits') == n_splits,
+                params.getint('random_state') == random_state,
+                params['score'] == score
+            ]):
+                raise ValueError(
+                    'Stored trial parameters do not match input parameters. '
+                    'This could contaminate the train/test split for previous '
+                    'trials. Either set n_splits={ns:s}, random_state={rs:s}, '
+                    'score={score:s} or specify a new trials directory'.format(
+                        ns=params['n_splits'],
+                        rs=params['random_state'],
+                        score=params['score']
+                    )
+                )
+        else:
+            # Write input params to file
+            config['params'] = {
+                'n_splits': n_splits,
+                'random_state': random_state,
+                'score': score
+            }
+            with open(configfile, 'w') as cfile:
+                config.write(cfile)
+
+    skf = StratifiedKFold(n_splits=n_splits, random_state=random_state)
+
+    if verbose:
+        splitter = tqdm(enumerate(skf.split(x, y)), total=skf.get_n_splits())
+    else:
+        splitter = enumerate(skf.split(x, y))
+
+    cv_results = []
+
+    for cv_idx, (train_idx, test_idx) in splitter:
+        x_train, x_test = x[train_idx], x[test_idx]
+        y_train, y_test = y[train_idx], y[test_idx]
+
+        if mongo_handle is None:
+            mongo_exp_key = None
+            if trials_pickle_dir is not None:
+                pickle_name = op.join(
+                    op.abspath(trials_pickle_dir),
+                    'cv{i:03d}_trials.pkl'.format(i=cv_idx)
+                )
+
+                try:
+                    with open(pickle_name, 'rb') as fp:
+                        trials = pickle.load(fp)
+                except IOError:
+                    trials = None
+            else:
+                pickle_name = None
+                trials = None
+        else:
+            mongo_exp_key = 'cv_{i:03d}'.format(i=cv_idx)
+            pickle_name = None
+            trials = None
+
+        hp_res = fit_hyperparams(
+            x_train, y_train, groups,
+            max_evals=max_evals_per_cv,
+            score=score,
+            trials=trials,
+            mongo_handle=mongo_handle,
+            mongo_exp_key=mongo_exp_key,
+            save_trials_pickle=pickle_name
+        )
+
+        alpha1 = hp_res.best_fit['alpha1']
+        alpha2 = hp_res.best_fit['alpha2']
+
+        pgd = pgd_classifier(
+            x_train, y_train, x_test, y_test, groups,
+            alpha1=alpha1, alpha2=alpha2,
+            clf_threshold=clf_threshold
+        )
+
+        cv_results.append(pgd)
+
+    return cv_results
