@@ -559,7 +559,7 @@ class TopNGroupsExtractor(BaseEstimator, TransformerMixin):
 
 
 @registered
-def beta_hat_by_groups(beta_hat, columns):
+def beta_hat_by_groups(beta_hat, columns, drop_zeros=False):
     """Transform one-dimensional beta_hat array into OrderedDict
 
     Organize by tract-metric groups
@@ -571,6 +571,9 @@ def beta_hat_by_groups(beta_hat, columns):
 
     columns : pd.MultiIndex
         MultiIndex columns of the feature matrix
+
+    drop_zeros : bool, default=False
+        If True, only include betas for which there are non-zero values
 
     Returns
     -------
@@ -589,12 +592,20 @@ def beta_hat_by_groups(beta_hat, columns):
     label_sets = multicol2sets(columns, tract_symmetry=False)
 
     for tract in columns.levels[columns.names.index('tractID')]:
-        betas[tract] = OrderedDict()
-        for metric in columns.levels[columns.names.index('metric')]:
-            betas[tract][metric] = select_group(
-                x=beta_hat,
-                select_label=(tract, metric),
-                label_sets=label_sets
-            )
+        all_metrics = select_group(
+            x=beta_hat,
+            select_label=(tract,),
+            label_sets=label_sets
+        )
+        if not drop_zeros or any(all_metrics != 0):
+            betas[tract] = OrderedDict()
+            for metric in columns.levels[columns.names.index('metric')]:
+                x = select_group(
+                    x=beta_hat,
+                    select_label=(tract, metric),
+                    label_sets=label_sets
+                )
+                if not drop_zeros or any(x != 0):
+                    betas[tract][metric] = x
 
     return betas
