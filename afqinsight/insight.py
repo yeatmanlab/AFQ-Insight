@@ -3,14 +3,15 @@ from __future__ import absolute_import, division, print_function
 import configparser
 import copt as cp
 import numpy as np
+import os
 import os.path as op
 import pickle
 from collections import namedtuple
 from functools import partial
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 from hyperopt.mongoexp import MongoTrials
-from sklearn.metrics import accuracy_score, average_precision_score
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import accuracy_score, average_precision_score, f1_score
+from sklearn.metrics import roc_auc_score, r2_score, mean_squared_error
 from sklearn.model_selection import RepeatedStratifiedKFold, StratifiedKFold
 from tqdm import tqdm
 
@@ -49,32 +50,67 @@ def classification_scores(x, y, beta_hat, clf_threshold=0.5):
     Returns
     -------
     collections.namedtuple
-        namedtuple with field:
+        namedtuple with fields:
         accuracy - accuracy score
         auc - ROC AUC
+        avg_precision - average precision score
+        f1_score - F1 score
     """
     y_pred = _sigmoid(x.dot(beta_hat))
 
     acc = accuracy_score(y, y_pred > clf_threshold)
     auc = roc_auc_score(y, y_pred)
     aps = average_precision_score(y, y_pred)
+    f1 = f1_score(y, y_pred > clf_threshold)
 
-    Scores = namedtuple('Scores', 'accuracy auc average_precision')
+    Scores = namedtuple('Scores', 'accuracy auc avg_precision f1')
 
-    return Scores(accuracy=acc, auc=auc, average_precision=aps)
+    return Scores(accuracy=acc, auc=auc, avg_precision=aps, f1=f1)
 
 
-PGDResult = namedtuple(
-    'PGDResult',
+@registered
+def regression_scores(x, y, beta_hat):
+    """Return regression scores
+
+    Parameters
+    ----------
+    x : np.ndarray
+        Feature matrix
+
+    y : np.ndarray
+        Target array
+
+    beta_hat : np.ndarray
+        Estimate of coefficient array
+
+    Returns
+    -------
+    collections.namedtuple
+        namedtuple with field:
+        rmse - RMSE score
+        r2 - R^2 score, coefficient of determination
+    """
+    y_pred = x.dot(beta_hat)
+
+    rmse = np.sqrt(mean_squared_error(y, y_pred))
+    r2 = r2_score(y, y_pred)
+
+    Scores = namedtuple('Scores', 'rmse r2')
+
+    return Scores(rmse=rmse, r2=r2)
+
+
+SGLResult = namedtuple(
+    'SGLResult',
     ['alpha1', 'alpha2', 'beta_hat', 'test', 'train', 'trace']
 )
 
 
 @registered
-def pgd_classifier(x_train, y_train, x_test, y_test, groups,
-                   beta0=None, alpha1=0.0, alpha2=0.0, max_iter=5000,
-                   tol=1e-6, verbose=0, cb_trace=False, accelerate=False,
-                   clf_threshold=0.5):
+def sgl_estimator(x_train, y_train, x_test, y_test, groups,
+                  beta0=None, alpha1=0.0, alpha2=0.0, max_iter=5000,
+                  tol=1e-6, verbose=0, cb_trace=False, accelerate=False,
+                  loss_type='logloss', clf_threshold=0.5):
     """Find solution to sparse group lasso problem by proximal gradient descent
 
     Solve sparse group lasso [1]_ problem for feature matrix `x_train` and
@@ -126,6 +162,12 @@ def pgd_classifier(x_train, y_train, x_test, y_test, groups,
     accelerate : bool, default=False
         If True, use accelerated PGD algorithm, otherwise use standard PGD.
 
+    loss_type : {'logloss', 'square', 'huber'}
+        The type of loss function to use. If 'logloss', treat this problem as
+        a binary classification problem using logistic regression. Otherwise,
+        treat this problem as a regression problem using either the mean
+        square error or the Huber loss.
+
     clf_threshold : float, default=0.5
         Decision threshold for binary classification
 
@@ -154,8 +196,17 @@ def pgd_classifier(x_train, y_train, x_test, y_test, groups,
 
     sg1 = SparseGroupL1(alpha1, alpha2, groups)
 
-    step_size = 1. / cp.utils.get_lipschitz(x_train, 'logloss')
-    f_grad = cp.utils.LogLoss(x_train, y_train).func_grad
+    if loss_type not in ['logloss', 'square', 'huber']:
+        raise ValueError("loss_type must be one of "
+                         "['logloss', 'square', 'huber'].")
+
+    step_size = 1. / cp.utils.get_lipschitz(x_train, loss_type)
+    if loss_type == 'logloss':
+        f_grad = cp.utils.LogLoss(x_train, y_train).func_grad
+    elif loss_type == 'huber':
+        f_grad = cp.utils.HuberLoss(x_train, y_train).func_grad
+    else:
+        f_grad = cp.utils.SquareLoss(x_train, y_train).func_grad
 
     if cb_trace:
         cb_tos = cp.utils.Trace()
@@ -175,22 +226,26 @@ def pgd_classifier(x_train, y_train, x_test, y_test, groups,
 
     beta_hat = np.copy(pgd.x)
 
-    train = classification_scores(x=x_train, y=y_train, beta_hat=beta_hat,
-                                  clf_threshold=clf_threshold)
-    test = classification_scores(x=x_test, y=y_test, beta_hat=beta_hat,
-                                 clf_threshold=clf_threshold)
+    if loss_type == 'logloss':
+        train = classification_scores(x=x_train, y=y_train, beta_hat=beta_hat,
+                                      clf_threshold=clf_threshold)
+        test = classification_scores(x=x_test, y=y_test, beta_hat=beta_hat,
+                                     clf_threshold=clf_threshold)
+    else:
+        train = regression_scores(x=x_train, y=y_train, beta_hat=beta_hat)
+        test = regression_scores(x=x_test, y=y_test, beta_hat=beta_hat)
 
-    return PGDResult(
+    return SGLResult(
         alpha1=alpha1, alpha2=alpha2, beta_hat=beta_hat,
         test=test, train=train, trace=cb_tos
     )
 
 
 @registered
-def pgd_classifier_cv(x, y, groups, beta0=None, alpha1=0.0, alpha2=0.0,
-                      max_iter=5000, tol=1e-6, verbose=0, cb_trace=False,
-                      accelerate=False, n_splits=3, n_repeats=1,
-                      random_state=None):
+def sgl_estimator_cv(x, y, groups, beta0=None, alpha1=0.0, alpha2=0.0,
+                     max_iter=5000, tol=1e-6, verbose=0, cb_trace=False,
+                     accelerate=False, loss_type='logloss',
+                     n_splits=3, n_repeats=1, random_state=None):
     """Find solution to sparse group lasso problem by proximal gradient descent
 
     Solve sparse group lasso [1]_ problem for feature matrix `x_train` and
@@ -236,6 +291,12 @@ def pgd_classifier_cv(x, y, groups, beta0=None, alpha1=0.0, alpha2=0.0,
     accelerate : bool, default=False
         If True, use accelerated PGD algorithm, otherwise use standard PGD.
 
+    loss_type : {'logloss', 'square', 'huber'}
+        The type of loss function to use. If 'logloss', treat this problem as
+        a binary classification problem using logistic regression. Otherwise,
+        treat this problem as a regression problem using either the mean
+        square error or the Huber loss.
+
     n_splits : int, default=3
         Number of folds. Must be at least 2.
 
@@ -277,20 +338,20 @@ def pgd_classifier_cv(x, y, groups, beta0=None, alpha1=0.0, alpha2=0.0,
         x_train, x_test = x[train_idx], x[test_idx]
         y_train, y_test = y[train_idx], y[test_idx]
 
-        res = pgd_classifier(
+        res = sgl_estimator(
             x_train=x_train, y_train=y_train,
             x_test=x_test, y_test=y_test,
             groups=groups,
             beta0=beta0, alpha1=alpha1, alpha2=alpha2,
             max_iter=max_iter, tol=tol,
             verbose=verbose, cb_trace=cb_trace,
-            accelerate=accelerate
+            accelerate=accelerate, loss_type=loss_type
         )
 
         clf_results.append(res)
         beta0 = res.beta_hat
 
-    return PGDResult(
+    return SGLResult(
         alpha1=alpha1,
         alpha2=alpha2,
         beta_hat=[res.beta_hat for res in clf_results],
@@ -301,9 +362,9 @@ def pgd_classifier_cv(x, y, groups, beta0=None, alpha1=0.0, alpha2=0.0,
 
 
 @registered
-def fit_hyperparams(x, y, groups, max_evals=100, score='roc_auc', trials=None,
-                    mongo_handle=None, mongo_exp_key=None,
-                    save_trials_pickle=None):
+def fit_hyperparams(x, y, groups, max_evals=100, loss_type='logloss',
+                    score='roc_auc', trials=None, mongo_handle=None,
+                    mongo_exp_key=None, save_trials_pickle=None):
     """Find the best hyperparameters for sparse group lasso using hyperopt.fmin
 
     Parameters
@@ -322,8 +383,14 @@ def fit_hyperparams(x, y, groups, max_evals=100, score='roc_auc', trials=None,
     max_evals : int, default=100
         Maximum allowed function evaluations for fmin
 
-    score : 'roc_auc', 'accuracy', or 'average_precision', default='roc_auc'
-        scoring metric to be optimized
+    loss_type : {'logloss', 'square', 'huber'}
+        The type of loss function to use. If 'logloss', treat this problem as
+        a binary classification problem using logistic regression. Otherwise,
+        treat this problem as a regression problem using either the mean
+        square error or the Huber loss.
+
+    score : {'roc_auc', 'accuracy', 'avg_precision', 'r2', 'rmse},
+        default='roc_auc'. scoring metric to be optimized
 
     trials : hyperopt Trials or MongoTrials object or None, default=None
         Pre-existing Trials or MongoTrials object to continue a previous
@@ -347,39 +414,69 @@ def fit_hyperparams(x, y, groups, max_evals=100, score='roc_auc', trials=None,
         best_fit - the best fit from hyperopt.fmin
         trials - trials object from hyperopt.fmin
     """
-    if score not in ['roc_auc', 'accuracy', 'average_precision']:
-        raise ValueError("`score` must be one of ['roc_auc', 'accuracy', "
-                         "'average_precision].")
+    allowed_clf_scores = ['roc_auc', 'accuracy', 'avg_precision']
+    allowed_rgs_scores = ['r2', 'rmse']
+    if loss_type == 'logloss' and score not in allowed_clf_scores:
+        raise ValueError('For classification problems `score` must be one of '
+                         '{scores!s}.'.format(scores=allowed_clf_scores))
+    elif loss_type in ['square', 'huber'] and score not in allowed_rgs_scores:
+        raise ValueError('For regression problems `score` must be one of '
+                         '{scores!s}.'.format(scores=allowed_rgs_scores))
 
+    # Define the search space
     hp_space = {
         'alpha1': hp.loguniform('alpha1', -4, 2),
         'alpha2': hp.loguniform('alpha2', -4, 2),
     }
 
+    # Define the objective function for hyperopt to minimize
     def hp_objective(params):
-        hp_cv_partial = partial(pgd_classifier_cv, x=x, y=y, groups=groups)
+        hp_cv_partial = partial(sgl_estimator_cv,
+                                x=x,
+                                y=y,
+                                groups=groups,
+                                loss_type=loss_type)
         cv_results = hp_cv_partial(**params)
-        auc = np.array([test.auc for test in cv_results.test])
-        acc = np.array([test.accuracy for test in cv_results.test])
-        aps = np.array([test.average_precision for test in cv_results.test])
-        if score == 'roc_auc':
-            loss = -auc
-        elif score == 'accuracy':
-            loss = -acc
-        else:
-            loss = -aps
+        if loss_type == 'logloss':
+            auc = np.array([test.auc for test in cv_results.test])
+            acc = np.array([test.accuracy for test in cv_results.test])
+            aps = np.array([test.avg_precision for test in cv_results.test])
+            if score == 'roc_auc':
+                loss = -auc
+            elif score == 'accuracy':
+                loss = -acc
+            else:
+                loss = -aps
 
-        return {
-            'loss': np.mean(loss),
-            'loss_variance': np.var(loss),
-            'status': STATUS_OK,
-            'accuracy_mean': np.mean(acc),
-            'accuracy_variance': np.var(acc),
-            'roc_auc_mean': np.mean(auc),
-            'roc_auc_variance': np.var(auc),
-            'average_precision_mean': np.mean(aps),
-            'average_precision_variance': np.var(aps),
-        }
+            result_dict = {
+                'loss': np.mean(loss),
+                'loss_variance': np.var(loss),
+                'status': STATUS_OK,
+                'accuracy_mean': np.mean(acc),
+                'accuracy_variance': np.var(acc),
+                'roc_auc_mean': np.mean(auc),
+                'roc_auc_variance': np.var(auc),
+                'avg_precision_mean': np.mean(aps),
+                'avg_precision_variance': np.var(aps),
+            }
+        else:
+            r2 = np.array([test.r2 for test in cv_results.test])
+            rmse = np.array([test.rmse for test in cv_results.test])
+            if score == 'rmse':
+                loss = rmse
+            else:
+                loss = -r2
+            result_dict = {
+                'loss': np.mean(loss),
+                'loss_variance': np.var(loss),
+                'status': STATUS_OK,
+                'r2_mean': np.mean(r2),
+                'r2_variance': np.var(r2),
+                'rmse_mean': np.mean(rmse),
+                'rmse_variance': np.var(rmse),
+            }
+
+        return result_dict
 
     if trials is None:
         if mongo_handle is not None:
@@ -404,7 +501,8 @@ def fit_hyperparams(x, y, groups, max_evals=100, score='roc_auc', trials=None,
 
 @registered
 def fit_hyperparams_cv(x, y, groups,
-                       n_splits=10, max_evals_per_cv=100, score='roc_auc',
+                       n_splits=10, max_evals_per_cv=100,
+                       loss_type='logloss', score='roc_auc',
                        trials_pickle_dir=None,
                        mongo_handle=None,
                        random_state=None, verbose=0,
@@ -430,8 +528,14 @@ def fit_hyperparams_cv(x, y, groups,
     max_evals_per_cv : int, default=100
         Maximum allowed function evaluations for fmin
 
-    score : 'roc_auc', 'accuracy', or 'average_precision', default='roc_auc'
-        scoring metric to be optimized
+    loss_type : {'logloss', 'square', 'huber'}
+        The type of loss function to use. If 'logloss', treat this problem as
+        a binary classification problem using logistic regression. Otherwise,
+        treat this problem as a regression problem using either the mean
+        square error or the Huber loss.
+
+    score : {'roc_auc', 'accuracy', 'avg_precision', 'r2', 'rmse},
+        default='roc_auc'. scoring metric to be optimized
 
     trials_pickle_dir : str or None, default=None
         Directory to store/retrieve pickled trials
@@ -453,11 +557,17 @@ def fit_hyperparams_cv(x, y, groups,
     Returns
     -------
     """
-    if score not in ['roc_auc', 'accuracy', 'average_precision']:
-        raise ValueError("`score` must be one of ['roc_auc', 'accuracy', "
-                         "'average_precision].")
+    allowed_clf_scores = ['roc_auc', 'accuracy', 'avg_precision']
+    allowed_rgs_scores = ['r2', 'rmse']
+    if loss_type == 'logloss' and score not in allowed_clf_scores:
+        raise ValueError('For classification problems `score` must be one of '
+                         '{scores!s}.'.format(scores=allowed_clf_scores))
+    elif loss_type in ['square', 'huber'] and score not in allowed_rgs_scores:
+        raise ValueError('For regression problems `score` must be one of '
+                         '{scores!s}.'.format(scores=allowed_rgs_scores))
 
     if trials_pickle_dir is not None:
+        os.makedirs(op.abspath(trials_pickle_dir), exist_ok=True)
         configfile = op.join(op.abspath(trials_pickle_dir), 'params.ini')
         config = configparser.ConfigParser()
         if op.isfile(configfile):
@@ -526,6 +636,7 @@ def fit_hyperparams_cv(x, y, groups,
         hp_res = fit_hyperparams(
             x_train, y_train, groups,
             max_evals=max_evals_per_cv,
+            loss_type=loss_type,
             score=score,
             trials=trials,
             mongo_handle=mongo_handle,
@@ -536,12 +647,12 @@ def fit_hyperparams_cv(x, y, groups,
         alpha1 = hp_res.best_fit['alpha1']
         alpha2 = hp_res.best_fit['alpha2']
 
-        pgd = pgd_classifier(
+        sgl = sgl_estimator(
             x_train, y_train, x_test, y_test, groups,
-            alpha1=alpha1, alpha2=alpha2,
+            alpha1=alpha1, alpha2=alpha2, loss_type=loss_type,
             clf_threshold=clf_threshold
         )
 
-        cv_results.append(pgd)
+        cv_results.append(sgl)
 
     return cv_results
