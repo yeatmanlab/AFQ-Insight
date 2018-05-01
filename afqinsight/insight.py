@@ -12,6 +12,7 @@ from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 from hyperopt.mongoexp import MongoTrials
 from sklearn.metrics import accuracy_score, average_precision_score, f1_score
 from sklearn.metrics import roc_auc_score, r2_score, mean_squared_error
+from sklearn.model_selection import KFold, RepeatedKFold
 from sklearn.model_selection import RepeatedStratifiedKFold, StratifiedKFold
 from tqdm import tqdm
 
@@ -322,17 +323,22 @@ def sgl_estimator_cv(x, y, groups, beta0=None, alpha1=0.0, alpha2=0.0,
     --------
     pgd_classify
     """
-    rskf = RepeatedStratifiedKFold(
-        n_splits=n_splits, n_repeats=n_repeats, random_state=random_state
-    )
+    if loss_type == 'logloss':
+        cv = RepeatedStratifiedKFold(
+            n_splits=n_splits, n_repeats=n_repeats, random_state=random_state
+        )
+    else:
+        cv = RepeatedKFold(
+            n_splits=n_splits, n_repeats=n_repeats, random_state=random_state
+        )
 
     clf_results = []
 
     if verbose:
         verbose -= 1
-        splitter = tqdm(rskf.split(x, y), total=rskf.get_n_splits())
+        splitter = tqdm(cv.split(x, y), total=cv.get_n_splits())
     else:
-        splitter = rskf.split(x, y)
+        splitter = cv.split(x, y)
 
     for train_idx, test_idx in splitter:
         x_train, x_test = x[train_idx], x[test_idx]
@@ -425,8 +431,8 @@ def fit_hyperparams(x, y, groups, max_evals=100, loss_type='logloss',
 
     # Define the search space
     hp_space = {
-        'alpha1': hp.loguniform('alpha1', -4, 2),
-        'alpha2': hp.loguniform('alpha2', -4, 2),
+        'alpha1': hp.loguniform('alpha1', -6, 3),
+        'alpha2': hp.loguniform('alpha2', -6, 3),
     }
 
     # Define the objective function for hyperopt to minimize
@@ -599,12 +605,15 @@ def fit_hyperparams_cv(x, y, groups,
             with open(configfile, 'w') as cfile:
                 config.write(cfile)
 
-    skf = StratifiedKFold(n_splits=n_splits, random_state=random_state)
+    if loss_type == 'logloss':
+        cv = StratifiedKFold(n_splits=n_splits, random_state=random_state)
+    else:
+        cv = KFold(n_splits=n_splits, random_state=random_state)
 
     if verbose:
-        splitter = tqdm(enumerate(skf.split(x, y)), total=skf.get_n_splits())
+        splitter = tqdm(enumerate(cv.split(x, y)), total=cv.get_n_splits())
     else:
-        splitter = enumerate(skf.split(x, y))
+        splitter = enumerate(cv.split(x, y))
 
     cv_results = []
 
