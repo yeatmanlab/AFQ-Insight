@@ -26,7 +26,7 @@ def registered(fn):
 @registered
 def load_afq_data(workdir, target_col, binary_positive=None,
                   fn_nodes='nodes.csv', fn_subjects='subjects.csv',
-                  scale_x=True):
+                  scale_x=True, add_bias_feature=True):
     """Load AFQ data from CSV, transform it, return feature matrix and target
 
     Parameters
@@ -52,6 +52,10 @@ def load_afq_data(workdir, target_col, binary_positive=None,
         If True, center each feature to have zero mean and scale it to have
         unit variance.
 
+    add_bias_feature : bool, default=True
+        If True, add a bias (i.e. intercept) feature to the feature matrix
+        and return the bias index with the results.
+
     Returns
     -------
     collections.namedtuple
@@ -59,7 +63,8 @@ def load_afq_data(workdir, target_col, binary_positive=None,
         x - the feature matrix
         y - the target array
         groups - group indices for each feature group
-        cols - multi-indexed columns of x
+        columns - multi-indexed columns of x
+        bias_index - index of the bias feature column in x
 
     See Also
     --------
@@ -80,15 +85,19 @@ def load_afq_data(workdir, target_col, binary_positive=None,
         y = y.map(lambda c: int(c == binary_positive)).values
 
     transformer = AFQFeatureTransformer()
-    x, groups, cols = transformer.transform(nodes)
+    x, groups, columns, bias_index = transformer.transform(
+        nodes, add_bias_feature=add_bias_feature
+    )
 
     if scale_x:
         scaler = StandardScaler()
         x = scaler.fit_transform(x)
+        x[:, bias_index] = 1.0
 
-    AFQData = namedtuple('AFQData', 'x y groups cols')
+    AFQData = namedtuple('AFQData', 'x y groups columns bias_index')
 
-    return AFQData(x=x, y=y, groups=groups, cols=cols)
+    return AFQData(x=x, y=y, groups=groups,
+                   columns=columns, bias_index=bias_index)
 
 
 def make_classification(n_samples=100, n_features=20, n_informative=2,

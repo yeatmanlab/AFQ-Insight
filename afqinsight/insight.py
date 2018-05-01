@@ -108,7 +108,7 @@ SGLResult = namedtuple(
 
 
 @registered
-def sgl_estimator(x_train, y_train, x_test, y_test, groups,
+def sgl_estimator(x_train, y_train, x_test, y_test, groups, bias_index=None,
                   beta0=None, alpha1=0.0, alpha2=0.0, max_iter=5000,
                   tol=1e-6, verbose=0, cb_trace=False, accelerate=False,
                   loss_type='logloss', clf_threshold=0.5):
@@ -137,6 +137,10 @@ def sgl_estimator(x_train, y_train, x_test, y_test, groups,
         Array of non-overlapping indices for each group. For example, if nine
         features are grouped into equal contiguous groups of three, then groups
         would be an nd.array like [[0, 1, 2], [3, 4, 5], [6, 7, 8]].
+
+    bias_index : int or None, default=None
+        the index of the bias feature in x_train and x_test. If None, assume
+        no bias feature.
 
     beta0 : numpy.ndarray
         Initial guess for coefficient array
@@ -195,13 +199,17 @@ def sgl_estimator(x_train, y_train, x_test, y_test, groups,
     if beta0 is None:
         beta0 = np.zeros(n_features)
 
-    sg1 = SparseGroupL1(alpha1, alpha2, groups)
+    sg1 = SparseGroupL1(alpha1, alpha2, groups, bias_index=bias_index)
 
     if loss_type not in ['logloss', 'square', 'huber']:
         raise ValueError("loss_type must be one of "
                          "['logloss', 'square', 'huber'].")
 
-    step_size = 1. / cp.utils.get_lipschitz(x_train, loss_type)
+    ind = np.ones(x_train.shape[1], bool)
+    if bias_index is not None:
+        ind[bias_index] = False
+
+    step_size = 1. / cp.utils.get_lipschitz(x_train[:, ind], loss_type)
     if loss_type == 'logloss':
         f_grad = cp.utils.LogLoss(x_train, y_train).func_grad
     elif loss_type == 'huber':
@@ -243,7 +251,8 @@ def sgl_estimator(x_train, y_train, x_test, y_test, groups,
 
 
 @registered
-def sgl_estimator_cv(x, y, groups, beta0=None, alpha1=0.0, alpha2=0.0,
+def sgl_estimator_cv(x, y, groups, bias_index=None, beta0=None,
+                     alpha1=0.0, alpha2=0.0,
                      max_iter=5000, tol=1e-6, verbose=0, cb_trace=False,
                      accelerate=False, loss_type='logloss',
                      n_splits=3, n_repeats=1, random_state=None):
@@ -266,6 +275,10 @@ def sgl_estimator_cv(x, y, groups, beta0=None, alpha1=0.0, alpha2=0.0,
         Array of non-overlapping indices for each group. For example, if nine
         features are grouped into equal contiguous groups of three, then groups
         would be an nd.array like [[0, 1, 2], [3, 4, 5], [6, 7, 8]].
+
+    bias_index : int or None, default=None
+        the index of the bias feature in x_train and x_test. If None, assume
+        no bias feature.
 
     beta0 : numpy.ndarray
         Initial guess for coefficient array
@@ -307,7 +320,6 @@ def sgl_estimator_cv(x, y, groups, beta0=None, alpha1=0.0, alpha2=0.0,
     random_state : None, int or RandomState, default=None
         Random state to be used to generate random state for each repetition.
 
-
     Returns
     -------
     collections.namedtuple
@@ -347,7 +359,7 @@ def sgl_estimator_cv(x, y, groups, beta0=None, alpha1=0.0, alpha2=0.0,
         res = sgl_estimator(
             x_train=x_train, y_train=y_train,
             x_test=x_test, y_test=y_test,
-            groups=groups,
+            groups=groups, bias_index=bias_index,
             beta0=beta0, alpha1=alpha1, alpha2=alpha2,
             max_iter=max_iter, tol=tol,
             verbose=verbose, cb_trace=cb_trace,
@@ -368,8 +380,9 @@ def sgl_estimator_cv(x, y, groups, beta0=None, alpha1=0.0, alpha2=0.0,
 
 
 @registered
-def fit_hyperparams(x, y, groups, max_evals=100, loss_type='logloss',
-                    score='roc_auc', trials=None, mongo_handle=None,
+def fit_hyperparams(x, y, groups, bias_index=None, max_evals=100,
+                    loss_type='logloss', score='roc_auc',
+                    trials=None, mongo_handle=None,
                     mongo_exp_key=None, save_trials_pickle=None):
     """Find the best hyperparameters for sparse group lasso using hyperopt.fmin
 
@@ -385,6 +398,10 @@ def fit_hyperparams(x, y, groups, max_evals=100, loss_type='logloss',
         Array of non-overlapping indices for each group. For example, if nine
         features are grouped into equal contiguous groups of three, then groups
         would be an nd.array like [[0, 1, 2], [3, 4, 5], [6, 7, 8]].
+
+    bias_index : int or None, default=None
+        the index of the bias feature in x_train and x_test. If None, assume
+        no bias feature.
 
     max_evals : int, default=100
         Maximum allowed function evaluations for fmin
@@ -441,7 +458,8 @@ def fit_hyperparams(x, y, groups, max_evals=100, loss_type='logloss',
                                 x=x,
                                 y=y,
                                 groups=groups,
-                                loss_type=loss_type)
+                                loss_type=loss_type,
+                                bias_index=bias_index)
         cv_results = hp_cv_partial(**params)
         if loss_type == 'logloss':
             auc = np.array([test.auc for test in cv_results.test])
@@ -506,7 +524,7 @@ def fit_hyperparams(x, y, groups, max_evals=100, loss_type='logloss',
 
 
 @registered
-def fit_hyperparams_cv(x, y, groups,
+def fit_hyperparams_cv(x, y, groups, bias_index=None,
                        n_splits=10, max_evals_per_cv=100,
                        loss_type='logloss', score='roc_auc',
                        trials_pickle_dir=None,
@@ -527,6 +545,10 @@ def fit_hyperparams_cv(x, y, groups,
         Array of non-overlapping indices for each group. For example, if nine
         features are grouped into equal contiguous groups of three, then groups
         would be an nd.array like [[0, 1, 2], [3, 4, 5], [6, 7, 8]].
+
+    bias_index : int or None, default=None
+        the index of the bias feature in x_train and x_test. If None, assume
+        no bias feature.
 
     n_splits : int, default=10
         Number of folds. Must be at least 2.
@@ -644,6 +666,7 @@ def fit_hyperparams_cv(x, y, groups,
 
         hp_res = fit_hyperparams(
             x_train, y_train, groups,
+            bias_index=bias_index,
             max_evals=max_evals_per_cv,
             loss_type=loss_type,
             score=score,
