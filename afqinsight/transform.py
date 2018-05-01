@@ -26,7 +26,7 @@ class AFQFeatureTransformer(object):
     def __init__(self):
         pass
 
-    def transform(self, df, extrapolate=False):
+    def transform(self, df, extrapolate=False, add_bias_feature=True):
         """Transforms an AFQ dataframe
 
         Parameters
@@ -34,11 +34,15 @@ class AFQFeatureTransformer(object):
         df : pandas.DataFrame
             input AFQ dataframe
 
-        extrapolate : boolean
+        extrapolate : bool, default=False
             If True, use column-wise linear interpolation/extrapolation
             for missing metric values. If False, use pandas built-in
             `interpolate` method, which uses interpolation for interior points
             and forward(back)-fill for exterior points.
+
+        add_bias_feature : bool, default=True
+            If True, add a bias (i.e. intercept) feature to the feature matrix
+            and return the bias index with the results.
 
         Returns
         -------
@@ -52,6 +56,9 @@ class AFQFeatureTransformer(object):
 
         columns : pandas.MultiIndex
             multi-indexed columns of X
+
+        bias_index : int
+            the index of the bias feature
         """
         # We'd like to interpolate the missing values, but first we need to
         # structure the data frame so that it does not interpolate from other
@@ -141,7 +148,17 @@ class AFQFeatureTransformer(object):
         groups = [np.where(bundle_group_membership == gid)[0]
                   for gid in np.unique(bundle_group_membership)]
 
-        return features.values, groups, features.columns
+        if add_bias_feature:
+            bias_index = features.values.shape[1]
+            x = np.hstack([
+                features.values,
+                np.ones((features.values.shape[0], 1))
+            ])
+        else:
+            bias_index = None
+            x = features.values
+
+        return x, groups, features.columns, bias_index
 
 
 def isiterable(obj):
