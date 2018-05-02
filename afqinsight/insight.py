@@ -12,8 +12,7 @@ from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 from hyperopt.mongoexp import MongoTrials
 from sklearn.metrics import accuracy_score, average_precision_score, f1_score
 from sklearn.metrics import roc_auc_score, r2_score, mean_squared_error
-from sklearn.model_selection import KFold, RepeatedKFold
-from sklearn.model_selection import RepeatedStratifiedKFold, StratifiedKFold
+from sklearn.model_selection import RepeatedKFold, RepeatedStratifiedKFold
 from tqdm import tqdm
 
 from .prox import SparseGroupL1
@@ -448,8 +447,8 @@ def fit_hyperparams(x, y, groups, bias_index=None, max_evals=100,
 
     # Define the search space
     hp_space = {
-        'alpha1': hp.loguniform('alpha1', -6, 3),
-        'alpha2': hp.loguniform('alpha2', -6, 3),
+        'alpha1': hp.loguniform('alpha1', -7, 3),
+        'alpha2': hp.loguniform('alpha2', -7, 3),
     }
 
     # Define the objective function for hyperopt to minimize
@@ -525,7 +524,8 @@ def fit_hyperparams(x, y, groups, bias_index=None, max_evals=100,
 
 @registered
 def fit_hyperparams_cv(x, y, groups, bias_index=None,
-                       n_splits=10, max_evals_per_cv=100,
+                       n_splits=10, n_repeats=1,
+                       max_evals_per_cv=100,
                        loss_type='logloss', score='roc_auc',
                        trials_pickle_dir=None,
                        mongo_handle=None,
@@ -552,6 +552,9 @@ def fit_hyperparams_cv(x, y, groups, bias_index=None,
 
     n_splits : int, default=10
         Number of folds. Must be at least 2.
+
+    n_repeats : int, default=1
+        Number of times cross-validator needs to be repeated.
 
     max_evals_per_cv : int, default=100
         Maximum allowed function evaluations for fmin
@@ -628,9 +631,11 @@ def fit_hyperparams_cv(x, y, groups, bias_index=None,
                 config.write(cfile)
 
     if loss_type == 'logloss':
-        cv = StratifiedKFold(n_splits=n_splits, random_state=random_state)
+        cv = RepeatedStratifiedKFold(n_splits=n_splits, n_repeats=n_repeats,
+                                     random_state=random_state)
     else:
-        cv = KFold(n_splits=n_splits, random_state=random_state)
+        cv = RepeatedKFold(n_splits=n_splits, n_repeats=n_repeats,
+                           random_state=random_state)
 
     if verbose:
         splitter = tqdm(enumerate(cv.split(x, y)), total=cv.get_n_splits())
