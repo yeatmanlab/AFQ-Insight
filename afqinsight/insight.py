@@ -607,6 +607,7 @@ def fit_hyperparams_cv(x, y, groups, bias_index=None,
             params = config['params']
             if not all([
                 params.getint('n_splits') == n_splits,
+                params.getint('n_repeats') == n_repeats,
                 params.getint('random_state') == random_state,
                 params['score'] == score
             ]):
@@ -616,6 +617,7 @@ def fit_hyperparams_cv(x, y, groups, bias_index=None,
                     'trials. Either set n_splits={ns:s}, random_state={rs:s}, '
                     'score={score:s} or specify a new trials directory'.format(
                         ns=params['n_splits'],
+                        nr=params['n_repeats'],
                         rs=params['random_state'],
                         score=params['score']
                     )
@@ -624,6 +626,7 @@ def fit_hyperparams_cv(x, y, groups, bias_index=None,
             # Write input params to file
             config['params'] = {
                 'n_splits': n_splits,
+                'n_repeats': n_repeats,
                 'random_state': random_state,
                 'score': score
             }
