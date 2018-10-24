@@ -210,11 +210,11 @@ def sgl_estimator(x_train, y_train, x_test, y_test, groups, bias_index=None,
 
     step_size = 1. / cp.utils.get_lipschitz(x_train[:, ind], loss_type)
     if loss_type == 'logloss':
-        f_grad = cp.utils.LogLoss(x_train, y_train).func_grad
+        f_grad = cp.utils.LogLoss(x_train, y_train).f_grad
     elif loss_type == 'huber':
-        f_grad = cp.utils.HuberLoss(x_train, y_train).func_grad
+        f_grad = cp.utils.HuberLoss(x_train, y_train).f_grad
     else:
-        f_grad = cp.utils.SquareLoss(x_train, y_train).func_grad
+        f_grad = cp.utils.SquareLoss(x_train, y_train).f_grad
 
     if cb_trace:
         cb_tos = cp.utils.Trace()
