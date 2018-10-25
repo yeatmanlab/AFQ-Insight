@@ -112,10 +112,10 @@ class SparseGroupL1(object):
         if self.bias_index is not None:
             out[self.bias_index] = x[self.bias_index]
 
-        for g in self.groups:
-            norm = np.linalg.norm(l1_prox[g])
-            if norm > self.alpha_1 * step_size:
-                out[g] -= step_size * self.alpha_1 * out[g] / norm
+        norms = np.linalg.norm(l1_prox[self.groups], axis=1)
+        for i, g in enumerate(self.groups):
+            if norms[i] > self.alpha_1 * step_size:
+                out[g] -= step_size * self.alpha_1 * out[g] / norms[i]
             else:
                 out[g] = 0
         return out
