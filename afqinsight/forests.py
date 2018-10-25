@@ -5,7 +5,7 @@ from collections import defaultdict
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.metrics import roc_auc_score, mean_squared_error
 from sklearn.model_selection import StratifiedShuffleSplit
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from .transform import shuffle_group
 
