@@ -113,9 +113,13 @@ class SparseGroupL1(object):
             out[self.bias_index] = x[self.bias_index]
 
         norms = np.linalg.norm(l1_prox[self.groups], axis=1)
-        for i, g in enumerate(self.groups):
-            if norms[i] > self.alpha_1 * step_size:
-                out[g] -= step_size * self.alpha_1 * out[g] / norms[i]
-            else:
-                out[g] = 0
+
+        norm_mask = norms > self.alpha_1 * step_size
+        mask_idx_true = np.where(norm_mask)[0]
+        groups_true = np.array(self.groups)[mask_idx_true]
+        groups_false = np.array(self.groups)[np.where(np.logical_not(norm_mask))]
+
+        out[groups_true] -= step_size * self.alpha_1 * out[groups_true] / norms[mask_idx_true, np.newaxis]
+        out[groups_false] = 0.0
+
         return out
