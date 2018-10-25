@@ -6,14 +6,16 @@ import numpy as np
 import os
 import os.path as op
 import pickle
+import warnings
 from collections import namedtuple
 from functools import partial
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 from hyperopt.mongoexp import MongoTrials
+from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.metrics import accuracy_score, average_precision_score, f1_score
 from sklearn.metrics import roc_auc_score, r2_score, mean_squared_error
 from sklearn.model_selection import RepeatedKFold, RepeatedStratifiedKFold
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from .prox import SparseGroupL1
 
@@ -61,10 +63,16 @@ def classification_scores(x, y, beta_hat, clf_threshold=0.5):
     acc = accuracy_score(y, y_pred > clf_threshold)
     auc = roc_auc_score(y, y_pred)
     aps = average_precision_score(y, y_pred)
-    f1 = f1_score(y, y_pred > clf_threshold)
+
+    with warnings.catch_warnings():
+        # For some metaparameters, we might not predict all of the true labels
+        # If that's the case, f1_score will raise a warning to tell us that
+        # the F1 score is being set to zero. This is nice to know but it's
+        # exactly what we want so we can suppress the warning here.
+        warnings.filterwarnings("ignore", category=UndefinedMetricWarning)
+        f1 = f1_score(y, y_pred > clf_threshold)
 
     Scores = namedtuple('Scores', 'accuracy auc avg_precision f1')
-
     return Scores(accuracy=acc, auc=auc, avg_precision=aps, f1=f1)
 
 
