@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import configparser
+import contextlib
 import copt as cp
 import numpy as np
 import os
@@ -117,8 +118,8 @@ SGLResult = namedtuple(
 @registered
 def sgl_estimator(x_train, y_train, x_test, y_test, groups, bias_index=None,
                   beta0=None, alpha1=0.0, alpha2=0.0, max_iter=5000,
-                  tol=1e-6, verbose=0, cb_trace=False, accelerate=False,
-                  loss_type='logloss', clf_threshold=0.5):
+                  tol=1e-6, verbose=0, suppress_warnings=True, cb_trace=False,
+                  accelerate=False, loss_type='logloss', clf_threshold=0.5):
     """Find solution to sparse group lasso problem by proximal gradient descent
 
     Solve sparse group lasso [1]_ problem for feature matrix `x_train` and
@@ -167,6 +168,11 @@ def sgl_estimator(x_train, y_train, x_test, y_test, groups, bias_index=None,
 
     verbose : int, default=0
         Verbosity flag for PGD algorithm.
+
+    suppress_warnings : bool, default=True
+        If True, suppress convergence warnings from PGD algorithm.
+        This is useful for hyperparameter tuning when some combinations
+        of hyperparameters may not converge.
 
     cb_trace : bool, default=False
         If True, include copt.utils.Trace() object in return
@@ -235,10 +241,22 @@ def sgl_estimator(x_train, y_train, x_test, y_test, groups, bias_index=None,
     else:
         minimizer = cp.minimize_PGD
 
-    pgd = minimizer(
-        f_grad, beta0, sg1.prox, step_size=step_size,
-        max_iter=max_iter, tol=tol, verbose=verbose,
-        callback=cb_tos)
+    if suppress_warnings:
+        ctx_mgr = warnings.catch_warnings()
+    else:
+        ctx_mgr = contextlib.suppress()
+
+    with ctx_mgr:
+        # For some metaparameters, minimize_PGD or minimize_APGD might not
+        # reach the desired tolerance level. This might be okay during
+        # hyperparameter optimization. So ignore the warning if the user
+        # specifies suppress_warnings=True
+        if suppress_warnings:
+            warnings.filterwarnings("ignore", category=RuntimeWarning)
+        pgd = minimizer(
+            f_grad, beta0, sg1.prox, step_size=step_size,
+            max_iter=max_iter, tol=tol, verbose=verbose,
+            callback=cb_tos)
 
     beta_hat = np.copy(pgd.x)
 
