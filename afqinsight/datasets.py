@@ -9,7 +9,6 @@ import pandas as pd
 from collections import namedtuple
 from shutil import copyfile
 from sklearn.datasets.samples_generator import _generate_hypercube
-from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils import check_random_state
 from sklearn.utils import shuffle as util_shuffle
@@ -25,7 +24,7 @@ def registered(fn):
 
 
 @registered
-def load_afq_data(workdir, target_cols, binary_positive=None, target_pca=False,
+def load_afq_data(workdir, target_cols, binary_positives=None,
                   fn_nodes='nodes.csv', fn_subjects='subjects.csv',
                   scale_x=True, add_bias_feature=True):
     """Load AFQ data from CSV, transform it, return feature matrix and target
@@ -38,15 +37,12 @@ def load_afq_data(workdir, target_cols, binary_positive=None, target_pca=False,
     target_cols : list of strings
         List of column names in subjects csv file to use as target variables
 
-    binary_positive : str or None, default=None
-        If supplied, use this value as the positive value in a binary
-        classification problem. If None, do not use a binary mapping (e.g. for
-        a regression problem). If not None, `target_pca` must be False.
-
-    target_pca : bool, default=False
-        If True, perform PCA on the target columns and return only the first
-        principle component. Otherwise, return all targets in `target_cols`.
-        If True, `binary_positive` must be None.
+    binary_positives : list or dict of string values, or None, default=None
+        If supplied, use these values as the positive value in a binary
+        classification problem. If this is a list, it must have the same
+        length as `target cols`. If this is a dict, it must have a key
+        for each item in `target_cols`. If None, do not use a binary mapping
+        (e.g. for a regression problem).
 
     fn_nodes : str, default='nodes.csv'
         Filename for the nodes csv file.
@@ -76,12 +72,6 @@ def load_afq_data(workdir, target_cols, binary_positive=None, target_pca=False,
     --------
     transform.FeatureTransformer
     """
-    if target_pca and binary_positive is not None:
-        raise ValueError(
-            "Using `target_pca` and setting a `binary_positive` value "
-            "are incompatible. Please choose one or the other."
-        )
-
     workdir = op.abspath(workdir)
     fn_nodes = op.join(workdir, fn_nodes)
     fn_subjects = op.join(workdir, fn_subjects)
@@ -93,12 +83,16 @@ def load_afq_data(workdir, target_cols, binary_positive=None, target_pca=False,
 
     y = targets[target_cols]
 
-    if binary_positive is not None:
-        y = y.map(lambda c: int(c == binary_positive)).values
+    if binary_positives is not None:
+        if not type(binary_positives, dict):
+            binary_positives = {
+                key: val for key, val in zip(target_cols, binary_positives)
+            }
 
-    if target_pca:
-        pca = PCA(n_components=1)
-        y = pca.fit_transform(y)
+        for col in y:
+            y.loc[:, col] = y[col].map(
+                lambda c: int(c == binary_positives[col])
+            ).values
 
     transformer = AFQFeatureTransformer()
     x, groups, columns, bias_index = transformer.transform(
