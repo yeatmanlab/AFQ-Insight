@@ -53,7 +53,7 @@ class SparseGroupL1(object):
         "A Sparse-Group Lasso," Journal of Computational and Graphical
         Statistics, vol. 22:2, pp. 231-245, 2012
         DOI: 10.1080/10618600.2012.681250
-    """
+    """  # noqa: W605
     def __init__(self, alpha_1, alpha_2, groups, bias_index=None):
         self.alpha_1 = alpha_1
         self.alpha_2 = alpha_2
@@ -104,7 +104,7 @@ class SparseGroupL1(object):
         np.ndarray
             proximal operator of sparse group lasso penalty evaluated on
             input `x` with step size `step_size`
-        """
+        """  # noqa: W605
         l1_prox = (np.fmax(x - self.alpha_2 * step_size, 0)
                    - np.fmax(- x - self.alpha_2 * step_size, 0))
         out = l1_prox.copy()
@@ -116,10 +116,13 @@ class SparseGroupL1(object):
 
         norm_mask = norms > self.alpha_1 * step_size
         mask_idx_true = np.where(norm_mask)[0]
+        mask_idx_false = np.where(np.logical_not(norm_mask))[0]
         groups_true = np.array(self.groups)[mask_idx_true]
-        groups_false = np.array(self.groups)[np.where(np.logical_not(norm_mask))]
+        groups_false = np.array(self.groups)[mask_idx_false]
 
-        out[groups_true] -= step_size * self.alpha_1 * out[groups_true] / norms[mask_idx_true, np.newaxis]
+        out[groups_true] -= (step_size * self.alpha_1
+                             * out[groups_true]
+                             / norms[mask_idx_true, np.newaxis])
         out[groups_false] = 0.0
 
         return out
