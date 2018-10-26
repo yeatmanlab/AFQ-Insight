@@ -89,7 +89,7 @@ def load_afq_data(workdir, target_cols, binary_positives=None,
                 key: val for key, val in zip(target_cols, binary_positives)
             }
 
-        for col in y:
+        for col in y.columns:
             y.loc[:, col] = y[col].map(
                 lambda c: int(c == binary_positives[col])
             ).values
