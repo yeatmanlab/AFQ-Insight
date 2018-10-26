@@ -617,17 +617,20 @@ def fit_hyperparams_cv(x, y, groups, bias_index=None,
                 params.getint('n_splits') == n_splits,
                 params.getint('n_repeats') == n_repeats,
                 params.getint('random_state') == random_state,
+                params['loss_type'] == loss_type,
                 params['score'] == score
             ]):
                 raise ValueError(
                     'Stored trial parameters do not match input parameters. '
                     'This could contaminate the train/test split for previous '
                     'trials. Either set n_splits={ns:s}, random_state={rs:s}, '
-                    'score={score:s} or specify a new trials directory'.format(
+                    'score={score:s}, loss_type={loss_type:s} or specify a '
+                    'new trials directory'.format(
                         ns=params['n_splits'],
                         nr=params['n_repeats'],
                         rs=params['random_state'],
-                        score=params['score']
+                        score=params['score'],
+                        loss_type=params['loss_type']
                     )
                 )
         else:
@@ -636,6 +639,7 @@ def fit_hyperparams_cv(x, y, groups, bias_index=None,
                 'n_splits': n_splits,
                 'n_repeats': n_repeats,
                 'random_state': random_state,
+                'loss_type': loss_type,
                 'score': score
             }
             with open(configfile, 'w') as cfile:
