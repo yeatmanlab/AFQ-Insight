@@ -84,7 +84,7 @@ def load_afq_data(workdir, target_cols, binary_positives=None,
     y = targets[target_cols]
 
     if binary_positives is not None:
-        if not type(binary_positives, dict):
+        if not isinstance(binary_positives, dict):
             binary_positives = {
                 key: val for key, val in zip(target_cols, binary_positives)
             }
