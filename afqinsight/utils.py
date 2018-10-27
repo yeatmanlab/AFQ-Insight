@@ -12,6 +12,30 @@ def registered(fn):
     return fn
 
 
+canonical_tract_names = [
+    'Left Arcuate',
+    'Left SLF',
+    'Left Uncinate',
+    'Left ILF',
+    'Left IFOF',
+    'Left Cingulum Hippocampus',
+    'Left Thalamic Radiation',
+    'Left Corticospinal',
+    'Left Cingulum Cingulate',
+    'Callosum Forceps Minor',
+    'Callosum Forceps Major',
+    'Right Cingulum Cingulate',
+    'Right Corticospinal',
+    'Right Thalamic Radiation',
+    'Right Cingulum Hippocampus',
+    'Right IFOF',
+    'Right ILF',
+    'Right Uncinate',
+    'Right SLF',
+    'Right Arcuate',
+]
+
+
 @registered
 def ecdf(data, reverse=False):
     """Compute ECDF for a one-dimensional array of measurements.

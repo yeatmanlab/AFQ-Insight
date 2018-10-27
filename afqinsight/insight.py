@@ -14,7 +14,8 @@ from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 from hyperopt.mongoexp import MongoTrials
 from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.metrics import accuracy_score, average_precision_score, f1_score
-from sklearn.metrics import roc_auc_score, r2_score, mean_squared_error, median_absolute_error
+from sklearn.metrics import roc_auc_score, r2_score, mean_squared_error
+from sklearn.metrics import median_absolute_error
 from sklearn.model_selection import RepeatedKFold, RepeatedStratifiedKFold
 from tqdm.auto import tqdm
 

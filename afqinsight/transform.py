@@ -9,6 +9,8 @@ from collections import OrderedDict
 from scipy.interpolate import interp1d
 from sklearn.base import BaseEstimator, TransformerMixin
 
+from .utils import canonical_tract_names
+
 __all__ = []
 
 
@@ -624,5 +626,51 @@ def beta_hat_by_groups(beta_hat, columns, drop_zeros=False):
                 )
                 if not drop_zeros or any(x != 0):
                     betas[tract][metric] = x
+
+    return betas
+
+
+def unfold_beta_hat_by_metrics(beta_hat, columns, drop_zero_metrics=False):
+    """Transform one-dimensional beta_hat array into OrderedDict
+
+    Organize by tract-metric groups
+
+    Parameters
+    ----------
+    beta_hat : np.ndarray
+        one-dimensional array of feature coefficients
+
+    columns : pd.MultiIndex
+        MultiIndex columns of the feature matrix
+
+    drop_zero_metrics : bool, default=False
+        If True, only include metrics for which there are non-zero beta values
+
+    Returns
+    -------
+    OrderedDict
+        Single-level ordered dict with beta_hat coefficients.
+        The keys are the metrics and the values are the unfolded beta_hat
+        coefficients
+
+    See Also
+    --------
+    AFQFeatureTransformer
+        Transforms AFQ csv files into feature matrix. Use this to create
+        the `columns` input.
+
+    beta_hat_by_groups
+        Returns a two-level ordered dict instead of "unfolding" the tracts
+    """
+    betas = OrderedDict()
+
+    betas_by_groups = beta_hat_by_groups(beta_hat, columns, drop_zeros=False)
+
+    for metric in columns.levels[columns.names.index('metric')]:
+        betas[metric] = []
+        for tract in canonical_tract_names:
+            betas[metric].append(betas_by_groups[tract][metric])
+
+        betas[metric] = np.concatenate(betas[metric])
 
     return betas
