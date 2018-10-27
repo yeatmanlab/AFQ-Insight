@@ -14,7 +14,7 @@ from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 from hyperopt.mongoexp import MongoTrials
 from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.metrics import accuracy_score, average_precision_score, f1_score
-from sklearn.metrics import roc_auc_score, r2_score, mean_squared_error
+from sklearn.metrics import roc_auc_score, r2_score, mean_squared_error, median_absolute_error
 from sklearn.model_selection import RepeatedKFold, RepeatedStratifiedKFold
 from tqdm.auto import tqdm
 
@@ -73,8 +73,8 @@ def classification_scores(x, y, beta_hat, clf_threshold=0.5):
         warnings.filterwarnings("ignore", category=UndefinedMetricWarning)
         f1 = f1_score(y, y_pred > clf_threshold)
 
-    Scores = namedtuple('Scores', 'accuracy auc avg_precision f1')
-    return Scores(accuracy=acc, auc=auc, avg_precision=aps, f1=f1)
+    Scores = namedtuple('Scores', 'x y accuracy auc avg_precision f1')
+    return Scores(x=x, y=y, accuracy=acc, auc=auc, avg_precision=aps, f1=f1)
 
 
 @registered
@@ -98,15 +98,17 @@ def regression_scores(x, y, beta_hat):
         namedtuple with field:
         rmse - RMSE score
         r2 - R^2 score, coefficient of determination
+        medae - The median absolute error
     """
     y_pred = x.dot(beta_hat)
 
     rmse = np.sqrt(mean_squared_error(y, y_pred))
     r2 = r2_score(y, y_pred)
+    medae = median_absolute_error(y, y_pred)
 
-    Scores = namedtuple('Scores', 'rmse r2')
+    Scores = namedtuple('Scores', 'x y rmse r2 medae')
 
-    return Scores(rmse=rmse, r2=r2)
+    return Scores(x=x, y=y, rmse=rmse, r2=r2, medae=medae)
 
 
 SGLResult = namedtuple(
@@ -437,7 +439,7 @@ def fit_hyperparams(x, y, groups, bias_index=None, max_evals=100,
         treat this problem as a regression problem using either the mean
         square error or the Huber loss.
 
-    score : {'roc_auc', 'accuracy', 'avg_precision', 'r2', 'rmse},
+    score : {'roc_auc', 'accuracy', 'avg_precision', 'r2', 'rmse', 'medae'},
         default='roc_auc'. scoring metric to be optimized
 
     trials : hyperopt Trials or MongoTrials object or None, default=None
@@ -463,7 +465,7 @@ def fit_hyperparams(x, y, groups, bias_index=None, max_evals=100,
         trials - trials object from hyperopt.fmin
     """
     allowed_clf_scores = ['roc_auc', 'accuracy', 'avg_precision']
-    allowed_rgs_scores = ['r2', 'rmse']
+    allowed_rgs_scores = ['r2', 'rmse', 'medae']
     if loss_type == 'logloss' and score not in allowed_clf_scores:
         raise ValueError('For classification problems `score` must be one of '
                          '{scores!s}.'.format(scores=allowed_clf_scores))
@@ -511,8 +513,11 @@ def fit_hyperparams(x, y, groups, bias_index=None, max_evals=100,
         else:
             r2 = np.array([test.r2 for test in cv_results.test])
             rmse = np.array([test.rmse for test in cv_results.test])
+            medae = np.array([test.medae for test in cv_results.test])
             if score == 'rmse':
                 loss = rmse
+            elif score == 'medae':
+                loss == medae
             else:
                 loss = -r2
             result_dict = {
@@ -523,6 +528,8 @@ def fit_hyperparams(x, y, groups, bias_index=None, max_evals=100,
                 'r2_variance': np.var(r2),
                 'rmse_mean': np.mean(rmse),
                 'rmse_variance': np.var(rmse),
+                'medae_mean': np.mean(medae),
+                'medae_variance': np.var(medae),
             }
 
         return result_dict
@@ -591,7 +598,7 @@ def fit_hyperparams_cv(x, y, groups, bias_index=None,
         treat this problem as a regression problem using either the mean
         square error or the Huber loss.
 
-    score : {'roc_auc', 'accuracy', 'avg_precision', 'r2', 'rmse},
+    score : {'roc_auc', 'accuracy', 'avg_precision', 'r2', 'rmse', 'medae'},
         default='roc_auc'. scoring metric to be optimized
 
     trials_pickle_dir : str or None, default=None
@@ -615,7 +622,7 @@ def fit_hyperparams_cv(x, y, groups, bias_index=None,
     -------
     """
     allowed_clf_scores = ['roc_auc', 'accuracy', 'avg_precision']
-    allowed_rgs_scores = ['r2', 'rmse']
+    allowed_rgs_scores = ['r2', 'rmse', 'medae']
     if loss_type == 'logloss' and score not in allowed_clf_scores:
         raise ValueError('For classification problems `score` must be one of '
                          '{scores!s}.'.format(scores=allowed_clf_scores))
