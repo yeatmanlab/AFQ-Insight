@@ -630,7 +630,8 @@ def beta_hat_by_groups(beta_hat, columns, drop_zeros=False):
     return betas
 
 
-def unfold_beta_hat_by_metrics(beta_hat, columns, drop_zero_metrics=False):
+@registered
+def unfold_beta_hat_by_metrics(beta_hat, columns):
     """Transform one-dimensional beta_hat array into OrderedDict
 
     Organize by tract-metric groups
@@ -642,9 +643,6 @@ def unfold_beta_hat_by_metrics(beta_hat, columns, drop_zero_metrics=False):
 
     columns : pd.MultiIndex
         MultiIndex columns of the feature matrix
-
-    drop_zero_metrics : bool, default=False
-        If True, only include metrics for which there are non-zero beta values
 
     Returns
     -------
