@@ -4,7 +4,6 @@ Create diagnostic plots of AFQ-Insight output
 from __future__ import absolute_import, division, print_function
 
 import itertools
-import json
 import matplotlib.pyplot as plt
 import numpy as np
 import os.path as op
@@ -12,13 +11,14 @@ import palettable
 
 from matplotlib.colors import to_hex
 
-from bokeh.embed import json_item
+from bokeh.embed import file_html
 from bokeh.layouts import column, row
 from bokeh.models import ColorBar, CustomJS, HoverTool, Range1d, Title
 from bokeh.models.mappers import LinearColorMapper
 from bokeh.models.tickers import FixedTicker
 from bokeh.palettes import Spectral10
 from bokeh.plotting import figure, show, ColumnDataSource
+from bokeh.resources import CDN
 
 from . import utils
 from .insight import _sigmoid
@@ -32,7 +32,7 @@ def registered(fn):
 
 
 @registered
-def plot_betas(beta_hat, columns, ecdf=False, output_json=None):
+def plot_betas(beta_hat, columns, ecdf=False, output_html=None):
     """Plot the classification probabilities for each cross-validation split
 
     Parameters
@@ -48,8 +48,8 @@ def plot_betas(beta_hat, columns, ecdf=False, output_json=None):
         If True, plot the estimated cumulative probability distribution (ECDF)
         of the beta coefficients. If False, plot the raw coefficients.
 
-    output_json : string or None, default=None
-        Filename for bokeh json output. If None, figure will not be saved
+    output_html : string or None, default=None
+        Filename for bokeh html output. If None, figure will not be saved
 
     See Also
     --------
@@ -90,16 +90,16 @@ def plot_betas(beta_hat, columns, ecdf=False, output_json=None):
 
     p = column(ps)
 
-    if output_json is not None:
-        item_text = json.dumps(json_item(p, "myplot"))
-        with open(op.abspath(output_json), 'w') as fp:
-            fp.write(item_text)
+    if output_html is not None:
+        html = file_html(p, CDN, "my plot")
+        with open(op.abspath(output_html), 'w') as fp:
+            fp.write(html)
 
-    show(p)
+    return p
 
 
 @registered
-def plot_classification_probabilities(x, y, cv_results, output_json=None):
+def plot_classification_probabilities(x, y, cv_results, output_html=None):
     """Plot the classification probabilities for each cross-validation split
 
     Parameters
@@ -113,8 +113,8 @@ def plot_classification_probabilities(x, y, cv_results, output_json=None):
     cv_results : list of SGLResult namedtuples
         Results of each cross-validation split
 
-    output_json : string or None, default=None
-        Filename for bokeh json output. If None, figure will not be saved
+    output_html : string or None, default=None
+        Filename for bokeh html output. If None, figure will not be saved
     """
     p = figure(plot_width=700, plot_height=700, toolbar_location='above')
     p.title.text = 'Classification probabilities for each CV split'
@@ -144,16 +144,16 @@ def plot_classification_probabilities(x, y, cv_results, output_json=None):
     p.legend.location = 'top_right'
     p.legend.click_policy = 'hide'
 
-    if output_json is not None:
-        item_text = json.dumps(json_item(p, "myplot"))
-        with open(op.abspath(output_json), 'w') as fp:
-            fp.write(item_text)
+    if output_html is not None:
+        html = file_html(p, CDN, "my plot")
+        with open(op.abspath(output_html), 'w') as fp:
+            fp.write(html)
 
-    show(p)
+    return p
 
 
 @registered
-def plot_unfolded_beta(unfolded_beta, output_json=None):
+def plot_unfolded_beta(unfolded_beta, output_html=None):
     """Plot the regression coefficients on the "unfolded" brain.
 
     All tracts are represented contiguously on the x-axis in this order:
@@ -169,8 +169,8 @@ def plot_unfolded_beta(unfolded_beta, output_json=None):
         (e.g. 'fa', 'md') and the values are the contiguous regression
         coefficient arrays
 
-    output_json : string or None, default=None
-        Filename for bokeh json output. If None, figure will not be saved
+    output_html : string or None, default=None
+        Filename for bokeh html output. If None, figure will not be saved
     """
     p = figure(plot_width=700, plot_height=700, toolbar_location='above')
     p.title.text = 'Feature weights in the "unfolded" brain'
@@ -247,17 +247,17 @@ def plot_unfolded_beta(unfolded_beta, output_json=None):
 
     p.y_range = Range1d(bottom, top)
 
-    if output_json is not None:
-        item_text = json.dumps(json_item(p, "myplot"))
-        with open(op.abspath(output_json), 'w') as fp:
-            fp.write(item_text)
+    if output_html is not None:
+        html = file_html(p, CDN, "my plot")
+        with open(op.abspath(output_html), 'w') as fp:
+            fp.write(html)
 
-    show(p)
+    return p
 
 
 @registered
 def plot_pca_space_classification(x2_sgl, y, pca_sgl=None, beta=None,
-                                  x2_orig=None, output_json=None):
+                                  x2_orig=None, output_html=None):
     """Plot classification predictions in a 2-component PCA space.
 
     This function has two plot modes, specified by the presence or
@@ -292,8 +292,8 @@ def plot_pca_space_classification(x2_sgl, y, pca_sgl=None, beta=None,
         Projection of the original (pre-SGL) feature matrix onto its
         first two principal components.
 
-    output_json : string or None, default=None
-        Filename for bokeh json output. If None, figure will not be saved
+    output_html : string or None, default=None
+        Filename for bokeh html output. If None, figure will not be saved
     """
     if x2_orig is None and any([
         pca_sgl is None, beta is None
@@ -403,9 +403,9 @@ def plot_pca_space_classification(x2_sgl, y, pca_sgl=None, beta=None,
 
     layout = row(ps[::-1])
 
-    if output_json is not None:
-        item_text = json.dumps(json_item(layout, "myplot"))
-        with open(op.abspath(output_json), 'w') as fp:
-            fp.write(item_text)
+    if output_html is not None:
+        html = file_html(layout, CDN, "my plot")
+        with open(op.abspath(output_html), 'w') as fp:
+            fp.write(html)
 
-    show(layout)
+    return layout
