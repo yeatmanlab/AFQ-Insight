@@ -31,7 +31,8 @@ def registered(fn):
 
 
 @registered
-def plot_betas(beta_hat, columns, ecdf=False, output_html=None):
+def plot_betas(beta_hat, columns, ecdf=False, output_html=None,
+               width=750, height=250, sizing_mode='stretch_both'):
     """Plot the classification probabilities for each cross-validation split
 
     Parameters
@@ -50,6 +51,19 @@ def plot_betas(beta_hat, columns, ecdf=False, output_html=None):
     output_html : string or None, default=None
         Filename for bokeh html output. If None, figure will not be saved
 
+    width : int, default=750
+        Width of each beta plot (in pixels)
+
+    height : int, default=250
+        Height of each beta plot (in pixels)
+
+    sizing_mode : string
+        One of ("fixed", "stretch_both", "scale_width", "scale_height",
+        "scale_both"). Specifies how will the items in the layout resize to
+        fill the available space. Default is "stretch_both". For more
+        information on the different modes see
+        https://bokeh.pydata.org/en/latest/docs/reference/models/layouts.html#bokeh.models.layouts.LayoutDOM
+
     See Also
     --------
     transform.AFQFeatureTransformer
@@ -67,7 +81,7 @@ def plot_betas(beta_hat, columns, ecdf=False, output_html=None):
         colors[metric] = Spectral10[idx]
 
     for idx, tract in enumerate(beta_hat.keys()):
-        ps.append(figure(plot_width=750, plot_height=250,
+        ps.append(figure(plot_width=width, plot_height=height,
                          toolbar_location='right'))
         ps[idx].title.text = tract
 
@@ -88,7 +102,7 @@ def plot_betas(beta_hat, columns, ecdf=False, output_html=None):
         ps[idx].legend.click_policy = 'hide'
 
     p = column(ps)
-    p.sizing_mode = "stretch_both"
+    p.sizing_mode = sizing_mode
 
     if output_html is not None:
         html = file_html(p, CDN, "my plot")
@@ -99,7 +113,9 @@ def plot_betas(beta_hat, columns, ecdf=False, output_html=None):
 
 
 @registered
-def plot_classification_probabilities(x, y, cv_results, output_html=None):
+def plot_classification_probabilities(x, y, cv_results, output_html=None,
+                                      width=500, height=500,
+                                      sizing_mode='stretch_both'):
     """Plot the classification probabilities for each cross-validation split
 
     Parameters
@@ -115,8 +131,21 @@ def plot_classification_probabilities(x, y, cv_results, output_html=None):
 
     output_html : string or None, default=None
         Filename for bokeh html output. If None, figure will not be saved
+
+    width : int, default=500
+        Width of each beta plot (in pixels)
+
+    height : int, default=500
+        Height of each beta plot (in pixels)
+
+    sizing_mode : string
+        One of ("fixed", "stretch_both", "scale_width", "scale_height",
+        "scale_both"). Specifies how will the items in the layout resize to
+        fill the available space. Default is "stretch_both". For more
+        information on the different modes see
+        https://bokeh.pydata.org/en/latest/docs/reference/models/layouts.html#bokeh.models.layouts.LayoutDOM
     """
-    p = figure(plot_width=700, plot_height=700, toolbar_location='above')
+    p = figure(plot_width=width, plot_height=height, toolbar_location='above')
     p.title.text = 'Classification probabilities for each CV split'
     p.add_layout(
         Title(text='Click on legend entries to hide/show corresponding lines',
@@ -143,7 +172,7 @@ def plot_classification_probabilities(x, y, cv_results, output_html=None):
     p.add_tools(hover)
     p.legend.location = 'top_right'
     p.legend.click_policy = 'hide'
-    p.sizing_mode = "stretch_both"
+    p.sizing_mode = sizing_mode
 
     if output_html is not None:
         html = file_html(p, CDN, "my plot")
@@ -154,7 +183,8 @@ def plot_classification_probabilities(x, y, cv_results, output_html=None):
 
 
 @registered
-def plot_unfolded_beta(unfolded_beta, output_html=None):
+def plot_unfolded_beta(unfolded_beta, output_html=None,
+                       width=500, height=500, sizing_mode='stretch_both'):
     """Plot the regression coefficients on the "unfolded" brain.
 
     All tracts are represented contiguously on the x-axis in this order:
@@ -172,8 +202,21 @@ def plot_unfolded_beta(unfolded_beta, output_html=None):
 
     output_html : string or None, default=None
         Filename for bokeh html output. If None, figure will not be saved
+
+    width : int, default=500
+        Width of each beta plot (in pixels)
+
+    height : int, default=500
+        Height of each beta plot (in pixels)
+
+    sizing_mode : string
+        One of ("fixed", "stretch_both", "scale_width", "scale_height",
+        "scale_both"). Specifies how will the items in the layout resize to
+        fill the available space. Default is "stretch_both". For more
+        information on the different modes see
+        https://bokeh.pydata.org/en/latest/docs/reference/models/layouts.html#bokeh.models.layouts.LayoutDOM
     """
-    p = figure(plot_width=700, plot_height=700, toolbar_location='above')
+    p = figure(plot_width=width, plot_height=height, toolbar_location='above')
     p.title.text = 'Feature weights in the "unfolded" brain'
     p.add_layout(
         Title(text='Click on legend entries to hide/show corresponding lines',
@@ -247,7 +290,7 @@ def plot_unfolded_beta(unfolded_beta, output_html=None):
     p.legend.click_policy = 'hide'
 
     p.y_range = Range1d(bottom, top)
-    p.sizing_mode = "stretch_both"
+    p.sizing_mode = sizing_mode
 
     if output_html is not None:
         html = file_html(p, CDN, "my plot")
@@ -259,7 +302,9 @@ def plot_unfolded_beta(unfolded_beta, output_html=None):
 
 @registered
 def plot_pca_space_classification(x2_sgl, y, pca_sgl=None, beta=None,
-                                  x2_orig=None, output_html=None):
+                                  x2_orig=None, output_html=None,
+                                  width=500, height=500,
+                                  sizing_mode='stretch_both'):
     """Plot classification predictions in a 2-component PCA space.
 
     This function has two plot modes, specified by the presence or
@@ -296,6 +341,19 @@ def plot_pca_space_classification(x2_sgl, y, pca_sgl=None, beta=None,
 
     output_html : string or None, default=None
         Filename for bokeh html output. If None, figure will not be saved
+
+    width : int, default=500
+        Width of each beta plot (in pixels)
+
+    height : int, default=500
+        Height of each beta plot (in pixels)
+
+    sizing_mode : string
+        One of ("fixed", "stretch_both", "scale_width", "scale_height",
+        "scale_both"). Specifies how will the items in the layout resize to
+        fill the available space. Default is "stretch_both". For more
+        information on the different modes see
+        https://bokeh.pydata.org/en/latest/docs/reference/models/layouts.html#bokeh.models.layouts.LayoutDOM
     """
     if x2_orig is None and any([
         pca_sgl is None, beta is None
@@ -332,10 +390,10 @@ def plot_pca_space_classification(x2_sgl, y, pca_sgl=None, beta=None,
     callback = CustomJS(args={'source': source}, code=code)
 
     if x2_orig is None:
-        ps[0] = figure(plot_width=550, plot_height=500,
+        ps[0] = figure(plot_width=width * 1.1, plot_height=height,
                        toolbar_location='right')
 
-        npoints = 100
+        npoints = 200
         dx = np.max(x2_sgl[:, 0]) - np.min(x2_sgl[:, 0])
         xmid = 0.5 * (np.max(x2_sgl[:, 0]) + np.min(x2_sgl[:, 0]))
         xmin = xmid - (dx * 1.1 / 2.0)
@@ -376,7 +434,7 @@ def plot_pca_space_classification(x2_sgl, y, pca_sgl=None, beta=None,
         ps[0].x_range = Range1d(xmin, xmax)
         ps[0].y_range = Range1d(ymin, ymax)
     else:
-        ps[0] = figure(plot_width=500, plot_height=500,
+        ps[0] = figure(plot_width=width, plot_height=height,
                        toolbar_location='right')
 
     ps[0].title.text = 'Classification in Post-SGL PCA space'
@@ -388,7 +446,7 @@ def plot_pca_space_classification(x2_sgl, y, pca_sgl=None, beta=None,
     ps[0].add_tools(hover0)
 
     if x2_orig is not None:
-        ps[1] = figure(plot_width=500, plot_height=500,
+        ps[1] = figure(plot_width=width, plot_height=height,
                        toolbar_location='right')
         ps[1].title.text = 'Classification in Original PCA space'
         s1 = ps[1].scatter('pc0_orig', 'pc1_orig', source=source,
@@ -403,8 +461,12 @@ def plot_pca_space_classification(x2_sgl, y, pca_sgl=None, beta=None,
         ps[idx].xaxis.axis_label = "1st Principal Component"
         ps[idx].yaxis.axis_label = "2nd Principal Component"
 
-    layout = row(ps[::-1])
-    layout.sizing_mode = "stretch_both"
+    if x2_orig is not None:
+        layout = row(ps[::-1])
+    else:
+        layout = ps[0]
+
+    layout.sizing_mode = sizing_mode
 
     if output_html is not None:
         html = file_html(layout, CDN, "my plot")
