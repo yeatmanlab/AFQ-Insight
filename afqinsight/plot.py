@@ -88,6 +88,7 @@ def plot_betas(beta_hat, columns, ecdf=False, output_html=None):
         ps[idx].legend.click_policy = 'hide'
 
     p = column(ps)
+    p.sizing_mode = "scale_both"
 
     if output_html is not None:
         html = file_html(p, CDN, "my plot")
@@ -142,6 +143,7 @@ def plot_classification_probabilities(x, y, cv_results, output_html=None):
     p.add_tools(hover)
     p.legend.location = 'top_right'
     p.legend.click_policy = 'hide'
+    p.sizing_mode = "scale_both"
 
     if output_html is not None:
         html = file_html(p, CDN, "my plot")
@@ -245,6 +247,7 @@ def plot_unfolded_beta(unfolded_beta, output_html=None):
     p.legend.click_policy = 'hide'
 
     p.y_range = Range1d(bottom, top)
+    p.sizing_mode = "scale_both"
 
     if output_html is not None:
         html = file_html(p, CDN, "my plot")
@@ -401,6 +404,7 @@ def plot_pca_space_classification(x2_sgl, y, pca_sgl=None, beta=None,
         ps[idx].yaxis.axis_label = "2nd Principal Component"
 
     layout = row(ps[::-1])
+    layout.sizing_mode = "scale_both"
 
     if output_html is not None:
         html = file_html(layout, CDN, "my plot")
