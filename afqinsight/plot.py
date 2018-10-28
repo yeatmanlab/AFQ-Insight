@@ -9,13 +9,14 @@ import os.path as op
 import matplotlib.pyplot as plt
 import numpy as np
 import palettable
-from bokeh.embed import components
+from bokeh.embed import file_html
 from bokeh.layouts import column, row
 from bokeh.models import ColorBar, CustomJS, HoverTool, Range1d, Title
 from bokeh.models.mappers import LinearColorMapper
 from bokeh.models.tickers import FixedTicker
 from bokeh.palettes import Spectral10
 from bokeh.plotting import ColumnDataSource, figure, show
+from bokeh.resources import CDN
 from matplotlib.colors import to_hex
 
 from . import utils
@@ -89,15 +90,9 @@ def plot_betas(beta_hat, columns, ecdf=False, output_root_name=None):
     p = column(ps)
 
     if output_root_name is not None:
-        js, div = components(p, wrap_script=False)
-
-        filename_js = output_root_name + '.js'
-        with open(op.abspath(filename_js), 'w') as fp:
-            fp.write(js)
-
-        filename_div = output_root_name + '.html'
-        with open(op.abspath(filename_div), 'w') as fp:
-            fp.write(div)
+        html = file_html(p, CDN, "my plot")
+        with open(op.abspath(output_root_name), 'w') as fp:
+            fp.write(html)
     else:
         show(p)
 
@@ -149,15 +144,9 @@ def plot_classification_probabilities(x, y, cv_results, output_root_name=None):
     p.legend.click_policy = 'hide'
 
     if output_root_name is not None:
-        js, div = components(p, wrap_script=False)
-
-        filename_js = output_root_name + '.js'
-        with open(op.abspath(filename_js), 'w') as fp:
-            fp.write(js)
-
-        filename_div = output_root_name + '.html'
-        with open(op.abspath(filename_div), 'w') as fp:
-            fp.write(div)
+        html = file_html(p, CDN, "my plot")
+        with open(op.abspath(output_root_name), 'w') as fp:
+            fp.write(html)
     else:
         show(p)
 
@@ -258,15 +247,9 @@ def plot_unfolded_beta(unfolded_beta, output_root_name=None):
     p.y_range = Range1d(bottom, top)
 
     if output_root_name is not None:
-        js, div = components(p, wrap_script=False)
-
-        filename_js = output_root_name + '.js'
-        with open(op.abspath(filename_js), 'w') as fp:
-            fp.write(js)
-
-        filename_div = output_root_name + '.html'
-        with open(op.abspath(filename_div), 'w') as fp:
-            fp.write(div)
+        html = file_html(p, CDN, "my plot")
+        with open(op.abspath(output_root_name), 'w') as fp:
+            fp.write(html)
     else:
         show(p)
 
@@ -420,14 +403,8 @@ def plot_pca_space_classification(x2_sgl, y, pca_sgl=None, beta=None,
     layout = row(ps[::-1])
 
     if output_root_name is not None:
-        js, div = components(layout, wrap_script=False)
-
-        filename_js = output_root_name + '.js'
-        with open(op.abspath(filename_js), 'w') as fp:
-            fp.write(js)
-
-        filename_div = output_root_name + '.html'
-        with open(op.abspath(filename_div), 'w') as fp:
-            fp.write(div)
+        html = file_html(layout, CDN, "my plot")
+        with open(op.abspath(output_root_name), 'w') as fp:
+            fp.write(html)
     else:
         show(layout)
