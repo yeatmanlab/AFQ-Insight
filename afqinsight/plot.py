@@ -11,10 +11,11 @@ import numpy as np
 import palettable
 from bokeh.embed import file_html
 from bokeh.layouts import column, row
-from bokeh.models import ColorBar, CustomJS, HoverTool, Range1d, Title
+from bokeh.models import BoxAnnotation, ColorBar, CustomJS, HoverTool
+from bokeh.models import Label, Range1d, Title
 from bokeh.models.mappers import LinearColorMapper
 from bokeh.models.tickers import FixedTicker
-from bokeh.palettes import Spectral10
+from bokeh.palettes import Category10, Spectral10
 from bokeh.plotting import ColumnDataSource, figure, show
 from bokeh.resources import CDN
 from matplotlib.colors import to_hex
@@ -155,7 +156,7 @@ def plot_classification_probabilities(x, y, cv_results, output_html=None,
     names = ['cv_idx = {i:d}'.format(i=i) for i in range(len(cv_results))]
 
     hover = HoverTool(
-        tooltips=[("index", "$index"), ],
+        tooltips=[("Subject", "$index"), ],
         mode='vline',
     )
     hover.point_policy = 'snap_to_data'
@@ -172,6 +173,11 @@ def plot_classification_probabilities(x, y, cv_results, output_html=None,
     p.add_tools(hover)
     p.legend.location = 'top_right'
     p.legend.click_policy = 'hide'
+    p.xaxis.axis_label = "Subject ID"
+    p.xaxis.major_tick_line_color = None  # turn off x-axis major ticks
+    p.xaxis.minor_tick_line_color = None  # turn off x-axis minor ticks
+    p.xaxis.major_label_text_font_size = '0pt'  # turn off x-axis tick labels
+    p.yaxis.axis_label = "Classification Probability"
     p.sizing_mode = sizing_mode
 
     if output_html is not None:
@@ -228,46 +234,12 @@ def plot_unfolded_beta(unfolded_beta, output_html=None,
     n_nodes = len_alltracts / n_tracts
     ticks = np.arange(0, len_alltracts, n_nodes)
 
+    p.xaxis.major_tick_line_color = None  # turn off x-axis major ticks
+    p.xaxis.minor_tick_line_color = None  # turn off x-axis minor ticks
+    p.xaxis.major_label_text_font_size = '0pt'  # turn off x-axis tick labels
+
     p.x_range = Range1d(0, len_alltracts)
     p.xgrid.grid_line_color = None
-    p.xaxis.ticker = FixedTicker(
-        ticks=ticks + n_nodes / 2,
-        minor_ticks=ticks
-    )
-    p.xaxis.major_label_orientation = np.pi / 2
-    p.xaxis.major_label_overrides = {
-        str(n): utils.canonical_tract_names[i]
-        for i, n in enumerate(ticks + n_nodes / 2)
-    }
-
-    attrs = [
-        'line_alpha',
-        'line_cap',
-        'line_color',
-        'line_dash',
-        'line_dash_offset',
-        'line_join',
-        'line_width',
-        'in',
-        'out',
-    ]
-
-    for attr in attrs:
-        major = 'major_tick_' + attr
-        minor = 'minor_tick_' + attr
-        setattr(p.xaxis[0], minor, getattr(p.xaxis[0], major))
-        setattr(p.xaxis[0], major, None)
-
-    top = 0.0
-    bottom = 0.0
-    for metric in unfolded_beta.keys():
-        if np.max(unfolded_beta[metric]) > top:
-            top = np.max(unfolded_beta[metric])
-        if np.min(unfolded_beta[metric]) < bottom:
-            bottom = np.min(unfolded_beta[metric])
-
-    top *= 1.0 + p.y_range.range_padding
-    bottom *= 1.0 + p.y_range.range_padding
 
     tract_colors = np.copy(palettable.tableau.Tableau_20.hex_colors).tolist()
     tract_colors = (tract_colors[1:-2:2]
@@ -275,21 +247,53 @@ def plot_unfolded_beta(unfolded_beta, output_html=None,
                     + tract_colors[-3::-2])
 
     for i, color in enumerate(tract_colors):
-        p.quad(top=[top], bottom=[bottom], left=[ticks[i]],
-               right=[ticks[i] + n_nodes], color=color, alpha=0.3)
+        p.add_layout(BoxAnnotation(
+            left=ticks[i], right=ticks[i] + n_nodes,
+            fill_color=color, fill_alpha=0.3
+        ))
+
+        p.add_layout(Label(
+            x=ticks[i] + n_nodes / 2,
+            y=10,
+            x_units='data',
+            y_units='screen',
+            text=utils.canonical_tract_names[i],
+            render_mode='canvas',
+            border_line_alpha=0.0,
+            background_fill_alpha=0.0,
+            angle=np.pi / 2,
+            text_align='left',
+            text_baseline='middle'
+        ))
 
     unfolded_beta['x'] = np.arange(len_alltracts)
     source = ColumnDataSource(data=unfolded_beta)
+    del unfolded_beta['x']
 
-    for name, color in zip(unfolded_beta.keys(), Spectral10):
-        if name != 'x':
-            p.line(x='x', y=name, source=source,
-                   line_width=2, color=color, legend=dict(value=name))
+    lines = {}
+    for name, color in zip(
+            unfolded_beta.keys(),
+            Category10[len(list(unfolded_beta.keys()))]
+    ):
+        lines[name] = p.line(
+            x='x', y=name, source=source, name=name,
+            line_width=3, color=color, legend=dict(value=name)
+        )
 
-    p.legend.location = 'bottom_left'
+    p.add_tools(HoverTool(
+        show_arrow=False,
+        line_policy='interp',
+        tooltips=[
+            ('metric', '$name'),
+            ('beta', '$y'),
+        ],
+        point_policy='snap_to_data',
+        renderers=list(lines.values())
+    ))
+
+    p.legend.location = 'center_right'
     p.legend.click_policy = 'hide'
 
-    p.y_range = Range1d(bottom, top)
     p.sizing_mode = sizing_mode
 
     if output_html is not None:
@@ -381,8 +385,8 @@ def plot_pca_space_classification(x2_sgl, y, pca_sgl=None, beta=None,
         ps = [None] * 2
 
     tooltips = [
-        ("subject", "@subject_id"),
-        ("status", "@als"),
+        ("Subject", "@subject_id"),
+        ("Status", "@als"),
     ]
 
     source = ColumnDataSource(data=pc_info)
@@ -390,7 +394,7 @@ def plot_pca_space_classification(x2_sgl, y, pca_sgl=None, beta=None,
     callback = CustomJS(args={'source': source}, code=code)
 
     if x2_orig is None:
-        ps[0] = figure(plot_width=width * 1.1, plot_height=height,
+        ps[0] = figure(plot_width=int(width * 1.1), plot_height=height,
                        toolbar_location='right')
 
         npoints = 200
