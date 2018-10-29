@@ -413,10 +413,13 @@ def plot_pca_space_classification(x2_sgl, y, pca_sgl=None, beta=None,
         subspace_pairs = np.array([
             [p[0], p[1]] for p in itertools.product(x_subspace, y_subspace)
         ])
-        bigspace_pairs = pca_sgl.inverse_transform(subspace_pairs)
-        predict_pairs = _sigmoid(bigspace_pairs.dot(np.ones_like(beta)))
+        bigspace_pairs = (pca_sgl.inverse_transform(subspace_pairs)
+                          * np.linalg.norm(beta) ** 2.0)
+        predict_pairs = _sigmoid(bigspace_pairs.dot(np.divide(
+            np.ones_like(beta), beta, out=np.zeros_like(beta), where=beta != 0
+        )))
         x_grid, y_grid = np.meshgrid(x_subspace, y_subspace)
-        p_grid = predict_pairs.reshape(x_grid.shape)
+        p_grid = predict_pairs.reshape(x_grid.shape).transpose()[:, ::-1]
 
         cmap = plt.get_cmap('RdBu')
         colors = [to_hex(c) for c in cmap(np.linspace(1, 0, 256))]
@@ -543,6 +546,11 @@ def plot_pca_space_regression(x2_sgl, y, pca_sgl=None, beta=None,
     color_mapper = LinearColorMapper(palette=Cividis256,
                                      low=np.min(y),
                                      high=np.max(y))
+    color_bar = ColorBar(
+        color_mapper=color_mapper,
+        ticker=FixedTicker(ticks=np.arange(np.min(y), np.max(y), 5)),
+        label_standoff=8, border_line_color=None, location=(0, 0)
+    )
 
     pc_info = {
         'pc0_sgl': x2_sgl[:, 0],
@@ -587,23 +595,18 @@ def plot_pca_space_regression(x2_sgl, y, pca_sgl=None, beta=None,
         subspace_pairs = np.array([
             [p[0], p[1]] for p in itertools.product(x_subspace, y_subspace)
         ])
-        bigspace_pairs = pca_sgl.inverse_transform(subspace_pairs)
-        predict_pairs = bigspace_pairs.dot(np.ones_like(beta))
+        bigspace_pairs = (pca_sgl.inverse_transform(subspace_pairs)
+                          * np.linalg.norm(beta) ** 2.0)
+        predict_pairs = bigspace_pairs.dot(np.divide(
+            np.ones_like(beta), beta, out=np.zeros_like(beta), where=beta != 0
+        ))
         x_grid, y_grid = np.meshgrid(x_subspace, y_subspace)
-        p_grid = predict_pairs.reshape(x_grid.shape)
+        p_grid = predict_pairs.reshape(x_grid.shape).transpose()[:, ::-1]
 
         ps[0].image(image=[p_grid], x=xmin, y=ymin,
                     dw=dx * 1.1,
                     dh=dy * 1.1,
                     palette=Cividis256)
-
-        color_bar = ColorBar(
-            color_mapper=color_mapper,
-            ticker=FixedTicker(ticks=np.arange(np.min(y), np.max(y), 5)),
-            label_standoff=8, border_line_color=None, location=(0, 0)
-        )
-
-        ps[0].add_layout(color_bar, 'right')
 
         ps[0].x_range = Range1d(xmin, xmax)
         ps[0].y_range = Range1d(ymin, ymax)
@@ -613,22 +616,23 @@ def plot_pca_space_regression(x2_sgl, y, pca_sgl=None, beta=None,
 
     ps[0].title.text = 'Regression in Post-SGL PCA space'
     s0 = ps[0].scatter('pc0_sgl', 'pc1_sgl', source=source,
-                       size=10,
+                       size=20,
                        fill_color={'field': 'age', 'transform': color_mapper},
                        line_color='white',
-                       line_width=1.5)
+                       line_width=2.5)
     hover0 = HoverTool(tooltips=tooltips, callback=callback, renderers=[s0])
     ps[0].add_tools(hover0)
+    ps[0].add_layout(color_bar, 'right')
 
     if x2_orig is not None:
         ps[1] = figure(plot_width=width, plot_height=height,
                        toolbar_location='right')
         ps[1].title.text = 'Regression in Original PCA space'
         s1 = ps[1].scatter('pc0_orig', 'pc1_orig', source=source,
-                           size=10,
+                           size=20,
                            fill_color={'field': 'age',
                                        'transform': color_mapper},
-                           line_color='white')
+                           line_color='white', line_width=2.5)
         hover1 = HoverTool(tooltips=tooltips,
                            callback=callback,
                            renderers=[s1])
