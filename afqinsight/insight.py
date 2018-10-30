@@ -518,7 +518,7 @@ def fit_hyperparams(x, y, groups, bias_index=None, max_evals=100,
             if score == 'rmse':
                 loss = rmse
             elif score == 'medae':
-                loss == medae
+                loss = medae
             else:
                 loss = -r2
             result_dict = {
