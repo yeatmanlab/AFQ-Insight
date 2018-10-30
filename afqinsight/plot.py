@@ -19,6 +19,7 @@ from bokeh.palettes import Category10, Spectral10, Cividis256
 from bokeh.plotting import ColumnDataSource, figure, show
 from bokeh.resources import CDN
 from matplotlib.colors import to_hex
+from sklearn.decomposition import PCA
 
 from . import utils
 from .insight import _sigmoid
@@ -273,7 +274,8 @@ def plot_unfolded_beta(unfolded_beta, output_html=None,
     lines = {}
     for name, color in zip(
             unfolded_beta.keys(),
-            Category10[len(list(unfolded_beta.keys()))]
+            Category10[max(len(list(unfolded_beta.keys())),
+                           min(list(Category10.keys())))]
     ):
         lines[name] = p.line(
             x='x', y=name, source=source, name=name,
@@ -304,44 +306,48 @@ def plot_unfolded_beta(unfolded_beta, output_html=None,
         show(p)
 
 
-@registered
-def plot_pca_space_classification(x2_sgl, y, pca_sgl=None, beta=None,
-                                  x2_orig=None, output_html=None,
-                                  width=500, height=500,
-                                  sizing_mode='stretch_both'):
-    """Plot classification predictions in a 2-component PCA space.
+def plot_pca_space(x, y, beta,
+                   plot_type,
+                   target_name,
+                   classification_strings=None,
+                   plot_both=True,
+                   output_html=None,
+                   width=500, height=500,
+                   sizing_mode='stretch_both'):
+    """Plot regression predictions in a 2-component PCA space.
 
-    This function has two plot modes, specified by the presence or
-    absence of certain input variables. If `x2_orig` is not None,
-    this plots side-by-side scatter plots of the target class in
-    2-D PCA space. The right plot is the post-SGL weighted feature
+    This function has two plot modes, specified by the `plot_both` flag. If
+    `plot_both` == True, this plots side-by-side scatter plots of the target
+    variable in 2-D PCA space. The right plot is the post-SGL weighted feature
     matrix and the left plot is the pre-SGL original feature matrix.
 
-    If `pca_sgl` and `beta` are not None, then this plots only the
-    post-SGL weighted feature space and also plots a contour of the
-    classification probabilities (from which one can infer the
-    decision boundary).
+    Otherwise this plots only the post-SGL weighted feature space and also
+    plots a contour of the regression prediction.
 
     Parameters
     ----------
-    x2_sgl : numpy.ndarray
-        Projection of the feature matrix onto its first two principal
-        components, after the feature matrix has been weighted by the
-        regression coefficients (i.e. beta)
+    x : numpy.ndarray
+        Feature matrix
 
     y : pandas.Series
         Binary classification target array
 
-    pca_sgl : sklearn.decomposition.pca.PCA
-        PCA decomposition that has been fitted to the full post-SGL
-        weighted feature matrix
-
     beta : numpy.ndarray
         Regression coefficients
 
-    x2_orig :
-        Projection of the original (pre-SGL) feature matrix onto its
-        first two principal components.
+    plot_type : 'regression' or 'classification'
+        Type of ML problem
+
+    target_name : string
+        The name of the target variable (used in hover tool)
+
+    classification_strings : dict
+        Dictionary mapping the categorical numerical target values onto their
+        names. If `plot_type` == "regression", this parameter is not used.
+
+    plot_both : boolean, default=True
+        If True, plot the PCA in both the original feature space and the
+        feature space projected onto the coefficient vector
 
     output_html : string or None, default=None
         Filename for bokeh html output. If None, figure will not be saved
@@ -359,223 +365,67 @@ def plot_pca_space_classification(x2_sgl, y, pca_sgl=None, beta=None,
         information on the different modes see
         https://bokeh.pydata.org/en/latest/docs/reference/models/layouts.html#bokeh.models.layouts.LayoutDOM
     """
-    if x2_orig is None and any([
-        pca_sgl is None, beta is None
-    ]):
-        raise ValueError('You must supply either (`pca_sgl` and `beta`) or '
-                         '`x2_orig`.')
-    colors = [Spectral10[1 - 2 * b] for b in y]
-    als = y.copy()
-    als[y == 1] = 'ALS'
-    als[y == 0] = 'Control'
+    if plot_type not in ['regression', 'classification']:
+        raise ValueError('`plot_type` must be either "classification" or '
+                         '"regression"')
 
-    pc_info = {
-        'pc0_sgl': x2_sgl[:, 0],
-        'pc1_sgl': x2_sgl[:, 1],
-        'als': als,
-        'subject_id': y.index,
-        'colors': colors
-    }
+    x_projection = (np.outer(x.dot(beta), beta)
+                    / (np.linalg.norm(beta) ** 2.0))
 
-    ps = [None]
+    pca_orig = PCA(n_components=2)
+    pca_sgl = PCA(n_components=2)
 
-    if x2_orig is not None:
-        pc_info['pc0_orig'] = x2_orig[:, 0]
-        pc_info['pc1_orig'] = x2_orig[:, 1]
-        ps = [None] * 2
+    x2_sgl = pca_sgl.fit_transform(x_projection)
+    x2_orig = pca_orig.fit_transform(x)
 
-    tooltips = [
-        ("Subject", "@subject_id"),
-        ("Status", "@als"),
-    ]
-
-    source = ColumnDataSource(data=pc_info)
-    code = "source.set('selected', cb_data.index);"
-    callback = CustomJS(args={'source': source}, code=code)
-
-    if x2_orig is None:
-        ps[0] = figure(plot_width=int(width * 1.1), plot_height=height,
-                       toolbar_location='right')
-
-        npoints = 200
-        dx = np.max(x2_sgl[:, 0]) - np.min(x2_sgl[:, 0])
-        xmid = 0.5 * (np.max(x2_sgl[:, 0]) + np.min(x2_sgl[:, 0]))
-        xmin = xmid - (dx * 1.1 / 2.0)
-        xmax = xmid + (dx * 1.1 / 2.0)
-
-        dy = np.max(x2_sgl[:, 1]) - np.min(x2_sgl[:, 1])
-        ymid = 0.5 * (np.max(x2_sgl[:, 1]) + np.min(x2_sgl[:, 1]))
-        ymin = ymid - (dy * 1.1 / 2.0)
-        ymax = ymid + (dy * 1.1 / 2.0)
-
-        x_subspace = np.linspace(xmin, xmax, npoints)
-        y_subspace = np.linspace(ymin, ymax, npoints)
-        subspace_pairs = np.array([
-            [p[0], p[1]] for p in itertools.product(x_subspace, y_subspace)
-        ])
-        bigspace_pairs = (pca_sgl.inverse_transform(subspace_pairs)
-                          * np.linalg.norm(beta) ** 2.0)
-        predict_pairs = _sigmoid(bigspace_pairs.dot(np.divide(
-            np.ones_like(beta), beta, out=np.zeros_like(beta), where=beta != 0
-        )))
-        x_grid, y_grid = np.meshgrid(x_subspace, y_subspace)
-        p_grid = predict_pairs.reshape(x_grid.shape).transpose()[:, ::-1]
-
+    if plot_type == 'classification':
         cmap = plt.get_cmap('RdBu')
         colors = [to_hex(c) for c in cmap(np.linspace(1, 0, 256))]
-
-        ps[0].image(image=[p_grid], x=xmin, y=ymin,
-                    dw=dx * 1.1,
-                    dh=dy * 1.1,
-                    palette=colors)
-
-        color_mapper = LinearColorMapper(palette=colors, low=0, high=1)
-        color_bar = ColorBar(
-            color_mapper=color_mapper,
-            ticker=FixedTicker(ticks=np.arange(0, 1.1, 0.1)),
-            label_standoff=8, border_line_color=None, location=(0, 0)
-        )
-
-        ps[0].add_layout(color_bar, 'right')
-
-        ps[0].x_range = Range1d(xmin, xmax)
-        ps[0].y_range = Range1d(ymin, ymax)
     else:
-        ps[0] = figure(plot_width=width, plot_height=height,
-                       toolbar_location='right')
+        colors = Cividis256
 
-    ps[0].title.text = 'Classification in Post-SGL PCA space'
-    s0 = ps[0].scatter('pc0_sgl', 'pc1_sgl', source=source,
-                       size=10, fill_color='colors', line_color='white',
-                       line_width=1.5,
-                       legend='als')
-    hover0 = HoverTool(tooltips=tooltips, callback=callback, renderers=[s0])
-    ps[0].add_tools(hover0)
-
-    if x2_orig is not None:
-        ps[1] = figure(plot_width=width, plot_height=height,
-                       toolbar_location='right')
-        ps[1].title.text = 'Classification in Original PCA space'
-        s1 = ps[1].scatter('pc0_orig', 'pc1_orig', source=source,
-                           size=10, fill_color='colors',
-                           line_color='white', legend='als')
-        hover1 = HoverTool(tooltips=tooltips,
-                           callback=callback,
-                           renderers=[s1])
-        ps[1].add_tools(hover1)
-
-    for idx in range(len(ps)):
-        ps[idx].xaxis.axis_label = "1st Principal Component"
-        ps[idx].yaxis.axis_label = "2nd Principal Component"
-
-    if x2_orig is not None:
-        layout = row(ps[::-1])
-    else:
-        layout = ps[0]
-
-    layout.sizing_mode = sizing_mode
-
-    if output_html is not None:
-        html = file_html(layout, CDN, "my plot")
-        with open(op.abspath(output_html), 'w') as fp:
-            fp.write(html)
-    else:
-        show(layout)
-
-
-def plot_pca_space_regression(x2_sgl, y, pca_sgl=None, beta=None,
-                              x2_orig=None, output_html=None,
-                              width=500, height=500,
-                              sizing_mode='stretch_both'):
-    """Plot classification predictions in a 2-component PCA space.
-
-    This function has two plot modes, specified by the presence or
-    absence of certain input variables. If `x2_orig` is not None,
-    this plots side-by-side scatter plots of the target class in
-    2-D PCA space. The right plot is the post-SGL weighted feature
-    matrix and the left plot is the pre-SGL original feature matrix.
-
-    If `pca_sgl` and `beta` are not None, then this plots only the
-    post-SGL weighted feature space and also plots a contour of the
-    classification probabilities (from which one can infer the
-    decision boundary).
-
-    Parameters
-    ----------
-    x2_sgl : numpy.ndarray
-        Projection of the feature matrix onto its first two principal
-        components, after the feature matrix has been weighted by the
-        regression coefficients (i.e. beta)
-
-    y : pandas.Series
-        Binary classification target array
-
-    pca_sgl : sklearn.decomposition.pca.PCA
-        PCA decomposition that has been fitted to the full post-SGL
-        weighted feature matrix
-
-    beta : numpy.ndarray
-        Regression coefficients
-
-    x2_orig :
-        Projection of the original (pre-SGL) feature matrix onto its
-        first two principal components.
-
-    output_html : string or None, default=None
-        Filename for bokeh html output. If None, figure will not be saved
-
-    width : int, default=500
-        Width of each beta plot (in pixels)
-
-    height : int, default=500
-        Height of each beta plot (in pixels)
-
-    sizing_mode : string
-        One of ("fixed", "stretch_both", "scale_width", "scale_height",
-        "scale_both"). Specifies how will the items in the layout resize to
-        fill the available space. Default is "stretch_both". For more
-        information on the different modes see
-        https://bokeh.pydata.org/en/latest/docs/reference/models/layouts.html#bokeh.models.layouts.LayoutDOM
-    """
-    if x2_orig is None and any([
-        pca_sgl is None, beta is None
-    ]):
-        raise ValueError('You must supply either (`pca_sgl` and `beta`) or '
-                         '`x2_orig`.')
-
-    color_mapper = LinearColorMapper(palette=Cividis256,
+    color_mapper = LinearColorMapper(palette=colors,
                                      low=np.min(y),
                                      high=np.max(y))
+
     color_bar = ColorBar(
         color_mapper=color_mapper,
         ticker=FixedTicker(ticks=np.arange(np.min(y), np.max(y), 5)),
         label_standoff=8, border_line_color=None, location=(0, 0)
     )
 
+    if plot_type == 'classification':
+        target = y.copy()
+        for k, v in classification_strings.items():
+            target[y == k] = v
+    else:
+        target = y.copy()
+
     pc_info = {
         'pc0_sgl': x2_sgl[:, 0],
         'pc1_sgl': x2_sgl[:, 1],
-        'age': y.values,
-        'subject_id': y.index,
+        'target': y.values,
+        'target_string': target.values,
+        'subject_id': target.index,
     }
 
     ps = [None]
 
-    if x2_orig is not None:
+    if plot_both:
         pc_info['pc0_orig'] = x2_orig[:, 0]
         pc_info['pc1_orig'] = x2_orig[:, 1]
         ps = [None] * 2
 
     tooltips = [
         ("Subject", "@subject_id"),
-        ("Age", "@age"),
+        (target_name, "@target_string"),
     ]
 
     source = ColumnDataSource(data=pc_info)
     code = "source.set('selected', cb_data.index);"
     callback = CustomJS(args={'source': source}, code=code)
 
-    if x2_orig is None:
+    if not plot_both:
         ps[0] = figure(plot_width=int(width * 1.1), plot_height=height,
                        toolbar_location='right')
 
@@ -601,38 +451,63 @@ def plot_pca_space_regression(x2_sgl, y, pca_sgl=None, beta=None,
             np.ones_like(beta), beta, out=np.zeros_like(beta), where=beta != 0
         ))
         x_grid, y_grid = np.meshgrid(x_subspace, y_subspace)
-        p_grid = predict_pairs.reshape(x_grid.shape).transpose()[:, ::-1]
+        p_grid = predict_pairs.reshape(x_grid.shape, order='F')
 
         ps[0].image(image=[p_grid], x=xmin, y=ymin,
                     dw=dx * 1.1,
                     dh=dy * 1.1,
-                    palette=Cividis256)
+                    palette=colors)
 
+        ps[0].add_layout(color_bar, 'right')
         ps[0].x_range = Range1d(xmin, xmax)
         ps[0].y_range = Range1d(ymin, ymax)
     else:
         ps[0] = figure(plot_width=width, plot_height=height,
                        toolbar_location='right')
 
-    ps[0].title.text = 'Regression in Post-SGL PCA space'
-    s0 = ps[0].scatter('pc0_sgl', 'pc1_sgl', source=source,
-                       size=20,
-                       fill_color={'field': 'age', 'transform': color_mapper},
-                       line_color='white',
-                       line_width=2.5)
+        if plot_type == 'regression':
+            ps[0].add_layout(color_bar, 'right')
+
+    if plot_type == 'regression':
+        ps[0].title.text = 'Regression in Post-SGL PCA space'
+        s0 = ps[0].scatter('pc0_sgl', 'pc1_sgl', source=source,
+                           size=20,
+                           fill_color={'field': 'target',
+                                       'transform': color_mapper},
+                           line_color='white',
+                           line_width=2.5)
+    else:
+        ps[0].title.text = 'Classification in Post-SGL PCA space'
+        s0 = ps[0].scatter('pc0_sgl', 'pc1_sgl', source=source,
+                           size=20,
+                           fill_color={'field': 'target',
+                                       'transform': color_mapper},
+                           line_color='white',
+                           line_width=2.5, legend='target_string')
+
     hover0 = HoverTool(tooltips=tooltips, callback=callback, renderers=[s0])
     ps[0].add_tools(hover0)
-    ps[0].add_layout(color_bar, 'right')
 
-    if x2_orig is not None:
+    if plot_both:
         ps[1] = figure(plot_width=width, plot_height=height,
                        toolbar_location='right')
-        ps[1].title.text = 'Regression in Original PCA space'
-        s1 = ps[1].scatter('pc0_orig', 'pc1_orig', source=source,
-                           size=20,
-                           fill_color={'field': 'age',
-                                       'transform': color_mapper},
-                           line_color='white', line_width=2.5)
+
+        if plot_type == 'regression':
+            ps[1].title.text = 'Regression in Original PCA space'
+            s1 = ps[1].scatter('pc0_orig', 'pc1_orig', source=source,
+                               size=20,
+                               fill_color={'field': 'target',
+                                           'transform': color_mapper},
+                               line_color='white', line_width=2.5)
+        else:
+            ps[1].title.text = 'Classification in Original PCA space'
+            s1 = ps[1].scatter('pc0_orig', 'pc1_orig', source=source,
+                               size=20,
+                               fill_color={'field': 'target',
+                                           'transform': color_mapper},
+                               line_color='white', line_width=2.5,
+                               legend='target_string')
+
         hover1 = HoverTool(tooltips=tooltips,
                            callback=callback,
                            renderers=[s1])
@@ -642,7 +517,7 @@ def plot_pca_space_regression(x2_sgl, y, pca_sgl=None, beta=None,
         ps[idx].xaxis.axis_label = "1st Principal Component"
         ps[idx].yaxis.axis_label = "2nd Principal Component"
 
-    if x2_orig is not None:
+    if plot_both:
         layout = row(ps[::-1])
     else:
         layout = ps[0]
@@ -655,3 +530,4 @@ def plot_pca_space_regression(x2_sgl, y, pca_sgl=None, beta=None,
             fp.write(html)
     else:
         show(layout)
+
