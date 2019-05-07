@@ -12,7 +12,6 @@ def registered(fn):
     __all__.append(fn.__name__)
     return fn
 
-
 @registered
 class SparseGroupL1(object):
     """Sparse group lasso penalty class for use with openopt/copt package.
@@ -20,19 +19,19 @@ class SparseGroupL1(object):
     Implements the sparse group lasso penalty [1]_
 
     .. math::
-        \alpha_1 \displaystyle \sum_{g \in G} || \beta_g ||_2
-        + \alpha_2 || \beta ||_1
+        (1 - \alpha_1) * \alpha_2 \displaystyle \sum_{g \in G} || \beta_g ||_2
+        + \alpha_1 * \alpha_2 || \beta ||_1
 
     where :math:`G` is a partition of the features into groups.
 
     Parameters
     ----------
     alpha_1 : float
-        Group lasso regularization parameter. This encourages groupwise
-        sparsity.
+        Combination between group lasso and lasso. alpha_1 = 0 gives the group
+        lasso and alpha_1 = 1 gives the lasso.
 
     alpha_2 : float
-        Lasso regularization parameter. This encourages within group sparsity.
+        Regularization parameter, overall strength of regularization.
 
     groups : numpy.ndarray
         array of non-overlapping indices for each group. For example, if nine
@@ -61,7 +60,7 @@ class SparseGroupL1(object):
         self.bias_index = bias_index
 
     def __call__(self, x):
-        penalty = self.alpha_1 * np.sum(
+        penalty = (1.0 - self.alpha_1) * self.alpha_2 * np.sum(
             [np.linalg.norm(x[g]) for g in self.groups]
         )
 
@@ -69,7 +68,7 @@ class SparseGroupL1(object):
         if self.bias_index is not None:
             ind[self.bias_index] = False
 
-        penalty += self.alpha_2 * np.abs(x[ind]).sum()
+        penalty += self.alpha_1 * self.alpha_2 * np.abs(x[ind]).sum()
         return penalty
 
     def prox(self, x, step_size):
@@ -80,9 +79,9 @@ class SparseGroupL1(object):
         .. math::
             P(\beta) = P_1(\beta) + P_2(\beta)
 
-        where :math:`P_2 = \alpha_2 || \beta ||_1` is the lasso penalty and
-        :math:`P_1 = \alpha_1 \displaystyle \sum_{g \in G} || \beta_g ||_2`
-        is the group lasso penalty.
+        where :math:`P_2 = \alpha_1 \alpha_2 || \beta ||_1` is the lasso
+        penalty and :math:`P_1 = (1 - \alpha_1) \alpha_2 \displaystyle
+        \sum_{g \in G} || \beta_g ||_2` is the group lasso penalty.
 
         Then the proximal operator is given by
 
@@ -105,8 +104,8 @@ class SparseGroupL1(object):
             proximal operator of sparse group lasso penalty evaluated on
             input `x` with step size `step_size`
         """  # noqa: W605
-        l1_prox = (np.fmax(x - self.alpha_2 * step_size, 0)
-                   - np.fmax(- x - self.alpha_2 * step_size, 0))
+        l1_prox = (np.fmax(x - self.alpha_1 * self.alpha_2 * step_size, 0)
+                   - np.fmax(- x - self.alpha_1 * self.alpha_2 * step_size, 0))
         out = l1_prox.copy()
 
         if self.bias_index is not None:
@@ -114,13 +113,13 @@ class SparseGroupL1(object):
 
         norms = np.linalg.norm(l1_prox[self.groups], axis=1)
 
-        norm_mask = norms > self.alpha_1 * step_size
+        norm_mask = norms > (1.0 - self.alpha_1) * self.alpha_2 * step_size
         mask_idx_true = np.where(norm_mask)[0]
         mask_idx_false = np.where(np.logical_not(norm_mask))[0]
         groups_true = np.array(self.groups)[mask_idx_true]
         groups_false = np.array(self.groups)[mask_idx_false]
 
-        out[groups_true] -= (step_size * self.alpha_1
+        out[groups_true] -= (step_size * (1.0 - self.alpha_1) * self.alpha_2
                              * out[groups_true]
                              / norms[mask_idx_true, np.newaxis])
         out[groups_false] = 0.0
