@@ -26,7 +26,7 @@ def registered(fn):
 @registered
 def load_afq_data(workdir, target_cols, binary_positives=None,
                   fn_nodes='nodes.csv', fn_subjects='subjects.csv',
-                  scale_x=True, add_bias_feature=True):
+                  scale_x=False, add_bias_feature=True):
     """Load AFQ data from CSV, transform it, return feature matrix and target
 
     Parameters
@@ -50,7 +50,7 @@ def load_afq_data(workdir, target_cols, binary_positives=None,
     fn_subjects : str, default='subjects.csv'
         Filename for the subjects csv file.
 
-    scale_x : bool, default=True
+    scale_x : bool, default=False
         If True, center each feature to have zero mean and scale it to have
         unit variance.
 

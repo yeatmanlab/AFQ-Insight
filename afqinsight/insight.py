@@ -10,13 +10,14 @@ import pickle
 import warnings
 from collections import namedtuple
 from functools import partial
-from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
+from hyperopt import fmin, tpe, hp, space_eval, STATUS_OK, Trials
 from hyperopt.mongoexp import MongoTrials
 from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.metrics import accuracy_score, average_precision_score, f1_score
 from sklearn.metrics import roc_auc_score, r2_score, mean_squared_error
 from sklearn.metrics import median_absolute_error
 from sklearn.model_selection import RepeatedKFold, RepeatedStratifiedKFold
+from sklearn.preprocessing import StandardScaler
 from tqdm.auto import tqdm
 
 from .prox import SparseGroupL1
@@ -31,6 +32,56 @@ def registered(fn):
 
 def _sigmoid(z):
     return 1.0 / (1.0 + np.exp(-z))
+
+
+@registered
+def target_transformation(y, eta=1.0, transform_type="power", direction="forward"):
+    """Tranform target variables according to
+    y_t = \begin{cases}
+        y^\eta & y > 0 and transform_type == "power" \\
+        \eta^y & y > 0 and transform_type == "exponentiation" \\
+        0 & y <= 0
+    \end{cases}
+
+    Parameters
+    ----------
+    y : np.ndarray
+        Target variables
+
+    eta : float, default=1.0
+        Transformation parameter
+
+    transform_type : ["power", "exponentiation"]
+        Type of transformation, see above equation
+
+    direction : ["forward", "inverse"], default="forward"
+        If "forward", do the transform listed above. If "inverse", do the
+        inverse transform
+
+    Returns
+    -------
+    y_t : mp.ndarray
+        Transformed target variables
+    """
+    if direction not in ["forward", "inverse"]:
+        raise ValueError("'direction' must be either 'forward' or 'inverse'")
+
+    if transform_type not in ["power", "exponentiation"]:
+        raise ValueError("'transform_type' must be either 'power' or 'exponentiation'")
+
+    y_t = np.zeros_like(y)
+    if direction == "forward":
+        if transform_type == "power":
+            y_t[y > 0] = np.power(y[y > 0], eta)
+        else:
+            y_t[y > 0] = np.power(eta, y[y > 0])
+    else:
+        if transform_type == "power":
+            y_t[y > 0] = np.power(y[y > 0], 1.0 / eta)
+        else:
+            y_t[y > 0] = np.log(y[y > 0]) / np.log(eta)
+
+    return y_t
 
 
 @registered
@@ -79,7 +130,7 @@ def classification_scores(x, y, beta_hat, clf_threshold=0.5):
 
 
 @registered
-def regression_scores(x, y, beta_hat):
+def regression_scores(x, y, beta_hat, eta=1.0, transform_type="power"):
     """Return regression scores
 
     Parameters
@@ -93,6 +144,12 @@ def regression_scores(x, y, beta_hat):
     beta_hat : np.ndarray
         Estimate of coefficient array
 
+    eta : float, default=1.0
+        Target variable transformation parameter
+
+    transform_type : ["power", "exponentiation"]
+        Type of transformation, see above equation
+
     Returns
     -------
     collections.namedtuple
@@ -102,6 +159,7 @@ def regression_scores(x, y, beta_hat):
         medae - The median absolute error
     """
     y_pred = x.dot(beta_hat)
+    y_pred = target_transformation(y=y_pred, eta=eta, transform_type=transform_type, direction="forward")
 
     rmse = np.sqrt(mean_squared_error(y, y_pred))
     r2 = r2_score(y, y_pred)
@@ -114,13 +172,13 @@ def regression_scores(x, y, beta_hat):
 
 SGLResult = namedtuple(
     'SGLResult',
-    ['alpha1', 'alpha2', 'beta_hat', 'test', 'train', 'trace']
+    ['alpha1', 'alpha2', 'eta', 'transform_type', 'beta_hat', 'test', 'train', 'trace']
 )
 
 
 @registered
 def sgl_estimator(x_train, y_train, x_test, y_test, groups, bias_index=None,
-                  beta0=None, alpha1=0.0, alpha2=0.0, max_iter=5000,
+                  beta0=None, alpha1=0.0, alpha2=0.0, eta=1.0, transform_type="power", max_iter=5000,
                   tol=1e-6, verbose=0, suppress_warnings=True, cb_trace=False,
                   accelerate=False, loss_type='logloss', clf_threshold=0.5):
     """Find solution to sparse group lasso problem by proximal gradient descent
@@ -163,6 +221,12 @@ def sgl_estimator(x_train, y_train, x_test, y_test, groups, bias_index=None,
     alpha2 : float, default=0.0
         Lasso regularization parameter. This encourages within group sparsity.
 
+    eta : float, default=1.0
+        Target variable transformation parameter.
+
+    transform_type : ["power", "exponentiation"]
+        Type of transformation, see above equation
+
     max_iter : int, default=5000
         Maximum number of iterations for PGD algorithm.
 
@@ -198,6 +262,7 @@ def sgl_estimator(x_train, y_train, x_test, y_test, groups, bias_index=None,
         namedtuple with fields:
         alpha1 - group lasso regularization parameter,
         alpha2 - lasso regularization parameter,
+        eta - target variable transformation parameter,
         beta_hat - estimate of the optimal beta,
         test - scores namedtuple for test set,
         train - scores namedtuple for train set,
@@ -221,11 +286,18 @@ def sgl_estimator(x_train, y_train, x_test, y_test, groups, bias_index=None,
         raise ValueError("loss_type must be one of "
                          "['logloss', 'square', 'huber'].")
 
+    if loss_type == 'logloss' and eta != 1.0:
+        raise ValueError("If loss_type is 'logloss', then eta must be one.")
+
     ind = np.ones(x_train.shape[1], bool)
     if bias_index is not None:
         ind[bias_index] = False
 
     step_size = 1. / cp.utils.get_lipschitz(x_train[:, ind], loss_type)
+
+    # Inverse transform target variables
+    y_train = target_transformation(y=y_train, eta=eta, transform_type=transform_type, direction="inverse")
+
     if loss_type == 'logloss':
         f_grad = cp.utils.LogLoss(x_train, y_train).f_grad
     elif loss_type == 'huber':
@@ -263,24 +335,27 @@ def sgl_estimator(x_train, y_train, x_test, y_test, groups, bias_index=None,
 
     beta_hat = np.copy(pgd.x)
 
+    # Transform the target variables back to original
+    y_train = target_transformation(y=y_train, eta=eta, transform_type=transform_type, direction="forward")
+
     if loss_type == 'logloss':
         train = classification_scores(x=x_train, y=y_train, beta_hat=beta_hat,
                                       clf_threshold=clf_threshold)
         test = classification_scores(x=x_test, y=y_test, beta_hat=beta_hat,
                                      clf_threshold=clf_threshold)
     else:
-        train = regression_scores(x=x_train, y=y_train, beta_hat=beta_hat)
-        test = regression_scores(x=x_test, y=y_test, beta_hat=beta_hat)
+        train = regression_scores(x=x_train, y=y_train, beta_hat=beta_hat, eta=eta, transform_type=transform_type)
+        test = regression_scores(x=x_test, y=y_test, beta_hat=beta_hat, eta=eta, transform_type=transform_type)
 
     return SGLResult(
-        alpha1=alpha1, alpha2=alpha2, beta_hat=beta_hat,
+        alpha1=alpha1, alpha2=alpha2, eta=eta, transform_type=transform_type, beta_hat=beta_hat,
         test=test, train=train, trace=cb_tos
     )
 
 
 @registered
 def sgl_estimator_cv(x, y, groups, bias_index=None, beta0=None,
-                     alpha1=0.0, alpha2=0.0,
+                     alpha1=0.0, alpha2=0.0, eta=1.0, transform_type="power",
                      max_iter=5000, tol=1e-6, verbose=0, cb_trace=False,
                      accelerate=False, loss_type='logloss',
                      n_splits=3, n_repeats=1, random_state=None):
@@ -318,6 +393,12 @@ def sgl_estimator_cv(x, y, groups, bias_index=None, beta0=None,
     alpha2 : float, default=0.0
         Lasso regularization parameter. This encourages within group sparsity.
 
+    eta : float, default=1.0
+        Target variable transformation parameter.
+
+    transform_type : ["power", "exponentiation"]
+        Type of transformation, see above equation
+
     max_iter : int, default=5000
         Maximum number of iterations for PGD algorithm.
 
@@ -354,6 +435,7 @@ def sgl_estimator_cv(x, y, groups, bias_index=None, beta0=None,
         namedtuple with fields:
         alpha1 - group lasso regularization parameter,
         alpha2 - lasso regularization parameter,
+        eta - target variable transformation parameter,
         beta_hat - list of estimates of the optimal beta,
         test - list of scores namedtuples for test set,
         train - list of scores namedtuples for train set,
@@ -380,15 +462,26 @@ def sgl_estimator_cv(x, y, groups, bias_index=None, beta0=None,
     else:
         splitter = cv.split(x, y)
 
+    scaler = StandardScaler()
+
+    if 0.0 <= eta < 1.0:
+        raise ValueError("eta must satisfy 0.0 <= eta < 1.0")
+
     for train_idx, test_idx in splitter:
         x_train, x_test = x[train_idx], x[test_idx]
         y_train, y_test = y[train_idx], y[test_idx]
+
+        x_train = scaler.fit_transform(x_train)
+        x_test = scaler.transform(x_test)
+        x_train[:, bias_index] = 1.0
+        x_test[:, bias_index] = 1.0
 
         res = sgl_estimator(
             x_train=x_train, y_train=y_train,
             x_test=x_test, y_test=y_test,
             groups=groups, bias_index=bias_index,
             beta0=beta0, alpha1=alpha1, alpha2=alpha2,
+            eta=eta, transform_type=transform_type,
             max_iter=max_iter, tol=tol,
             verbose=verbose, cb_trace=cb_trace,
             accelerate=accelerate, loss_type=loss_type
@@ -400,6 +493,8 @@ def sgl_estimator_cv(x, y, groups, bias_index=None, beta0=None,
     return SGLResult(
         alpha1=alpha1,
         alpha2=alpha2,
+        eta=eta,
+        transform_type=transform_type,
         beta_hat=[res.beta_hat for res in clf_results],
         test=[res.test for res in clf_results],
         train=[res.train for res in clf_results],
@@ -409,6 +504,7 @@ def sgl_estimator_cv(x, y, groups, bias_index=None, beta0=None,
 
 @registered
 def fit_hyperparams(x, y, groups, bias_index=None, max_evals=100,
+                    beta0=None,
                     loss_type='logloss', score='roc_auc',
                     trials=None, mongo_handle=None,
                     mongo_exp_key=None, save_trials_pickle=None):
@@ -433,6 +529,9 @@ def fit_hyperparams(x, y, groups, bias_index=None, max_evals=100,
 
     max_evals : int, default=100
         Maximum allowed function evaluations for fmin
+
+    beta0 : numpy.ndarray
+        Initial guess for coefficient array
 
     loss_type : {'logloss', 'square', 'huber'}
         The type of loss function to use. If 'logloss', treat this problem as
@@ -476,9 +575,17 @@ def fit_hyperparams(x, y, groups, bias_index=None, max_evals=100,
 
     # Define the search space
     hp_space = {
-        'alpha1': hp.loguniform('alpha1', -7, 3),
+        'alpha1': hp.uniform('alpha1', 0.0, 1.0),
         'alpha2': hp.loguniform('alpha2', -7, 3),
+        'eta': hp.uniform('eta', 1.0, 3.0),
+        'transform_type': hp.choice('transform_type', ['power', 'exponentiation']),
     }
+
+    if trials is None:
+        if mongo_handle is not None:
+            trials = MongoTrials(mongo_handle, exp_key=mongo_exp_key)
+        else:
+            trials = Trials()
 
     # Define the objective function for hyperopt to minimize
     def hp_objective(params):
@@ -487,7 +594,8 @@ def fit_hyperparams(x, y, groups, bias_index=None, max_evals=100,
                                 y=y,
                                 groups=groups,
                                 loss_type=loss_type,
-                                bias_index=bias_index)
+                                bias_index=bias_index,
+                                beta0=beta0)
         cv_results = hp_cv_partial(**params)
         if loss_type == 'logloss':
             auc = np.array([test.auc for test in cv_results.test])
@@ -535,12 +643,6 @@ def fit_hyperparams(x, y, groups, bias_index=None, max_evals=100,
 
         return result_dict
 
-    if trials is None:
-        if mongo_handle is not None:
-            trials = MongoTrials(mongo_handle, exp_key=mongo_exp_key)
-        else:
-            trials = Trials()
-
     best = fmin(hp_objective, hp_space, algo=tpe.suggest,
                 max_evals=max_evals, trials=trials)
 
@@ -548,16 +650,18 @@ def fit_hyperparams(x, y, groups, bias_index=None, max_evals=100,
         with open(save_trials_pickle, 'wb') as fp:
             pickle.dump(trials, fp)
 
-    HPResults = namedtuple('HPResults', 'best_fit trials')
+    HPResults = namedtuple('HPResults', 'best_fit trials space')
 
     return HPResults(
         best_fit=best,
         trials=trials,
+        space=hp_space,
     )
 
 
 @registered
 def fit_hyperparams_cv(x, y, groups, bias_index=None,
+                       beta0=None,
                        n_splits=10, n_repeats=1,
                        max_evals_per_cv=100,
                        loss_type='logloss', score='roc_auc',
@@ -583,6 +687,9 @@ def fit_hyperparams_cv(x, y, groups, bias_index=None,
     bias_index : int or None, default=None
         the index of the bias feature in x_train and x_test. If None, assume
         no bias feature.
+
+    beta0 : numpy.ndarray
+        Initial guess for coefficient array
 
     n_splits : int, default=10
         Number of folds. Must be at least 2.
@@ -685,6 +792,8 @@ def fit_hyperparams_cv(x, y, groups, bias_index=None,
 
     cv_results = []
 
+    scaler = StandardScaler()
+
     for cv_idx, (train_idx, test_idx) in splitter:
         x_train, x_test = x[train_idx], x[test_idx]
         y_train, y_test = y[train_idx], y[test_idx]
@@ -713,6 +822,7 @@ def fit_hyperparams_cv(x, y, groups, bias_index=None,
         hp_res = fit_hyperparams(
             x_train, y_train, groups,
             bias_index=bias_index,
+            beta0=beta0,
             max_evals=max_evals_per_cv,
             loss_type=loss_type,
             score=score,
@@ -724,12 +834,26 @@ def fit_hyperparams_cv(x, y, groups, bias_index=None,
 
         alpha1 = hp_res.best_fit['alpha1']
         alpha2 = hp_res.best_fit['alpha2']
+        eta = hp_res.best_fit.get('eta', 1.0)
+        if loss_type != 'logloss':
+            transform_type = space_eval(hp_res.space, hp_res.best_fit)['transform_type']
+        else:
+            transform_type = "power"
+
+        x_train = scaler.fit_transform(x_train)
+        x_test = scaler.transform(x_test)
+        x_train[:, bias_index] = 1.0
+        x_test[:, bias_index] = 1.0
 
         sgl = sgl_estimator(
             x_train, y_train, x_test, y_test, groups,
-            alpha1=alpha1, alpha2=alpha2, loss_type=loss_type,
+            alpha1=alpha1, alpha2=alpha2, eta=eta,
+            transform_type=transform_type,
+            loss_type=loss_type,
             clf_threshold=clf_threshold
         )
+
+        beta0 = sgl.beta_hat
 
         cv_results.append(sgl)
 
