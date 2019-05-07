@@ -68,8 +68,5 @@ REQUIRES = [
     "scikit-learn>=0.19.1", "tqdm>=4.19.4",
     "copt",
 ]
-DEPENDENCY_LINKS = [
-    "git+ssh://git@github.com/openopt/copt.git",
-]
 EXTRAS_REQUIRE = {}
 ENTRY_POINTS = {}
