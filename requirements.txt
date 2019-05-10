@@ -1,4 +1,4 @@
-copt
+git+git://github.com/openopt/copt.git
 numpy>=1.11.3
 pandas>=0.22.0
 scipy>=1.0.0
