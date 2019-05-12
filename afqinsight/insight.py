@@ -293,28 +293,23 @@ def sgl_estimator(x_train, y_train, x_test, y_test, groups, bias_index=None,
     if bias_index is not None:
         ind[bias_index] = False
 
-    step_size = 1. / cp.utils.get_lipschitz(x_train[:, ind], loss_type)
-
     # Inverse transform target variables
     y_train = target_transformation(y=y_train, eta=eta, transform_type=transform_type, direction="inverse")
 
     if loss_type == 'logloss':
-        f_grad = cp.utils.LogLoss(x_train, y_train).f_grad
+        f = cp.utils.LogLoss(x_train, y_train)
     elif loss_type == 'huber':
-        f_grad = cp.utils.HuberLoss(x_train, y_train).f_grad
+        f = cp.utils.HuberLoss(x_train, y_train)
     else:
-        f_grad = cp.utils.SquareLoss(x_train, y_train).f_grad
+        f = cp.utils.SquareLoss(x_train, y_train)
+
+    step_size = 1. / f.lipschitz
 
     if cb_trace:
         cb_tos = cp.utils.Trace()
         cb_tos(beta0)
     else:
         cb_tos = None
-
-    if accelerate:
-        minimizer = cp.minimize_APGD
-    else:
-        minimizer = cp.minimize_PGD
 
     if suppress_warnings:
         ctx_mgr = warnings.catch_warnings()
@@ -328,10 +323,10 @@ def sgl_estimator(x_train, y_train, x_test, y_test, groups, bias_index=None,
         # specifies suppress_warnings=True
         if suppress_warnings:
             warnings.filterwarnings("ignore", category=RuntimeWarning)
-        pgd = minimizer(
-            f_grad, beta0, sg1.prox, step_size=step_size,
+        pgd = cp.minimize_proximal_gradient(
+            f.f_grad, beta0, sg1.prox, step_size=step_size,
             max_iter=max_iter, tol=tol, verbose=verbose,
-            callback=cb_tos)
+            callback=cb_tos, accelerated=accelerate)
 
     beta_hat = np.copy(pgd.x)
 
