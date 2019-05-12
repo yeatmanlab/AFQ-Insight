@@ -67,7 +67,9 @@ REQUIRES = [
     "copt @ git+git://github.com/openopt/copt.git",
     "numpy>=1.11.3", "pandas>=0.22.0", "scipy>=1.0.0",
     "hyperopt>=0.1.2",
-    "scikit-learn>=0.19.1", "tqdm>=4.19.4",
+    "scikit-learn>=0.19.1",
+    "tqdm>=4.19.4",
+    "ipywidgets",
 ]
 EXTRAS_REQUIRE = {}
 ENTRY_POINTS = {}
