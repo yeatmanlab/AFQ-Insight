@@ -142,8 +142,8 @@ class AFQFeatureTransformer(object):
         tract_level = features.columns.names.index('tractID')
         n_tracts = len(features.columns.levels[tract_level])
         bundle_group_membership = np.array(
-            features.columns.labels[metric_level].astype(np.int64) * n_tracts
-            + features.columns.labels[tract_level].astype(np.int64),
+            features.columns.codes[metric_level].astype(np.int64) * n_tracts
+            + features.columns.codes[tract_level].astype(np.int64),
             dtype=np.int64
         )
 
