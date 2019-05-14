@@ -74,6 +74,8 @@ REQUIRES = [
     "scipy>=1.0.0",
     "hyperopt>=0.1.2",
     "scikit-learn>=0.19.1",
+    "matplotlib",
+    "bokeh",
     "tqdm>=4.19.4",
     "ipywidgets",
 ]
