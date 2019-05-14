@@ -25,6 +25,7 @@ class AFQFeatureTransformer(object):
 
     Using an object interface for eventual inclusion into sklearn Pipelines
     """
+
     def __init__(self):
         pass
 
@@ -68,13 +69,10 @@ class AFQFeatureTransformer(object):
         # nodes. So we want the nodeID as the row index and all the other
         # stuff as columns . After that we can interpolate along each column.
         by_node_idx = pd.pivot_table(
-            data=df.melt(
-                id_vars=['subjectID', 'tractID', 'nodeID'],
-                var_name='metric'
-            ),
-            index='nodeID',
-            columns=['metric', 'tractID', 'subjectID'],
-            values='value'
+            data=df.melt(id_vars=["subjectID", "tractID", "nodeID"], var_name="metric"),
+            index="nodeID",
+            columns=["metric", "tractID", "subjectID"],
+            values="value",
         )
 
         if not extrapolate:
@@ -87,7 +85,7 @@ class AFQFeatureTransformer(object):
             # time is much, much faster than doing column-wise linear
             # extrapolation
             interpolated = by_node_idx.interpolate(
-                method='linear', limit_direction='both'
+                method="linear", limit_direction="both"
             )
         else:
             # Instead, we may want to interpolate NaN values with
@@ -106,7 +104,7 @@ class AFQFeatureTransformer(object):
                 """
                 x = series[~series.isnull()].index.values
                 y = series[~series.isnull()].values
-                f = interp1d(x, y, kind='linear', fill_value='extrapolate')
+                f = interp1d(x, y, kind="linear", fill_value="extrapolate")
                 return f(series.index)
 
             # Apply the interpolation across all columns
@@ -115,17 +113,14 @@ class AFQFeatureTransformer(object):
         # Now we have the NaN values filled in, we want to structure the nodes
         # dataframe as a feature matrix with one row per subject and one
         # column for each combination of metric, tractID, and nodeID
-        features = interpolated.stack(
-            ['subjectID', 'tractID', 'metric']
-        ).unstack(
-            ['metric', 'tractID', 'nodeID']
+        features = interpolated.stack(["subjectID", "tractID", "metric"]).unstack(
+            ["metric", "tractID", "nodeID"]
         )
 
         # We're almost there. It'd be nice if the multi-indexed columns were
         # ordered well. So let's reorder the columns
         new_columns = pd.MultiIndex.from_product(
-            features.columns.levels,
-            names=['metric', 'tractID', 'nodeID']
+            features.columns.levels, names=["metric", "tractID", "nodeID"]
         )
 
         features = features.loc[:, new_columns]
@@ -138,24 +133,23 @@ class AFQFeatureTransformer(object):
         features.fillna(features.median(), inplace=True)
 
         # Construct bundle group membership
-        metric_level = features.columns.names.index('metric')
-        tract_level = features.columns.names.index('tractID')
+        metric_level = features.columns.names.index("metric")
+        tract_level = features.columns.names.index("tractID")
         n_tracts = len(features.columns.levels[tract_level])
         bundle_group_membership = np.array(
             features.columns.codes[metric_level].astype(np.int64) * n_tracts
             + features.columns.codes[tract_level].astype(np.int64),
-            dtype=np.int64
+            dtype=np.int64,
         )
 
-        groups = [np.where(bundle_group_membership == gid)[0]
-                  for gid in np.unique(bundle_group_membership)]
+        groups = [
+            np.where(bundle_group_membership == gid)[0]
+            for gid in np.unique(bundle_group_membership)
+        ]
 
         if add_bias_feature:
             bias_index = features.values.shape[1]
-            x = np.hstack([
-                features.values,
-                np.ones((features.values.shape[0], 1))
-            ])
+            x = np.hstack([features.values, np.ones((features.values.shape[0], 1))])
         else:
             bias_index = None
             x = features.values
@@ -196,6 +190,7 @@ class GroupExtractor(BaseEstimator, TransformerMixin):
     We do not do have any parameter validation in __init__. All logic behind
     estimator parameters is done in transform.
     """
+
     def __init__(self, extract=None, groups=None):
         self.extract = extract
         self.groups = groups
@@ -257,7 +252,7 @@ def remove_group(x, remove_label, label_sets):
     elif len(x.shape) == 1:
         return np.copy(x[mask])
     else:
-        raise ValueError('`x` must be a one- or two-dimensional ndarray.')
+        raise ValueError("`x` must be a one- or two-dimensional ndarray.")
 
 
 @registered
@@ -295,7 +290,7 @@ def remove_groups(x, remove_labels, label_sets):
     elif len(x.shape) == 1:
         return np.copy(x[mask])
     else:
-        raise ValueError('`x` must be a one- or two-dimensional ndarray.')
+        raise ValueError("`x` must be a one- or two-dimensional ndarray.")
 
 
 @registered
@@ -330,7 +325,7 @@ def select_group(x, select_label, label_sets):
     elif len(x.shape) == 1:
         return np.copy(x[mask])
     else:
-        raise ValueError('`x` must be a one- or two-dimensional ndarray.')
+        raise ValueError("`x` must be a one- or two-dimensional ndarray.")
 
 
 @registered
@@ -368,7 +363,7 @@ def select_groups(x, select_labels, label_sets):
     elif len(x.shape) == 1:
         return np.copy(x[mask])
     else:
-        raise ValueError('`x` must be a one- or two-dimensional ndarray.')
+        raise ValueError("`x` must be a one- or two-dimensional ndarray.")
 
 
 @registered
@@ -441,22 +436,16 @@ def multicol2sets(columns, tract_symmetry=True):
     col_vals = columns.get_values()
 
     if tract_symmetry:
-        tract_idx = columns.names.index('tractID')
+        tract_idx = columns.names.index("tractID")
 
         bilateral_symmetry = {
-            tract: tract.replace('Left ', '').replace('Right ', '')
+            tract: tract.replace("Left ", "").replace("Right ", "")
             for tract in columns.levels[tract_idx]
         }
 
-        col_vals = np.array([
-            x + (bilateral_symmetry[x[tract_idx]], )
-            for x in col_vals
-        ])
+        col_vals = np.array([x + (bilateral_symmetry[x[tract_idx]],) for x in col_vals])
 
-    col_sets = np.array(list(map(
-        lambda c: set(c),
-        col_vals
-    )))
+    col_sets = np.array(list(map(lambda c: set(c), col_vals)))
 
     return col_sets
 
@@ -485,19 +474,16 @@ def multicol2dicts(columns, tract_symmetry=True):
     col_names = columns.names
 
     if tract_symmetry:
-        tract_idx = columns.names.index('tractID')
+        tract_idx = columns.names.index("tractID")
 
         bilateral_symmetry = {
-            tract: tract.replace('Left ', '').replace('Right ', '')
+            tract: tract.replace("Left ", "").replace("Right ", "")
             for tract in columns.levels[tract_idx]
         }
 
-        col_vals = np.array([
-            x + (bilateral_symmetry[x[tract_idx]], )
-            for x in col_vals
-        ])
+        col_vals = np.array([x + (bilateral_symmetry[x[tract_idx]],) for x in col_vals])
 
-        col_names = list(col_names) + ['symmetrized_tractID']
+        col_names = list(col_names) + ["symmetrized_tractID"]
 
     col_dicts = np.array([dict(zip(col_names, vals)) for vals in col_vals])
 
@@ -525,7 +511,7 @@ def sort_features(features, scores):
     res = sorted(
         [(feat, score) for feat, score in zip(features, scores)],
         key=lambda s: np.abs(s[1]),
-        reverse=True
+        reverse=True,
     )
 
     return res
@@ -554,6 +540,7 @@ class TopNGroupsExtractor(BaseEstimator, TransformerMixin):
     We do not do have any parameter validation in __init__. All logic behind
     estimator parameters is done in transform.
     """
+
     def __init__(self, top_n=10, labels_by_importance=None, all_labels=None):
         self.top_n = top_n
         self.labels_by_importance = labels_by_importance
@@ -561,13 +548,12 @@ class TopNGroupsExtractor(BaseEstimator, TransformerMixin):
 
     def transform(self, x, *_):
         input_provided = (
-            self.labels_by_importance is not None
-            and self.all_labels is not None
+            self.labels_by_importance is not None and self.all_labels is not None
         )
 
         if input_provided:
             out = select_groups(
-                x, self.labels_by_importance[:self.top_n], self.all_labels
+                x, self.labels_by_importance[: self.top_n], self.all_labels
             )
             return out
         else:
@@ -610,19 +596,15 @@ def beta_hat_by_groups(beta_hat, columns, drop_zeros=False):
 
     label_sets = multicol2sets(columns, tract_symmetry=False)
 
-    for tract in columns.levels[columns.names.index('tractID')]:
+    for tract in columns.levels[columns.names.index("tractID")]:
         all_metrics = select_group(
-            x=beta_hat,
-            select_label=(tract,),
-            label_sets=label_sets
+            x=beta_hat, select_label=(tract,), label_sets=label_sets
         )
         if not drop_zeros or any(all_metrics != 0):
             betas[tract] = OrderedDict()
-            for metric in columns.levels[columns.names.index('metric')]:
+            for metric in columns.levels[columns.names.index("metric")]:
                 x = select_group(
-                    x=beta_hat,
-                    select_label=(tract, metric),
-                    label_sets=label_sets
+                    x=beta_hat, select_label=(tract, metric), label_sets=label_sets
                 )
                 if not drop_zeros or any(x != 0):
                     betas[tract][metric] = x
@@ -664,7 +646,7 @@ def unfold_beta_hat_by_metrics(beta_hat, columns):
 
     betas_by_groups = beta_hat_by_groups(beta_hat, columns, drop_zeros=False)
 
-    for metric in columns.levels[columns.names.index('metric')]:
+    for metric in columns.levels[columns.names.index("metric")]:
         betas[metric] = []
         for tract in canonical_tract_names:
             betas[metric].append(betas_by_groups[tract][metric])

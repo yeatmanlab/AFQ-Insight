@@ -36,12 +36,14 @@ def _sigmoid(z):
 
 @registered
 def target_transformation(y, eta=1.0, transform_type="power", direction="forward"):
-    """Tranform target variables according to
-    y_t = \begin{cases}
-        y^\eta & y > 0 and transform_type == "power" \\
-        \eta^y & y > 0 and transform_type == "exponentiation" \\
-        0 & y <= 0
-    \end{cases}
+    r"""Tranform target variables according to
+    .. math::
+
+        y_t = \begin{cases}
+            y^\eta & y > 0 and transform_type == "power" \\
+            \eta^y & y > 0 and transform_type == "exponentiation" \\
+            0 & y <= 0
+        \end{cases}
 
     Parameters
     ----------
@@ -125,7 +127,7 @@ def classification_scores(x, y, beta_hat, clf_threshold=0.5):
         warnings.filterwarnings("ignore", category=UndefinedMetricWarning)
         f1 = f1_score(y, y_pred > clf_threshold)
 
-    Scores = namedtuple('Scores', 'x y accuracy auc avg_precision f1')
+    Scores = namedtuple("Scores", "x y accuracy auc avg_precision f1")
     return Scores(x=x, y=y, accuracy=acc, auc=auc, avg_precision=aps, f1=f1)
 
 
@@ -159,28 +161,47 @@ def regression_scores(x, y, beta_hat, eta=1.0, transform_type="power"):
         medae - The median absolute error
     """
     y_pred = x.dot(beta_hat)
-    y_pred = target_transformation(y=y_pred, eta=eta, transform_type=transform_type, direction="forward")
+    y_pred = target_transformation(
+        y=y_pred, eta=eta, transform_type=transform_type, direction="forward"
+    )
 
     rmse = np.sqrt(mean_squared_error(y, y_pred))
     r2 = r2_score(y, y_pred)
     medae = median_absolute_error(y, y_pred)
 
-    Scores = namedtuple('Scores', 'x y rmse r2 medae')
+    Scores = namedtuple("Scores", "x y rmse r2 medae")
 
     return Scores(x=x, y=y, rmse=rmse, r2=r2, medae=medae)
 
 
 SGLResult = namedtuple(
-    'SGLResult',
-    ['alpha1', 'alpha2', 'eta', 'transform_type', 'beta_hat', 'test', 'train', 'trace']
+    "SGLResult",
+    ["alpha1", "alpha2", "eta", "transform_type", "beta_hat", "test", "train", "trace"],
 )
 
 
 @registered
-def sgl_estimator(x_train, y_train, x_test, y_test, groups, bias_index=None,
-                  beta0=None, alpha1=0.0, alpha2=0.0, eta=1.0, transform_type="power", max_iter=5000,
-                  tol=1e-6, verbose=0, suppress_warnings=True, cb_trace=False,
-                  accelerate=False, loss_type='logloss', clf_threshold=0.5):
+def sgl_estimator(
+    x_train,
+    y_train,
+    x_test,
+    y_test,
+    groups,
+    bias_index=None,
+    beta0=None,
+    alpha1=0.0,
+    alpha2=0.0,
+    eta=1.0,
+    transform_type="power",
+    max_iter=5000,
+    tol=1e-6,
+    verbose=0,
+    suppress_warnings=True,
+    cb_trace=False,
+    accelerate=False,
+    loss_type="logloss",
+    clf_threshold=0.5,
+):
     """Find solution to sparse group lasso problem by proximal gradient descent
 
     Solve sparse group lasso [1]_ problem for feature matrix `x_train` and
@@ -282,11 +303,10 @@ def sgl_estimator(x_train, y_train, x_test, y_test, groups, bias_index=None,
 
     sg1 = SparseGroupL1(alpha1, alpha2, groups, bias_index=bias_index)
 
-    if loss_type not in ['logloss', 'square', 'huber']:
-        raise ValueError("loss_type must be one of "
-                         "['logloss', 'square', 'huber'].")
+    if loss_type not in ["logloss", "square", "huber"]:
+        raise ValueError("loss_type must be one of " "['logloss', 'square', 'huber'].")
 
-    if loss_type == 'logloss' and eta != 1.0:
+    if loss_type == "logloss" and eta != 1.0:
         raise ValueError("If loss_type is 'logloss', then eta must be one.")
 
     ind = np.ones(x_train.shape[1], bool)
@@ -294,16 +314,18 @@ def sgl_estimator(x_train, y_train, x_test, y_test, groups, bias_index=None,
         ind[bias_index] = False
 
     # Inverse transform target variables
-    y_train = target_transformation(y=y_train, eta=eta, transform_type=transform_type, direction="inverse")
+    y_train = target_transformation(
+        y=y_train, eta=eta, transform_type=transform_type, direction="inverse"
+    )
 
-    if loss_type == 'logloss':
+    if loss_type == "logloss":
         f = cp.utils.LogLoss(x_train, y_train)
-    elif loss_type == 'huber':
+    elif loss_type == "huber":
         f = cp.utils.HuberLoss(x_train, y_train)
     else:
         f = cp.utils.SquareLoss(x_train, y_train)
 
-    step_size = 1. / f.lipschitz
+    step_size = 1.0 / f.lipschitz
 
     if cb_trace:
         cb_tos = cp.utils.Trace()
@@ -324,36 +346,80 @@ def sgl_estimator(x_train, y_train, x_test, y_test, groups, bias_index=None,
         if suppress_warnings:
             warnings.filterwarnings("ignore", category=RuntimeWarning)
         pgd = cp.minimize_proximal_gradient(
-            f.f_grad, beta0, sg1.prox, step_size=step_size,
-            max_iter=max_iter, tol=tol, verbose=verbose,
-            callback=cb_tos, accelerated=accelerate)
+            f.f_grad,
+            beta0,
+            sg1.prox,
+            step_size=step_size,
+            max_iter=max_iter,
+            tol=tol,
+            verbose=verbose,
+            callback=cb_tos,
+            accelerated=accelerate,
+        )
 
     beta_hat = np.copy(pgd.x)
 
     # Transform the target variables back to original
-    y_train = target_transformation(y=y_train, eta=eta, transform_type=transform_type, direction="forward")
+    y_train = target_transformation(
+        y=y_train, eta=eta, transform_type=transform_type, direction="forward"
+    )
 
-    if loss_type == 'logloss':
-        train = classification_scores(x=x_train, y=y_train, beta_hat=beta_hat,
-                                      clf_threshold=clf_threshold)
-        test = classification_scores(x=x_test, y=y_test, beta_hat=beta_hat,
-                                     clf_threshold=clf_threshold)
+    if loss_type == "logloss":
+        train = classification_scores(
+            x=x_train, y=y_train, beta_hat=beta_hat, clf_threshold=clf_threshold
+        )
+        test = classification_scores(
+            x=x_test, y=y_test, beta_hat=beta_hat, clf_threshold=clf_threshold
+        )
     else:
-        train = regression_scores(x=x_train, y=y_train, beta_hat=beta_hat, eta=eta, transform_type=transform_type)
-        test = regression_scores(x=x_test, y=y_test, beta_hat=beta_hat, eta=eta, transform_type=transform_type)
+        train = regression_scores(
+            x=x_train,
+            y=y_train,
+            beta_hat=beta_hat,
+            eta=eta,
+            transform_type=transform_type,
+        )
+        test = regression_scores(
+            x=x_test,
+            y=y_test,
+            beta_hat=beta_hat,
+            eta=eta,
+            transform_type=transform_type,
+        )
 
     return SGLResult(
-        alpha1=alpha1, alpha2=alpha2, eta=eta, transform_type=transform_type, beta_hat=beta_hat,
-        test=test, train=train, trace=cb_tos
+        alpha1=alpha1,
+        alpha2=alpha2,
+        eta=eta,
+        transform_type=transform_type,
+        beta_hat=beta_hat,
+        test=test,
+        train=train,
+        trace=cb_tos,
     )
 
 
 @registered
-def sgl_estimator_cv(x, y, groups, bias_index=None, beta0=None,
-                     alpha1=0.0, alpha2=0.0, eta=1.0, transform_type="power",
-                     max_iter=5000, tol=1e-6, verbose=0, cb_trace=False,
-                     accelerate=False, loss_type='logloss',
-                     n_splits=3, n_repeats=1, random_state=None):
+def sgl_estimator_cv(
+    x,
+    y,
+    groups,
+    bias_index=None,
+    beta0=None,
+    alpha1=0.0,
+    alpha2=0.0,
+    eta=1.0,
+    transform_type="power",
+    max_iter=5000,
+    tol=1e-6,
+    verbose=0,
+    cb_trace=False,
+    accelerate=False,
+    loss_type="logloss",
+    n_splits=3,
+    n_repeats=1,
+    random_state=None,
+):
     """Find solution to sparse group lasso problem by proximal gradient descent
 
     Solve sparse group lasso [1]_ problem for feature matrix `x_train` and
@@ -440,7 +506,7 @@ def sgl_estimator_cv(x, y, groups, bias_index=None, beta0=None,
     --------
     pgd_classify
     """
-    if loss_type == 'logloss':
+    if loss_type == "logloss":
         cv = RepeatedStratifiedKFold(
             n_splits=n_splits, n_repeats=n_repeats, random_state=random_state
         )
@@ -472,14 +538,23 @@ def sgl_estimator_cv(x, y, groups, bias_index=None, beta0=None,
         x_test[:, bias_index] = 1.0
 
         res = sgl_estimator(
-            x_train=x_train, y_train=y_train,
-            x_test=x_test, y_test=y_test,
-            groups=groups, bias_index=bias_index,
-            beta0=beta0, alpha1=alpha1, alpha2=alpha2,
-            eta=eta, transform_type=transform_type,
-            max_iter=max_iter, tol=tol,
-            verbose=verbose, cb_trace=cb_trace,
-            accelerate=accelerate, loss_type=loss_type
+            x_train=x_train,
+            y_train=y_train,
+            x_test=x_test,
+            y_test=y_test,
+            groups=groups,
+            bias_index=bias_index,
+            beta0=beta0,
+            alpha1=alpha1,
+            alpha2=alpha2,
+            eta=eta,
+            transform_type=transform_type,
+            max_iter=max_iter,
+            tol=tol,
+            verbose=verbose,
+            cb_trace=cb_trace,
+            accelerate=accelerate,
+            loss_type=loss_type,
         )
 
         clf_results.append(res)
@@ -493,16 +568,25 @@ def sgl_estimator_cv(x, y, groups, bias_index=None, beta0=None,
         beta_hat=[res.beta_hat for res in clf_results],
         test=[res.test for res in clf_results],
         train=[res.train for res in clf_results],
-        trace=[res.trace for res in clf_results]
+        trace=[res.trace for res in clf_results],
     )
 
 
 @registered
-def fit_hyperparams(x, y, groups, bias_index=None, max_evals=100,
-                    beta0=None,
-                    loss_type='logloss', score='roc_auc',
-                    trials=None, mongo_handle=None,
-                    mongo_exp_key=None, save_trials_pickle=None):
+def fit_hyperparams(
+    x,
+    y,
+    groups,
+    bias_index=None,
+    max_evals=100,
+    beta0=None,
+    loss_type="logloss",
+    score="roc_auc",
+    trials=None,
+    mongo_handle=None,
+    mongo_exp_key=None,
+    save_trials_pickle=None,
+):
     """Find the best hyperparameters for sparse group lasso using hyperopt.fmin
 
     Parameters
@@ -559,21 +643,25 @@ def fit_hyperparams(x, y, groups, bias_index=None, max_evals=100,
         best_fit - the best fit from hyperopt.fmin
         trials - trials object from hyperopt.fmin
     """
-    allowed_clf_scores = ['roc_auc', 'accuracy', 'avg_precision']
-    allowed_rgs_scores = ['r2', 'rmse', 'medae']
-    if loss_type == 'logloss' and score not in allowed_clf_scores:
-        raise ValueError('For classification problems `score` must be one of '
-                         '{scores!s}.'.format(scores=allowed_clf_scores))
-    elif loss_type in ['square', 'huber'] and score not in allowed_rgs_scores:
-        raise ValueError('For regression problems `score` must be one of '
-                         '{scores!s}.'.format(scores=allowed_rgs_scores))
+    allowed_clf_scores = ["roc_auc", "accuracy", "avg_precision"]
+    allowed_rgs_scores = ["r2", "rmse", "medae"]
+    if loss_type == "logloss" and score not in allowed_clf_scores:
+        raise ValueError(
+            "For classification problems `score` must be one of "
+            "{scores!s}.".format(scores=allowed_clf_scores)
+        )
+    elif loss_type in ["square", "huber"] and score not in allowed_rgs_scores:
+        raise ValueError(
+            "For regression problems `score` must be one of "
+            "{scores!s}.".format(scores=allowed_rgs_scores)
+        )
 
     # Define the search space
     hp_space = {
-        'alpha1': hp.uniform('alpha1', 0.0, 1.0),
-        'alpha2': hp.loguniform('alpha2', -7, 3),
-        'eta': hp.uniform('eta', 1.0, 3.0),
-        'transform_type': hp.choice('transform_type', ['power', 'exponentiation']),
+        "alpha1": hp.uniform("alpha1", 0.0, 1.0),
+        "alpha2": hp.loguniform("alpha2", -7, 3),
+        "eta": hp.uniform("eta", 1.0, 3.0),
+        "transform_type": hp.choice("transform_type", ["power", "exponentiation"]),
     }
 
     if trials is None:
@@ -584,86 +672,93 @@ def fit_hyperparams(x, y, groups, bias_index=None, max_evals=100,
 
     # Define the objective function for hyperopt to minimize
     def hp_objective(params):
-        hp_cv_partial = partial(sgl_estimator_cv,
-                                x=x,
-                                y=y,
-                                groups=groups,
-                                loss_type=loss_type,
-                                bias_index=bias_index,
-                                beta0=beta0)
+        hp_cv_partial = partial(
+            sgl_estimator_cv,
+            x=x,
+            y=y,
+            groups=groups,
+            loss_type=loss_type,
+            bias_index=bias_index,
+            beta0=beta0,
+        )
         cv_results = hp_cv_partial(**params)
-        if loss_type == 'logloss':
+        if loss_type == "logloss":
             auc = np.array([test.auc for test in cv_results.test])
             acc = np.array([test.accuracy for test in cv_results.test])
             aps = np.array([test.avg_precision for test in cv_results.test])
-            if score == 'roc_auc':
+            if score == "roc_auc":
                 loss = -auc
-            elif score == 'accuracy':
+            elif score == "accuracy":
                 loss = -acc
             else:
                 loss = -aps
 
             result_dict = {
-                'loss': np.mean(loss),
-                'loss_variance': np.var(loss),
-                'status': STATUS_OK,
-                'accuracy_mean': np.mean(acc),
-                'accuracy_variance': np.var(acc),
-                'roc_auc_mean': np.mean(auc),
-                'roc_auc_variance': np.var(auc),
-                'avg_precision_mean': np.mean(aps),
-                'avg_precision_variance': np.var(aps),
+                "loss": np.mean(loss),
+                "loss_variance": np.var(loss),
+                "status": STATUS_OK,
+                "accuracy_mean": np.mean(acc),
+                "accuracy_variance": np.var(acc),
+                "roc_auc_mean": np.mean(auc),
+                "roc_auc_variance": np.var(auc),
+                "avg_precision_mean": np.mean(aps),
+                "avg_precision_variance": np.var(aps),
             }
         else:
             r2 = np.array([test.r2 for test in cv_results.test])
             rmse = np.array([test.rmse for test in cv_results.test])
             medae = np.array([test.medae for test in cv_results.test])
-            if score == 'rmse':
+            if score == "rmse":
                 loss = rmse
-            elif score == 'medae':
+            elif score == "medae":
                 loss = medae
             else:
                 loss = -r2
             result_dict = {
-                'loss': np.mean(loss),
-                'loss_variance': np.var(loss),
-                'status': STATUS_OK,
-                'r2_mean': np.mean(r2),
-                'r2_variance': np.var(r2),
-                'rmse_mean': np.mean(rmse),
-                'rmse_variance': np.var(rmse),
-                'medae_mean': np.mean(medae),
-                'medae_variance': np.var(medae),
+                "loss": np.mean(loss),
+                "loss_variance": np.var(loss),
+                "status": STATUS_OK,
+                "r2_mean": np.mean(r2),
+                "r2_variance": np.var(r2),
+                "rmse_mean": np.mean(rmse),
+                "rmse_variance": np.var(rmse),
+                "medae_mean": np.mean(medae),
+                "medae_variance": np.var(medae),
             }
 
         return result_dict
 
-    best = fmin(hp_objective, hp_space, algo=tpe.suggest,
-                max_evals=max_evals, trials=trials)
+    best = fmin(
+        hp_objective, hp_space, algo=tpe.suggest, max_evals=max_evals, trials=trials
+    )
 
     if mongo_handle is None and save_trials_pickle is not None:
-        with open(save_trials_pickle, 'wb') as fp:
+        with open(save_trials_pickle, "wb") as fp:
             pickle.dump(trials, fp)
 
-    HPResults = namedtuple('HPResults', 'best_fit trials space')
+    HPResults = namedtuple("HPResults", "best_fit trials space")
 
-    return HPResults(
-        best_fit=best,
-        trials=trials,
-        space=hp_space,
-    )
+    return HPResults(best_fit=best, trials=trials, space=hp_space)
 
 
 @registered
-def fit_hyperparams_cv(x, y, groups, bias_index=None,
-                       beta0=None,
-                       n_splits=10, n_repeats=1,
-                       max_evals_per_cv=100,
-                       loss_type='logloss', score='roc_auc',
-                       trials_pickle_dir=None,
-                       mongo_handle=None,
-                       random_state=None, verbose=0,
-                       clf_threshold=0.5):
+def fit_hyperparams_cv(
+    x,
+    y,
+    groups,
+    bias_index=None,
+    beta0=None,
+    n_splits=10,
+    n_repeats=1,
+    max_evals_per_cv=100,
+    loss_type="logloss",
+    score="roc_auc",
+    trials_pickle_dir=None,
+    mongo_handle=None,
+    random_state=None,
+    verbose=0,
+    clf_threshold=0.5,
+):
     """Run fit_hyperparams over K-fold cross validation
 
     Parameters
@@ -724,61 +819,69 @@ def fit_hyperparams_cv(x, y, groups, bias_index=None,
     Returns
     -------
     """
-    allowed_clf_scores = ['roc_auc', 'accuracy', 'avg_precision']
-    allowed_rgs_scores = ['r2', 'rmse', 'medae']
-    if loss_type == 'logloss' and score not in allowed_clf_scores:
-        raise ValueError('For classification problems `score` must be one of '
-                         '{scores!s}.'.format(scores=allowed_clf_scores))
-    elif loss_type in ['square', 'huber'] and score not in allowed_rgs_scores:
-        raise ValueError('For regression problems `score` must be one of '
-                         '{scores!s}.'.format(scores=allowed_rgs_scores))
+    allowed_clf_scores = ["roc_auc", "accuracy", "avg_precision"]
+    allowed_rgs_scores = ["r2", "rmse", "medae"]
+    if loss_type == "logloss" and score not in allowed_clf_scores:
+        raise ValueError(
+            "For classification problems `score` must be one of "
+            "{scores!s}.".format(scores=allowed_clf_scores)
+        )
+    elif loss_type in ["square", "huber"] and score not in allowed_rgs_scores:
+        raise ValueError(
+            "For regression problems `score` must be one of "
+            "{scores!s}.".format(scores=allowed_rgs_scores)
+        )
 
     if trials_pickle_dir is not None:
         os.makedirs(op.abspath(trials_pickle_dir), exist_ok=True)
-        configfile = op.join(op.abspath(trials_pickle_dir), 'params.ini')
+        configfile = op.join(op.abspath(trials_pickle_dir), "params.ini")
         config = configparser.ConfigParser()
         if op.isfile(configfile):
             # Check that existing params equal input params
             config.read(configfile)
-            params = config['params']
-            if not all([
-                params.getint('n_splits') == n_splits,
-                params.getint('n_repeats') == n_repeats,
-                params.getint('random_state') == random_state,
-                params['loss_type'] == loss_type,
-                params['score'] == score
-            ]):
+            params = config["params"]
+            if not all(
+                [
+                    params.getint("n_splits") == n_splits,
+                    params.getint("n_repeats") == n_repeats,
+                    params.getint("random_state") == random_state,
+                    params["loss_type"] == loss_type,
+                    params["score"] == score,
+                ]
+            ):
                 raise ValueError(
-                    'Stored trial parameters do not match input parameters. '
-                    'This could contaminate the train/test split for previous '
-                    'trials. Either set n_splits={ns:s}, random_state={rs:s}, '
-                    'score={score:s}, loss_type={loss_type:s} or specify a '
-                    'new trials directory'.format(
-                        ns=params['n_splits'],
-                        nr=params['n_repeats'],
-                        rs=params['random_state'],
-                        score=params['score'],
-                        loss_type=params['loss_type']
+                    "Stored trial parameters do not match input parameters. "
+                    "This could contaminate the train/test split for previous "
+                    "trials. Either set n_splits={ns:s}, random_state={rs:s}, "
+                    "score={score:s}, loss_type={loss_type:s} or specify a "
+                    "new trials directory".format(
+                        ns=params["n_splits"],
+                        nr=params["n_repeats"],
+                        rs=params["random_state"],
+                        score=params["score"],
+                        loss_type=params["loss_type"],
                     )
                 )
         else:
             # Write input params to file
-            config['params'] = {
-                'n_splits': n_splits,
-                'n_repeats': n_repeats,
-                'random_state': random_state,
-                'loss_type': loss_type,
-                'score': score
+            config["params"] = {
+                "n_splits": n_splits,
+                "n_repeats": n_repeats,
+                "random_state": random_state,
+                "loss_type": loss_type,
+                "score": score,
             }
-            with open(configfile, 'w') as cfile:
+            with open(configfile, "w") as cfile:
                 config.write(cfile)
 
-    if loss_type == 'logloss':
-        cv = RepeatedStratifiedKFold(n_splits=n_splits, n_repeats=n_repeats,
-                                     random_state=random_state)
+    if loss_type == "logloss":
+        cv = RepeatedStratifiedKFold(
+            n_splits=n_splits, n_repeats=n_repeats, random_state=random_state
+        )
     else:
-        cv = RepeatedKFold(n_splits=n_splits, n_repeats=n_repeats,
-                           random_state=random_state)
+        cv = RepeatedKFold(
+            n_splits=n_splits, n_repeats=n_repeats, random_state=random_state
+        )
 
     if verbose:
         splitter = tqdm(enumerate(cv.split(x, y)), total=cv.get_n_splits())
@@ -798,11 +901,11 @@ def fit_hyperparams_cv(x, y, groups, bias_index=None,
             if trials_pickle_dir is not None:
                 pickle_name = op.join(
                     op.abspath(trials_pickle_dir),
-                    'cv{i:03d}_trials.pkl'.format(i=cv_idx)
+                    "cv{i:03d}_trials.pkl".format(i=cv_idx),
                 )
 
                 try:
-                    with open(pickle_name, 'rb') as fp:
+                    with open(pickle_name, "rb") as fp:
                         trials = pickle.load(fp)
                 except IOError:
                     trials = None
@@ -810,12 +913,14 @@ def fit_hyperparams_cv(x, y, groups, bias_index=None,
                 pickle_name = None
                 trials = None
         else:
-            mongo_exp_key = 'cv_{i:03d}'.format(i=cv_idx)
+            mongo_exp_key = "cv_{i:03d}".format(i=cv_idx)
             pickle_name = None
             trials = None
 
         hp_res = fit_hyperparams(
-            x_train, y_train, groups,
+            x_train,
+            y_train,
+            groups,
             bias_index=bias_index,
             beta0=beta0,
             max_evals=max_evals_per_cv,
@@ -824,14 +929,14 @@ def fit_hyperparams_cv(x, y, groups, bias_index=None,
             trials=trials,
             mongo_handle=mongo_handle,
             mongo_exp_key=mongo_exp_key,
-            save_trials_pickle=pickle_name
+            save_trials_pickle=pickle_name,
         )
 
-        alpha1 = hp_res.best_fit['alpha1']
-        alpha2 = hp_res.best_fit['alpha2']
-        eta = hp_res.best_fit.get('eta', 1.0)
-        if loss_type != 'logloss':
-            transform_type = space_eval(hp_res.space, hp_res.best_fit)['transform_type']
+        alpha1 = hp_res.best_fit["alpha1"]
+        alpha2 = hp_res.best_fit["alpha2"]
+        eta = hp_res.best_fit.get("eta", 1.0)
+        if loss_type != "logloss":
+            transform_type = space_eval(hp_res.space, hp_res.best_fit)["transform_type"]
         else:
             transform_type = "power"
 
@@ -841,11 +946,17 @@ def fit_hyperparams_cv(x, y, groups, bias_index=None,
         x_test[:, bias_index] = 1.0
 
         sgl = sgl_estimator(
-            x_train, y_train, x_test, y_test, groups,
-            alpha1=alpha1, alpha2=alpha2, eta=eta,
+            x_train,
+            y_train,
+            x_test,
+            y_test,
+            groups,
+            alpha1=alpha1,
+            alpha2=alpha2,
+            eta=eta,
             transform_type=transform_type,
             loss_type=loss_type,
-            clf_threshold=clf_threshold
+            clf_threshold=clf_threshold,
         )
 
         beta0 = sgl.beta_hat
