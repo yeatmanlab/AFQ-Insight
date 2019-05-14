@@ -12,6 +12,7 @@ def registered(fn):
     __all__.append(fn.__name__)
     return fn
 
+
 @registered
 class SparseGroupL1(object):
     """Sparse group lasso penalty class for use with openopt/copt package.
@@ -53,6 +54,7 @@ class SparseGroupL1(object):
         Statistics, vol. 22:2, pp. 231-245, 2012
         DOI: 10.1080/10618600.2012.681250
     """  # noqa: W605
+
     def __init__(self, alpha_1, alpha_2, groups, bias_index=None):
         self.alpha_1 = alpha_1
         self.alpha_2 = alpha_2
@@ -60,8 +62,10 @@ class SparseGroupL1(object):
         self.bias_index = bias_index
 
     def __call__(self, x):
-        penalty = (1.0 - self.alpha_1) * self.alpha_2 * np.sum(
-            [np.linalg.norm(x[g]) for g in self.groups]
+        penalty = (
+            (1.0 - self.alpha_1)
+            * self.alpha_2
+            * np.sum([np.linalg.norm(x[g]) for g in self.groups])
         )
 
         ind = np.ones(len(x), bool)
@@ -104,8 +108,9 @@ class SparseGroupL1(object):
             proximal operator of sparse group lasso penalty evaluated on
             input `x` with step size `step_size`
         """  # noqa: W605
-        l1_prox = (np.fmax(x - self.alpha_1 * self.alpha_2 * step_size, 0)
-                   - np.fmax(- x - self.alpha_1 * self.alpha_2 * step_size, 0))
+        l1_prox = np.fmax(x - self.alpha_1 * self.alpha_2 * step_size, 0) - np.fmax(
+            -x - self.alpha_1 * self.alpha_2 * step_size, 0
+        )
         out = l1_prox.copy()
 
         if self.bias_index is not None:
@@ -119,9 +124,13 @@ class SparseGroupL1(object):
         groups_true = np.array(self.groups)[mask_idx_true]
         groups_false = np.array(self.groups)[mask_idx_false]
 
-        out[groups_true] -= (step_size * (1.0 - self.alpha_1) * self.alpha_2
-                             * out[groups_true]
-                             / norms[mask_idx_true, np.newaxis])
+        out[groups_true] -= (
+            step_size
+            * (1.0 - self.alpha_1)
+            * self.alpha_2
+            * out[groups_true]
+            / norms[mask_idx_true, np.newaxis]
+        )
         out[groups_false] = 0.0
 
         return out

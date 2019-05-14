@@ -13,26 +13,26 @@ def registered(fn):
 
 
 canonical_tract_names = [
-    'Left Arcuate',
-    'Left SLF',
-    'Left Uncinate',
-    'Left ILF',
-    'Left IFOF',
-    'Left Cingulum Hippocampus',
-    'Left Thalamic Radiation',
-    'Left Corticospinal',
-    'Left Cingulum Cingulate',
-    'Callosum Forceps Minor',
-    'Callosum Forceps Major',
-    'Right Cingulum Cingulate',
-    'Right Corticospinal',
-    'Right Thalamic Radiation',
-    'Right Cingulum Hippocampus',
-    'Right IFOF',
-    'Right ILF',
-    'Right Uncinate',
-    'Right SLF',
-    'Right Arcuate',
+    "Left Arcuate",
+    "Left SLF",
+    "Left Uncinate",
+    "Left ILF",
+    "Left IFOF",
+    "Left Cingulum Hippocampus",
+    "Left Thalamic Radiation",
+    "Left Corticospinal",
+    "Left Cingulum Cingulate",
+    "Callosum Forceps Minor",
+    "Callosum Forceps Major",
+    "Right Cingulum Cingulate",
+    "Right Corticospinal",
+    "Right Thalamic Radiation",
+    "Right Cingulum Hippocampus",
+    "Right IFOF",
+    "Right ILF",
+    "Right Uncinate",
+    "Right SLF",
+    "Right Arcuate",
 ]
 
 
@@ -67,7 +67,7 @@ def ecdf(data, reverse=False):
     # y-data for the ECDF: y
     y = np.arange(1, n + 1) / n
 
-    ECDF = namedtuple('ECDF', 'x y')
+    ECDF = namedtuple("ECDF", "x y")
     return ECDF(x=x, y=y)
 
 
@@ -87,14 +87,14 @@ def plot_ecdf(data, reverse=False):
     cdf = ecdf(data, reverse=reverse)
 
     # Generate plot
-    plt.plot(cdf.x, cdf.y, marker='.', linestyle='none')
+    plt.plot(cdf.x, cdf.y, marker=".", linestyle="none")
 
     # Make the margins nice
     plt.margins(0.02)
 
     # Label the axes
-    plt.xlabel('data')
-    plt.ylabel('ECDF')
+    plt.xlabel("data")
+    plt.ylabel("ECDF")
 
     # Display the plot
     plt.show()

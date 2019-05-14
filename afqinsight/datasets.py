@@ -24,9 +24,15 @@ def registered(fn):
 
 
 @registered
-def load_afq_data(workdir, target_cols, binary_positives=None,
-                  fn_nodes='nodes.csv', fn_subjects='subjects.csv',
-                  scale_x=False, add_bias_feature=True):
+def load_afq_data(
+    workdir,
+    target_cols,
+    binary_positives=None,
+    fn_nodes="nodes.csv",
+    fn_subjects="subjects.csv",
+    scale_x=False,
+    add_bias_feature=True,
+):
     """Load AFQ data from CSV, transform it, return feature matrix and target
 
     Parameters
@@ -77,9 +83,9 @@ def load_afq_data(workdir, target_cols, binary_positives=None,
     fn_subjects = op.join(workdir, fn_subjects)
 
     nodes = pd.read_csv(fn_nodes)
-    targets = pd.read_csv(
-        fn_subjects, index_col='subjectID'
-    ).drop(['Unnamed: 0'], axis='columns')
+    targets = pd.read_csv(fn_subjects, index_col="subjectID").drop(
+        ["Unnamed: 0"], axis="columns"
+    )
 
     y = targets[target_cols]
 
@@ -90,9 +96,7 @@ def load_afq_data(workdir, target_cols, binary_positives=None,
             }
 
         for col in y.columns:
-            y.loc[:, col] = y[col].map(
-                lambda c: int(c == binary_positives[col])
-            ).values
+            y.loc[:, col] = y[col].map(lambda c: int(c == binary_positives[col])).values
 
     transformer = AFQFeatureTransformer()
     x, groups, columns, bias_index = transformer.transform(
@@ -104,17 +108,29 @@ def load_afq_data(workdir, target_cols, binary_positives=None,
         x = scaler.fit_transform(x)
         x[:, bias_index] = 1.0
 
-    AFQData = namedtuple('AFQData', 'x y groups columns bias_index')
+    AFQData = namedtuple("AFQData", "x y groups columns bias_index")
 
-    return AFQData(x=x, y=y, groups=groups,
-                   columns=columns, bias_index=bias_index)
+    return AFQData(x=x, y=y, groups=groups, columns=columns, bias_index=bias_index)
 
 
-def make_classification(n_samples=100, n_features=20, n_informative=2,
-                        n_redundant=2, n_repeated=0, n_classes=2,
-                        n_clusters_per_class=2, weights=None, flip_y=0.01,
-                        class_sep=1.0, hypercube=True, shift=0.0, scale=1.0,
-                        shuffle=True, useful_indices=False, random_state=None):
+def make_classification(
+    n_samples=100,
+    n_features=20,
+    n_informative=2,
+    n_redundant=2,
+    n_repeated=0,
+    n_classes=2,
+    n_clusters_per_class=2,
+    weights=None,
+    flip_y=0.01,
+    class_sep=1.0,
+    hypercube=True,
+    shift=0.0,
+    scale=1.0,
+    shuffle=True,
+    useful_indices=False,
+    random_state=None,
+):
     """Generate a random n-class classification problem.
 
     This initially creates clusters of points normally distributed (std=1)
@@ -237,15 +253,20 @@ def make_classification(n_samples=100, n_features=20, n_informative=2,
 
     # Count features, clusters and samples
     if n_informative + n_redundant + n_repeated > n_features:
-        raise ValueError("Number of informative, redundant and repeated "
-                         "features must sum to less than the number of total"
-                         " features")
+        raise ValueError(
+            "Number of informative, redundant and repeated "
+            "features must sum to less than the number of total"
+            " features"
+        )
     if 2 ** n_informative < n_classes * n_clusters_per_class:
-        raise ValueError("n_classes * n_clusters_per_class must"
-                         " be smaller or equal 2 ** n_informative")
+        raise ValueError(
+            "n_classes * n_clusters_per_class must"
+            " be smaller or equal 2 ** n_informative"
+        )
     if weights and len(weights) not in [n_classes, n_classes - 1]:
-        raise ValueError("Weights specified but incompatible with number "
-                         "of classes.")
+        raise ValueError(
+            "Weights specified but incompatible with number " "of classes."
+        )
 
     n_useless = n_features - n_informative - n_redundant - n_repeated
     n_clusters = n_classes * n_clusters_per_class
@@ -260,8 +281,9 @@ def make_classification(n_samples=100, n_features=20, n_informative=2,
     # Distribute samples among clusters by weight
     n_samples_per_cluster = []
     for k in range(n_clusters):
-        n_samples_per_cluster.append(int(n_samples * weights[k % n_classes]
-                                         / n_clusters_per_class))
+        n_samples_per_cluster.append(
+            int(n_samples * weights[k % n_classes] / n_clusters_per_class)
+        )
     for i in range(n_samples - sum(n_samples_per_cluster)):
         n_samples_per_cluster[i % n_clusters] += 1
 
@@ -270,8 +292,7 @@ def make_classification(n_samples=100, n_features=20, n_informative=2,
     y = np.zeros(n_samples, dtype=np.int)
 
     # Build the polytope whose vertices become cluster centroids
-    centroids = _generate_hypercube(n_clusters, n_informative,
-                                    generator).astype(float)
+    centroids = _generate_hypercube(n_clusters, n_informative, generator).astype(float)
     centroids *= 2 * class_sep
     centroids -= class_sep
     if not hypercube:
@@ -296,14 +317,15 @@ def make_classification(n_samples=100, n_features=20, n_informative=2,
     # Create redundant features
     if n_redundant > 0:
         B = 2 * generator.rand(n_informative, n_redundant) - 1
-        X[:, n_informative:n_informative + n_redundant] = \
-            np.dot(X[:, :n_informative], B)
+        X[:, n_informative : n_informative + n_redundant] = np.dot(
+            X[:, :n_informative], B
+        )
 
     # Repeat some features
     if n_repeated > 0:
         n = n_informative + n_redundant
         indices = ((n - 1) * generator.rand(n_repeated) + 0.5).astype(np.intp)
-        X[:, n:n + n_repeated] = X[:, indices]
+        X[:, n : n + n_repeated] = X[:, indices]
 
     # Fill useless features
     if n_useless > 0:
@@ -340,13 +362,25 @@ def make_classification(n_samples=100, n_features=20, n_informative=2,
 
 
 def make_sparse_group_classification(
-        n_samples=100, n_groups=20, n_informative_groups=2,
-        n_features_per_group=20, n_informative_per_group=2,
-        n_redundant_per_group=2, n_repeated_per_group=0,
-        n_classes=2, n_clusters_per_class=2,
-        weights=None, flip_y=0.01,
-        class_sep=1.0, hypercube=True, shift=0.0, scale=1.0,
-        shuffle=True, useful_indices=False, random_state=None):
+    n_samples=100,
+    n_groups=20,
+    n_informative_groups=2,
+    n_features_per_group=20,
+    n_informative_per_group=2,
+    n_redundant_per_group=2,
+    n_repeated_per_group=0,
+    n_classes=2,
+    n_clusters_per_class=2,
+    weights=None,
+    flip_y=0.01,
+    class_sep=1.0,
+    hypercube=True,
+    shift=0.0,
+    scale=1.0,
+    shuffle=True,
+    useful_indices=False,
+    random_state=None,
+):
     """Generate a random n-class sparse group classification problem.
     This initially creates clusters of points normally distributed (std=1)
     about vertices of an `n_informative`-dimensional hypercube with sides of
@@ -460,13 +494,22 @@ def make_sparse_group_classification(
     # The `shuffle` argument is False so that the feature matrix X has
     # features stacked in the order: informative, redundant, repeated, useless
     consolidated_class_output = make_classification(
-        n_samples=n_samples, n_features=total_features,
-        n_informative=total_informative, n_redundant=total_redundant,
-        n_repeated=total_repeated, n_classes=n_classes,
-        n_clusters_per_class=n_clusters_per_class, weights=weights,
-        flip_y=flip_y, class_sep=class_sep, hypercube=hypercube, shift=shift,
-        scale=scale, shuffle=False, useful_indices=useful_indices,
-        random_state=generator
+        n_samples=n_samples,
+        n_features=total_features,
+        n_informative=total_informative,
+        n_redundant=total_redundant,
+        n_repeated=total_repeated,
+        n_classes=n_classes,
+        n_clusters_per_class=n_clusters_per_class,
+        weights=weights,
+        flip_y=flip_y,
+        class_sep=class_sep,
+        hypercube=hypercube,
+        shift=shift,
+        scale=scale,
+        shuffle=False,
+        useful_indices=useful_indices,
+        random_state=generator,
     )
 
     if useful_indices:
@@ -479,20 +522,22 @@ def make_sparse_group_classification(
     n_info_grp_features = n_informative_groups * n_features_per_group
     idx_range = np.arange(n_info_grp_features)
 
-    idx_map_consolidated_2_grouped = np.concatenate([
-        np.arange(0, n_info_grp_features, n_informative_groups)
-    ] * n_informative_groups) + idx_range // n_features_per_group
+    idx_map_consolidated_2_grouped = (
+        np.concatenate(
+            [np.arange(0, n_info_grp_features, n_informative_groups)]
+            * n_informative_groups
+        )
+        + idx_range // n_features_per_group
+    )
 
-    X = np.concatenate([
-        X[:, idx_map_consolidated_2_grouped],
-        X[:, n_info_grp_features:]
-    ], axis=1)
+    X = np.concatenate(
+        [X[:, idx_map_consolidated_2_grouped], X[:, n_info_grp_features:]], axis=1
+    )
 
     if useful_indices:
-        idx = np.concatenate([
-            idx[idx_map_consolidated_2_grouped],
-            idx[n_info_grp_features:]
-        ])
+        idx = np.concatenate(
+            [idx[idx_map_consolidated_2_grouped], idx[n_info_grp_features:]]
+        )
 
     if shuffle:
         # Randomly permute samples
@@ -501,20 +546,28 @@ def make_sparse_group_classification(
         # Permute the groups, maintaining the order within them group_idx_map
         # maps feature indices to group indices. The group order is random
         # but all features in a single group are adjacent
-        group_idx_map = np.concatenate([
-            np.ones(n_features_per_group, dtype=np.int32) * i
-            for i in np.random.choice(
-                np.arange(n_groups), size=n_groups, replace=False
-            )
-        ])
+        group_idx_map = np.concatenate(
+            [
+                np.ones(n_features_per_group, dtype=np.int32) * i
+                for i in np.random.choice(
+                    np.arange(n_groups), size=n_groups, replace=False
+                )
+            ]
+        )
 
-        permute_group_map = np.concatenate([
-            np.random.choice(
-                np.arange(n_features_per_group),
-                size=n_features_per_group,
-                replace=False
-            ) for _ in range(n_groups)
-        ]) + group_idx_map * n_features_per_group
+        permute_group_map = (
+            np.concatenate(
+                [
+                    np.random.choice(
+                        np.arange(n_features_per_group),
+                        size=n_features_per_group,
+                        replace=False,
+                    )
+                    for _ in range(n_groups)
+                ]
+            )
+            + group_idx_map * n_features_per_group
+        )
 
         X = X[:, permute_group_map]
 
@@ -528,12 +581,17 @@ def make_sparse_group_classification(
 
 
 @registered
-def output_beta_to_afq(beta_hat, columns, workdir_in, workdir_out,
-                       fn_nodes_in='nodes.csv',
-                       fn_subjects_in='subjects.csv',
-                       fn_nodes_out='nodes.csv',
-                       fn_subjects_out='subjects.csv',
-                       scale_beta=False):
+def output_beta_to_afq(
+    beta_hat,
+    columns,
+    workdir_in,
+    workdir_out,
+    fn_nodes_in="nodes.csv",
+    fn_subjects_in="subjects.csv",
+    fn_nodes_out="nodes.csv",
+    fn_subjects_out="subjects.csv",
+    scale_beta=False,
+):
     """Load AFQ data from CSV, transform it, return feature matrix and target
 
     Parameters
@@ -576,19 +634,21 @@ def output_beta_to_afq(beta_hat, columns, workdir_in, workdir_out,
     fn_subjects_out = op.join(workdir_out, fn_subjects_out)
 
     if op.samefile(workdir_in, workdir_out):
-        raise ValueError('output directory equals input directory, please '
-                         'output to a different directory to avoid '
-                         'overwriting your files.')
+        raise ValueError(
+            "output directory equals input directory, please "
+            "output to a different directory to avoid "
+            "overwriting your files."
+        )
 
     df_nodes = pd.read_csv(fn_nodes_in)
 
     df_beta = pd.DataFrame(columns=columns)
-    df_beta.loc['value'] = beta_hat
+    df_beta.loc["value"] = beta_hat
     df_beta = df_beta.transpose()
-    df_beta = df_beta.unstack(level='metric')
+    df_beta = df_beta.unstack(level="metric")
     df_beta.columns = [t[-1] for t in df_beta.columns]
     df_beta.reset_index(inplace=True)
-    df_beta['subjectID'] = 'beta_hat'
+    df_beta["subjectID"] = "beta_hat"
     df_beta = df_beta[df_nodes.columns]
 
     if scale_beta:
@@ -598,45 +658,53 @@ def output_beta_to_afq(beta_hat, columns, workdir_in, workdir_out,
         # and standard deviation `b_std` and we want to arrive at a similar
         # set with mean `f_mean` and standard deviation `f_std`:
         #     y_i = f_mean + (x_i - b_mean) * f_std / b_std
-        for tract in df_nodes['tractID'].unique():
-            f_mean = df_nodes.drop(
-                ['tractID', 'subjectID', 'nodeID'], axis='columns'
-            ).loc[df_nodes['tractID'] == tract].mean()
+        for tract in df_nodes["tractID"].unique():
+            f_mean = (
+                df_nodes.drop(["tractID", "subjectID", "nodeID"], axis="columns")
+                .loc[df_nodes["tractID"] == tract]
+                .mean()
+            )
 
-            f_std = df_nodes.drop(
-                ['tractID', 'subjectID', 'nodeID'], axis='columns'
-            ).loc[df_nodes['tractID'] == tract].std()
+            f_std = (
+                df_nodes.drop(["tractID", "subjectID", "nodeID"], axis="columns")
+                .loc[df_nodes["tractID"] == tract]
+                .std()
+            )
 
-            b_mean = df_beta.drop(
-                ['tractID', 'subjectID', 'nodeID'], axis='columns'
-            ).loc[df_beta['tractID'] == tract].mean()
+            b_mean = (
+                df_beta.drop(["tractID", "subjectID", "nodeID"], axis="columns")
+                .loc[df_beta["tractID"] == tract]
+                .mean()
+            )
 
-            b_std = df_beta.drop(
-                ['tractID', 'subjectID', 'nodeID'], axis='columns'
-            ).loc[df_beta['tractID'] == tract].std()
+            b_std = (
+                df_beta.drop(["tractID", "subjectID", "nodeID"], axis="columns")
+                .loc[df_beta["tractID"] == tract]
+                .std()
+            )
 
             metrics = b_mean.index
-            df_beta.loc[df_beta['tractID'] == tract, metrics] = f_mean + (
-                df_beta.loc[df_beta['tractID'] == tract, metrics] - b_mean
+            df_beta.loc[df_beta["tractID"] == tract, metrics] = f_mean + (
+                df_beta.loc[df_beta["tractID"] == tract, metrics] - b_mean
             ) * f_std.divide(b_std).replace([np.inf, -np.inf], 1)
 
-    df_nodes = pd.concat([df_nodes, df_beta], axis='rows', ignore_index=True)
+    df_nodes = pd.concat([df_nodes, df_beta], axis="rows", ignore_index=True)
     df_nodes.to_csv(fn_nodes_out, index=False)
 
     df_subjects = pd.read_csv(fn_subjects_in, index_col=0)
-    subject_row = {key: '' for key in df_subjects.columns}
-    subject_row['subjectID'] = 'beta_hat'
+    subject_row = {key: "" for key in df_subjects.columns}
+    subject_row["subjectID"] = "beta_hat"
     df_subjects.loc[len(df_subjects)] = subject_row
     df_subjects.to_csv(fn_subjects_out, index=True)
 
-    fn_streamlines_in = op.join(workdir_in, 'streamlines.json')
-    fn_streamlines_out = op.join(workdir_out, 'streamlines.json')
+    fn_streamlines_in = op.join(workdir_in, "streamlines.json")
+    fn_streamlines_out = op.join(workdir_out, "streamlines.json")
     copyfile(fn_streamlines_in, fn_streamlines_out)
 
-    fn_params_in = op.join(workdir_in, 'params.json')
-    fn_params_out = op.join(workdir_out, 'params.json')
+    fn_params_in = op.join(workdir_in, "params.json")
+    fn_params_out = op.join(workdir_out, "params.json")
     copyfile(fn_params_in, fn_params_out)
 
-    OutputFiles = namedtuple('OutputFiles', 'nodes_file subjects_file')
+    OutputFiles = namedtuple("OutputFiles", "nodes_file subjects_file")
 
     return OutputFiles(nodes_file=fn_nodes_out, subjects_file=fn_subjects_out)
