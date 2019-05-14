@@ -71,5 +71,11 @@ REQUIRES = [
     "tqdm>=4.19.4",
     "ipywidgets",
 ]
-EXTRAS_REQUIRE = {}
+EXTRAS_REQUIRE = {
+    "dev": [
+        "flake8",
+        "pytest",
+        "pytest-cov",
+    ]
+}
 ENTRY_POINTS = {}
