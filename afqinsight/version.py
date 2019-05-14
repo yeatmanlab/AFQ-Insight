@@ -76,6 +76,7 @@ REQUIRES = [
     "scikit-learn>=0.19.1",
     "matplotlib",
     "bokeh",
+    "palettable",
     "tqdm>=4.19.4",
     "ipywidgets",
 ]
