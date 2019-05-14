@@ -7,8 +7,9 @@ python:
   - "3.7"
 cache: pip
 install:
+  - pip install --upgrade pip
+  - pip --version
   - travis_retry pip install $PIP_DEPS
-  - travis_retry pip install -r requirements.txt
   - travis_retry pip install -e .
 script:
   - flake8 `find . -name \*.py | grep -v setup.py | grep -v
