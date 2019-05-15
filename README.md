@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.org/richford/AFQ-Insight.png?branch=master)](https://travis-ci.org/richford/AFQ-Insight)
 [![Coverage Status](https://coveralls.io/repos/github/richford/AFQ-Insight/badge.svg?branch=master)](https://coveralls.io/github/richford/AFQ-Insight?branch=master)
-[![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 [![Updates](https://pyup.io/repos/github/richford/AFQ-Insight/shield.svg)](https://pyup.io/repos/github/richford/AFQ-Insight/)
+[![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/python/black)
 
 # Python based statistical learning of AFQ data
