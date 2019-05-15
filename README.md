@@ -1,4 +1,3 @@
-[![Known Vulnerabilities](https://snyk.io/test/github/richford/AFQ-Insight/badge.svg)](https://snyk.io/test/github/richford/AFQ-Insight)
 [![Build Status](https://travis-ci.org/richford/AFQ-Insight.png?branch=master)](https://travis-ci.org/richford/AFQ-Insight)
 [![Coverage Status](https://coveralls.io/repos/github/richford/AFQ-Insight/badge.svg?branch=master)](https://coveralls.io/github/richford/AFQ-Insight?branch=master)
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
