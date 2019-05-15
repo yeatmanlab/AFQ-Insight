@@ -73,13 +73,13 @@ REQUIRES = [
     "pandas>=0.22.0",
     "tables>=3.5.1",
     "scipy>=1.0.0",
-    "hyperopt>=0.1.2",
     "scikit-learn>=0.19.1",
+    "hyperopt>=0.1.2",
     "matplotlib",
     "bokeh",
     "palettable",
-    "tqdm>=4.19.4",
-    "ipywidgets",
+    "tqdm>=4.27.0",
+    "ipywidgets==7.4.2",
 ]
 EXTRAS_REQUIRE = {"dev": ["flake8", "pytest", "pytest-cov", "coveralls", "pre-commit"]}
 ENTRY_POINTS = {}
