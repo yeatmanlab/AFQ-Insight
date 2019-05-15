@@ -1,4 +1,4 @@
 flake8==3.7.7
 pytest
 pytest-cov
-pre-commit
+pre-commit==1.16.1
