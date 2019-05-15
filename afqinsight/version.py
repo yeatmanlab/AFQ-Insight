@@ -69,9 +69,9 @@ VERSION = __version__
 PACKAGE_DATA = {"afqinsight": [pjoin("data", "*", "*")]}
 REQUIRES = [
     "copt @ git+git://github.com/openopt/copt.git",
-    "numpy>=1.11.3",
+    "numpy>=1.16.3",
     "pandas>=0.22.0",
-    "tables>=3.5.1",
+    "tables",
     "scipy>=1.0.0",
     "scikit-learn>=0.19.1",
     "hyperopt>=0.1.2",
@@ -79,7 +79,7 @@ REQUIRES = [
     "bokeh",
     "palettable",
     "tqdm>=4.27.0",
-    "ipywidgets==7.4.2",
+    "ipywidgets",
 ]
 EXTRAS_REQUIRE = {"dev": ["flake8", "pytest", "pytest-cov", "coveralls", "pre-commit"]}
 ENTRY_POINTS = {}
