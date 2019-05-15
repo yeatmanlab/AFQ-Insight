@@ -8,5 +8,5 @@ hyperopt==0.1.2
 matplotlib
 bokeh
 palettable
-tqdm==4.27.0
+tqdm==4.32.1
 ipywidgets==7.4.2
