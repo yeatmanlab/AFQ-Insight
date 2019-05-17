@@ -3,8 +3,6 @@
 Contributions are welcome, and they are greatly appreciated! Every little bit
 helps, and credit will always be given.
 
-You can contribute in many ways:
-
 # Installing a development version of AFQ-Insight
 
 You can install a development version of AFQ-Insight by cloning in the repository
@@ -26,6 +24,8 @@ make test
 ```
 
 ## Types of Contributions
+
+You can contribute in many ways:
 
 ### Report Bugs
 
