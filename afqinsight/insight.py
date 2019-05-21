@@ -35,14 +35,15 @@ def _sigmoid(z):
 
 
 @registered
-def target_transformation(y, eta=1.0, transform_type="power", direction="forward"):
+def target_transformation(y, eta=1.0, transform_type=None, direction="forward"):
     r"""Tranform target variables according to
     .. math::
 
         y_t = \begin{cases}
             y^\eta & y > 0 and transform_type == "power" \\
             \eta^y & y > 0 and transform_type == "exponentiation" \\
-            0 & y <= 0
+            0 & y <= 0 and transform_type != None
+            y & transform_type is None
         \end{cases}
 
     Parameters
@@ -53,7 +54,7 @@ def target_transformation(y, eta=1.0, transform_type="power", direction="forward
     eta : float, default=1.0
         Transformation parameter
 
-    transform_type : ["power", "exponentiation"]
+    transform_type : ["power", "exponentiation", None], default=None
         Type of transformation, see above equation
 
     direction : ["forward", "inverse"], default="forward"
@@ -65,6 +66,9 @@ def target_transformation(y, eta=1.0, transform_type="power", direction="forward
     y_t : mp.ndarray
         Transformed target variables
     """
+    if transform_type is None:
+        return y
+
     if direction not in ["forward", "inverse"]:
         raise ValueError("'direction' must be either 'forward' or 'inverse'")
 
@@ -132,7 +136,7 @@ def classification_scores(x, y, beta_hat, clf_threshold=0.5):
 
 
 @registered
-def regression_scores(x, y, beta_hat, eta=1.0, transform_type="power"):
+def regression_scores(x, y, beta_hat, eta=1.0, transform_type=None):
     """Return regression scores
 
     Parameters
@@ -149,8 +153,8 @@ def regression_scores(x, y, beta_hat, eta=1.0, transform_type="power"):
     eta : float, default=1.0
         Target variable transformation parameter
 
-    transform_type : ["power", "exponentiation"]
-        Type of transformation, see above equation
+    transform_type : ["power", "exponentiation", None], default=None
+        Type of transformation, see insight.target_transformation
 
     Returns
     -------
@@ -192,7 +196,7 @@ def sgl_estimator(
     alpha1=0.0,
     alpha2=0.0,
     eta=1.0,
-    transform_type="power",
+    transform_type=None,
     max_iter=5000,
     tol=1e-6,
     verbose=0,
@@ -245,8 +249,8 @@ def sgl_estimator(
     eta : float, default=1.0
         Target variable transformation parameter.
 
-    transform_type : ["power", "exponentiation"]
-        Type of transformation, see above equation
+    transform_type : ["power", "exponentiation", None], default=None
+        Type of transformation, see insight.target_transformation
 
     max_iter : int, default=5000
         Maximum number of iterations for PGD algorithm.
@@ -360,9 +364,10 @@ def sgl_estimator(
     beta_hat = np.copy(pgd.x)
 
     # Transform the target variables back to original
-    y_train = target_transformation(
-        y=y_train, eta=eta, transform_type=transform_type, direction="forward"
-    )
+    if loss_type != "logloss":
+        y_train = target_transformation(
+            y=y_train, eta=eta, transform_type=transform_type, direction="forward"
+        )
 
     if loss_type == "logloss":
         train = classification_scores(
@@ -409,7 +414,7 @@ def sgl_estimator_cv(
     alpha1=0.0,
     alpha2=0.0,
     eta=1.0,
-    transform_type="power",
+    transform_type=None,
     max_iter=5000,
     tol=1e-6,
     verbose=0,
@@ -457,8 +462,8 @@ def sgl_estimator_cv(
     eta : float, default=1.0
         Target variable transformation parameter.
 
-    transform_type : ["power", "exponentiation"]
-        Type of transformation, see above equation
+    transform_type : ["power", "exponentiation", None], default=None
+        Type of transformation, see insight.target_transformation
 
     max_iter : int, default=5000
         Maximum number of iterations for PGD algorithm.
@@ -661,8 +666,14 @@ def fit_hyperparams(
         "alpha1": hp.uniform("alpha1", 0.0, 1.0),
         "alpha2": hp.loguniform("alpha2", -7, 3),
         "eta": hp.uniform("eta", 1.0, 3.0),
-        "transform_type": hp.choice("transform_type", ["power", "exponentiation"]),
+        "transform_type": hp.choice(
+            "transform_type", ["power", "exponentiation", None]
+        ),
     }
+
+    if loss_type == "logloss":
+        hp_space["eta"] = 1.0
+        hp_space["transform_type"] = None
 
     if trials is None:
         if mongo_handle is not None:
@@ -938,7 +949,7 @@ def fit_hyperparams_cv(
         if loss_type != "logloss":
             transform_type = space_eval(hp_res.space, hp_res.best_fit)["transform_type"]
         else:
-            transform_type = "power"
+            transform_type = None
 
         x_train = scaler.fit_transform(x_train)
         x_test = scaler.transform(x_test)
