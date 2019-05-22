@@ -10,7 +10,6 @@ See [https://yeatmanlab.github.io/AFQ-Browser/](https://yeatmanlab.github.io/AFQ
 
 This is a work in progress.
 
-
 ## Contributing
 
 We love contributions! AFQ-Insight is open source, built on open source,
@@ -42,7 +41,6 @@ most valuable to the project as a whole, because you're coming to the
 project with fresh eyes, so you can see the errors and assumptions that
 seasoned contributors have glossed over.
 
-
 ## Credits
 
 The imposter syndrome disclaimer was originally written by
@@ -50,4 +48,3 @@ The imposter syndrome disclaimer was originally written by
 talk](https://www.youtube.com/watch?v=6Uj746j9Heo), and was
 adapted based on its use in the README file for the [MetPy
 project](https://github.com/Unidata/MetPy).
-
