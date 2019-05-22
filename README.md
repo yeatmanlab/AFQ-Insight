@@ -1,7 +1,7 @@
 [![Known Vulnerabilities](https://snyk.io/test/github/richford/AFQ-Insight/badge.svg)](https://snyk.io/test/github/richford/AFQ-Insight)
 [![Build Status](https://travis-ci.org/richford/AFQ-Insight.png?branch=master)](https://travis-ci.org/richford/AFQ-Insight)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/bae74594a6f340be90364835d46908d1)](https://www.codacy.com/app/richford/AFQ-Insight?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=richford/AFQ-Insight&amp;utm_campaign=Badge_Grade)
-[![Coverage Status](https://coveralls.io/repos/github/richford/AFQ-Insight/badge.svg?branch=master)](https://coveralls.io/github/richford/AFQ-Insight?branch=master)
+[![Codacy Badge](https://api.codacy.com/project/badge/Coverage/bae74594a6f340be90364835d46908d1)](https://www.codacy.com/app/richford/AFQ-Insight?utm_source=github.com&utm_medium=referral&utm_content=richford/AFQ-Insight&utm_campaign=Badge_Coverage)
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/python/black)
 
