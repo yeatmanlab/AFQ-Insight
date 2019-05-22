@@ -19,11 +19,18 @@ def registered(fn):
 
 @registered
 def get_random_forest_group_scores(
-        x, y, group_labels, all_label_sets,
-        type='classifier',
-        n_splits=1000, test_size=0.3,
-        ss_random_state=None, rf_random_state=None,
-        rf_n_estimators=100, rf_criterion=None, rf_max_depth=None
+    x,
+    y,
+    group_labels,
+    all_label_sets,
+    _type="classifier",
+    n_splits=1000,
+    test_size=0.3,
+    ss_random_state=None,
+    rf_random_state=None,
+    rf_n_estimators=100,
+    rf_criterion=None,
+    rf_max_depth=None,
 ):
     """Get scores for each group using a form of feature elimination
 
@@ -52,7 +59,7 @@ def get_random_forest_group_scores(
     all_label_sets : ndarray of sets
         Array of sets of labels for each column of `x`
 
-    type : 'classifier' or 'regressor'
+    _type : 'classifier' or 'regressor'
         Type of random forest to use: classifier or regressor
         Default: 'classifier'
 
@@ -78,7 +85,7 @@ def get_random_forest_group_scores(
 
     rf_criterion : string
         Splitting criterion to use in random forest
-        Default: 'gini' if type is 'classifier', 'mse' if type is 'regressor'
+        Default: 'gini' if _type is 'classifier', 'mse' if _type is 'regressor'
 
     rf_max_depth : int
         Maximum depth of a tree in the random forest
@@ -92,33 +99,31 @@ def get_random_forest_group_scores(
         in descending order by score.
     """
     if rf_criterion is None:
-        rf_criterion = 'gini' if type == 'classifier' else 'mse'
+        rf_criterion = "gini" if _type == "classifier" else "mse"
 
-    if type == 'classifier':
+    if _type == "classifier":
         rf = RandomForestClassifier(
             n_estimators=rf_n_estimators,
             criterion=rf_criterion,
             max_depth=rf_max_depth,
-            random_state=rf_random_state
+            random_state=rf_random_state,
         )
 
         get_score = roc_auc_score
-    elif type == 'regressor':
+    elif _type == "regressor":
         rf = RandomForestRegressor(
             n_estimators=rf_n_estimators,
             criterion=rf_criterion,
             max_depth=rf_max_depth,
-            random_state=rf_random_state
+            random_state=rf_random_state,
         )
 
         get_score = mean_squared_error
     else:
-        raise ValueError('`type` must be either "classifier" or "regressor".')
+        raise ValueError('`_type` must be either "classifier" or "regressor".')
 
     ss = StratifiedShuffleSplit(
-        n_splits=n_splits,
-        test_size=test_size,
-        random_state=ss_random_state
+        n_splits=n_splits, test_size=test_size, random_state=ss_random_state
     )
 
     scores = defaultdict(list)
@@ -134,15 +139,15 @@ def get_random_forest_group_scores(
         for label in group_labels:
             x_shuffled = shuffle_group(x_test, label, all_label_sets)
             shuffled_score = get_score(y_test, rf.predict(x_shuffled))
-            if type == 'classifier':
+            if _type == "classifier":
                 scores[label].append((score - shuffled_score) / score)
             else:
                 scores[label].append((shuffled_score - score) / score)
 
     importance = sorted(
-        [(feat, np.mean(score)) for
-         feat, score in scores.items()],
+        [(feat, np.mean(score)) for feat, score in scores.items()],
         key=lambda s: s[1],
-        reverse=True)
+        reverse=True,
+    )
 
     return importance
