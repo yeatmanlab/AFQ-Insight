@@ -33,9 +33,9 @@ Report bugs at <https://github.com/richford/AFQ-Insight/issues>.
 
 If you are reporting a bug, please include:
 
-  - Your operating system name and version.
-  - Any details about your local setup that might be helpful in troubleshooting.
-  - Detailed steps to reproduce the bug.
+-   Your operating system name and version.
+-   Any details about your local setup that might be helpful in troubleshooting.
+-   Detailed steps to reproduce the bug.
 
 ### Work on "good first issues"
 
@@ -66,7 +66,7 @@ The best way to send feedback is to file an issue at
 
 If you are proposing a feature:
 
-  - Explain in detail how it would work.
-  - Keep the scope as narrow as possible, to make it easier to implement.
-  - Remember that this is a volunteer-driven project, and that contributions
+-   Explain in detail how it would work.
+-   Keep the scope as narrow as possible, to make it easier to implement.
+-   Remember that this is a volunteer-driven project, and that contributions
     are welcome :)
