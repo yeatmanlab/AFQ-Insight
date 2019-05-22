@@ -575,9 +575,9 @@ def plot_pca_space(
         hover1 = HoverTool(tooltips=tooltips, callback=callback, renderers=[s1])
         ps[1].add_tools(hover1)
 
-    for idx in range(len(ps)):
-        ps[idx].xaxis.axis_label = "1st Principal Component"
-        ps[idx].yaxis.axis_label = "2nd Principal Component"
+    for plot in ps:
+        plot.xaxis.axis_label = "1st Principal Component"
+        plot.yaxis.axis_label = "2nd Principal Component"
 
     if plot_both:
         layout = row(ps[::-1])
