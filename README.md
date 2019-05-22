@@ -1,3 +1,4 @@
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/4c5a1102f7c34a338f39538ab23a76f6)](https://app.codacy.com/app/richford/AFQ-Insight?utm_source=github.com&utm_medium=referral&utm_content=richford/AFQ-Insight&utm_campaign=Badge_Grade_Dashboard)
 [![Known Vulnerabilities](https://snyk.io/test/github/richford/AFQ-Insight/badge.svg)](https://snyk.io/test/github/richford/AFQ-Insight)
 [![Build Status](https://travis-ci.org/richford/AFQ-Insight.png?branch=master)](https://travis-ci.org/richford/AFQ-Insight)
 [![Coverage Status](https://coveralls.io/repos/github/richford/AFQ-Insight/badge.svg?branch=master)](https://coveralls.io/github/richford/AFQ-Insight?branch=master)
