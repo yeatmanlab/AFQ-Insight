@@ -13,11 +13,13 @@ pip install -e .[dev]
 ```
 
 Activate the pre-commit formatting hook by typing
+
 ```bash
 pre-commit install
 ```
 
 Before committing your work, you can check for formatting issues or errors by typing
+
 ```bash
 make flake
 make test
