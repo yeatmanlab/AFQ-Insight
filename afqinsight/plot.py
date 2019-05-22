@@ -502,7 +502,7 @@ def plot_pca_space(
                 np.ones_like(beta), beta, out=np.zeros_like(beta), where=beta != 0
             )
         )
-        x_grid, y_grid = np.meshgrid(x_subspace, y_subspace)
+        x_grid, _ = np.meshgrid(x_subspace, y_subspace)
         p_grid = predict_pairs.reshape(x_grid.shape, order="F")
 
         ps[0].image(
