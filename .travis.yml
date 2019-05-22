@@ -11,9 +11,11 @@ install:
   - pip install --upgrade pip
   - pip --version
   - travis_retry pip install -e .[dev]
+  - pip install codacy-coverage
 script:
   - flake8 `find . -name \*.py | grep -v setup.py | grep -v
     version.py | grep -v __init__.py | grep -v /doc/`
   - travis_wait 30 py.test --pyargs afqinsight --cov-report term-missing --cov-config .coveragerc --cov=afqinsight
+  - coverage xml
 after_success:
-  - coveralls
+  - python-codacy-coverage -r coverage.xml
