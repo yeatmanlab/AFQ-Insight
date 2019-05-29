@@ -8,7 +8,6 @@ import os
 import os.path as op
 import pickle
 import warnings
-from collections import namedtuple
 from functools import partial
 from hyperopt import fmin, tpe, hp, space_eval, STATUS_OK, Trials
 from hyperopt.mongoexp import MongoTrials
@@ -18,6 +17,7 @@ from sklearn.metrics import roc_auc_score, r2_score, mean_squared_error
 from sklearn.metrics import median_absolute_error
 from sklearn.model_selection import RepeatedKFold, RepeatedStratifiedKFold
 from sklearn.preprocessing import StandardScaler
+from sklearn.utils import check_random_state
 from tqdm.auto import tqdm
 
 from .prox import SparseGroupL1
@@ -110,14 +110,15 @@ def classification_scores(x, y, beta_hat, clf_threshold=0.5):
 
     Returns
     -------
-    collections.namedtuple
-        namedtuple with fields:
+    dict
+        dict with keys:
         accuracy - accuracy score
         auc - ROC AUC
         avg_precision - average precision score
         f1_score - F1 score
     """
-    y_pred = _sigmoid(x.dot(beta_hat))
+    y_pred = x.dot(beta_hat)
+    y_pred = _sigmoid(y_pred)
 
     acc = accuracy_score(y, y_pred > clf_threshold)
     auc = roc_auc_score(y, y_pred)
@@ -131,8 +132,7 @@ def classification_scores(x, y, beta_hat, clf_threshold=0.5):
         warnings.filterwarnings("ignore", category=UndefinedMetricWarning)
         f1 = f1_score(y, y_pred > clf_threshold)
 
-    Scores = namedtuple("Scores", "x y accuracy auc avg_precision f1")
-    return Scores(x=x, y=y, accuracy=acc, auc=auc, avg_precision=aps, f1=f1)
+    return dict(x=x, y=y, accuracy=acc, auc=auc, avg_precision=aps, f1=f1)
 
 
 @registered
@@ -158,8 +158,8 @@ def regression_scores(x, y, beta_hat, eta=1.0, transform_type=None):
 
     Returns
     -------
-    collections.namedtuple
-        namedtuple with field:
+    dict
+        dict with keys:
         rmse - RMSE score
         r2 - R^2 score, coefficient of determination
         medae - The median absolute error
@@ -173,15 +173,7 @@ def regression_scores(x, y, beta_hat, eta=1.0, transform_type=None):
     r2 = r2_score(y, y_pred)
     medae = median_absolute_error(y, y_pred)
 
-    Scores = namedtuple("Scores", "x y rmse r2 medae")
-
-    return Scores(x=x, y=y, rmse=rmse, r2=r2, medae=medae)
-
-
-SGLResult = namedtuple(
-    "SGLResult",
-    ["alpha1", "alpha2", "eta", "transform_type", "beta_hat", "test", "train", "trace"],
-)
+    return dict(x=x, y=y, rmse=rmse, r2=r2, medae=medae)
 
 
 @registered
@@ -205,6 +197,7 @@ def sgl_estimator(
     accelerate=False,
     loss_type="logloss",
     clf_threshold=0.5,
+    random_state=None,
 ):
     """Find solution to sparse group lasso problem by proximal gradient descent
 
@@ -281,16 +274,22 @@ def sgl_estimator(
     clf_threshold : float, default=0.5
         Decision threshold for binary classification
 
+    random_state : int, numpy.RandomState instance or None, optional (default=None)
+        If int, random_state is the seed used by the random number generator;
+        If numpy.RandomState instance, random_state is the random number generator;
+        If None, the random number generator is the RandomState instance used
+        by `np.random`.
+
     Returns
     -------
-    collections.namedtuple
-        namedtuple with fields:
+    dict
+        dict with keys:
         alpha1 - group lasso regularization parameter,
         alpha2 - lasso regularization parameter,
         eta - target variable transformation parameter,
         beta_hat - estimate of the optimal beta,
-        test - scores namedtuple for test set,
-        train - scores namedtuple for train set,
+        test - scores dict for test set,
+        train - scores dict for train set,
         trace - copt.utils.Trace object if cv_trace is True, None otherwise
 
     References
@@ -302,6 +301,9 @@ def sgl_estimator(
     """
     n_features = x_train.shape[1]
 
+    rng = check_random_state(random_state)
+    np.random.set_state(rng.get_state())
+
     if beta0 is None:
         beta0 = np.zeros(n_features)
 
@@ -310,17 +312,15 @@ def sgl_estimator(
     if loss_type not in ["logloss", "square", "huber"]:
         raise ValueError("loss_type must be one of " "['logloss', 'square', 'huber'].")
 
-    if loss_type == "logloss" and eta != 1.0:
-        raise ValueError("If loss_type is 'logloss', then eta must be one.")
-
     ind = np.ones(x_train.shape[1], bool)
     if bias_index is not None:
         ind[bias_index] = False
 
     # Inverse transform target variables
-    y_train = target_transformation(
-        y=y_train, eta=eta, transform_type=transform_type, direction="inverse"
-    )
+    if loss_type != "logloss":
+        y_train = target_transformation(
+            y=y_train, eta=eta, transform_type=transform_type, direction="inverse"
+        )
 
     if loss_type == "logloss":
         f = cp.utils.LogLoss(x_train, y_train)
@@ -332,8 +332,7 @@ def sgl_estimator(
     step_size = 1.0 / f.lipschitz
 
     if cb_trace:
-        cb_tos = cp.utils.Trace()
-        cb_tos(beta0)
+        cb_tos = cp.utils.Trace(f)
     else:
         cb_tos = None
 
@@ -392,7 +391,7 @@ def sgl_estimator(
             transform_type=transform_type,
         )
 
-    return SGLResult(
+    return dict(
         alpha1=alpha1,
         alpha2=alpha2,
         eta=eta,
@@ -401,6 +400,7 @@ def sgl_estimator(
         test=test,
         train=train,
         trace=cb_tos,
+        init_random_state=random_state,
     )
 
 
@@ -492,33 +492,36 @@ def sgl_estimator_cv(
     n_repeats : int, default=1
         Number of times cross-validator needs to be repeated.
 
-    random_state : None, int or RandomState, default=None
-        Random state to be used to generate random state for each repetition.
+    random_state : int, numpy.RandomState instance or None, optional (default=None)
+        If int, random_state is the seed used by the random number generator;
+        If numpy.RandomState instance, random_state is the random number generator;
+        If None, the random number generator is the RandomState instance used
+        by `np.random`.
 
     Returns
     -------
-    collections.namedtuple
-        namedtuple with fields:
+    dict
+        dict with keys:
         alpha1 - group lasso regularization parameter,
         alpha2 - lasso regularization parameter,
         eta - target variable transformation parameter,
         beta_hat - list of estimates of the optimal beta,
-        test - list of scores namedtuples for test set,
-        train - list of scores namedtuples for train set,
+        test - list of scores dicts for test set,
+        train - list of scores dicts for train set,
         trace - list of copt.utils.Trace objects if cv_trace is True
 
     See Also
     --------
     pgd_classify
     """
+    rng = check_random_state(random_state)
+
     if loss_type == "logloss":
         cv = RepeatedStratifiedKFold(
-            n_splits=n_splits, n_repeats=n_repeats, random_state=random_state
+            n_splits=n_splits, n_repeats=n_repeats, random_state=rng
         )
     else:
-        cv = RepeatedKFold(
-            n_splits=n_splits, n_repeats=n_repeats, random_state=random_state
-        )
+        cv = RepeatedKFold(n_splits=n_splits, n_repeats=n_repeats, random_state=rng)
 
     clf_results = []
 
@@ -531,7 +534,7 @@ def sgl_estimator_cv(
     scaler = StandardScaler()
 
     if 0.0 <= eta < 1.0:
-        raise ValueError("eta must satisfy 0.0 <= eta < 1.0")
+        raise ValueError("eta must not satisfy 0.0 <= eta < 1.0")
 
     for train_idx, test_idx in splitter:
         x_train, x_test = x[train_idx], x[test_idx]
@@ -560,20 +563,21 @@ def sgl_estimator_cv(
             cb_trace=cb_trace,
             accelerate=accelerate,
             loss_type=loss_type,
+            random_state=random_state,
         )
 
         clf_results.append(res)
-        beta0 = res.beta_hat
+        beta0 = res["beta_hat"]
 
-    return SGLResult(
+    return dict(
         alpha1=alpha1,
         alpha2=alpha2,
         eta=eta,
         transform_type=transform_type,
-        beta_hat=[res.beta_hat for res in clf_results],
-        test=[res.test for res in clf_results],
-        train=[res.train for res in clf_results],
-        trace=[res.trace for res in clf_results],
+        beta_hat=[res["beta_hat"] for res in clf_results],
+        test=[res["test"] for res in clf_results],
+        train=[res["train"] for res in clf_results],
+        trace=[res["trace"] for res in clf_results],
     )
 
 
@@ -591,6 +595,8 @@ def fit_hyperparams(
     mongo_handle=None,
     mongo_exp_key=None,
     save_trials_pickle=None,
+    random_state=None,
+    verbose=0,
 ):
     """Find the best hyperparameters for sparse group lasso using hyperopt.fmin
 
@@ -641,12 +647,22 @@ def fit_hyperparams(
     save_trials_pickle : str or None, default=None
         If not None, save trials dictionary to pickle file using this filename.
 
+    random_state : int, numpy.RandomState instance or None, optional (default=None)
+        If int, random_state is the seed used by the random number generator;
+        If numpy.RandomState instance, random_state is the random number generator;
+        If None, the random number generator is the RandomState instance used
+        by `np.random`.
+
+    verbose : int, default=0
+        Verbosity flag
+
     Returns
     -------
-    collections.namedtuple
-        namedtuple with fields:
+    dict
+        dict with keys:
         best_fit - the best fit from hyperopt.fmin
         trials - trials object from hyperopt.fmin
+        space - hyperopt search space
     """
     allowed_clf_scores = ["roc_auc", "accuracy", "avg_precision"]
     allowed_rgs_scores = ["r2", "rmse", "medae"]
@@ -691,12 +707,15 @@ def fit_hyperparams(
             loss_type=loss_type,
             bias_index=bias_index,
             beta0=beta0,
+            verbose=verbose - 1 if verbose > 0 else 0,
+            random_state=random_state,
         )
+
         cv_results = hp_cv_partial(**params)
         if loss_type == "logloss":
-            auc = np.array([test.auc for test in cv_results.test])
-            acc = np.array([test.accuracy for test in cv_results.test])
-            aps = np.array([test.avg_precision for test in cv_results.test])
+            auc = np.array([test["auc"] for test in cv_results["test"]])
+            acc = np.array([test["accuracy"] for test in cv_results["test"]])
+            aps = np.array([test["avg_precision"] for test in cv_results["test"]])
             if score == "roc_auc":
                 loss = -auc
             elif score == "accuracy":
@@ -716,9 +735,9 @@ def fit_hyperparams(
                 "avg_precision_variance": np.var(aps),
             }
         else:
-            r2 = np.array([test.r2 for test in cv_results.test])
-            rmse = np.array([test.rmse for test in cv_results.test])
-            medae = np.array([test.medae for test in cv_results.test])
+            r2 = np.array([test["r2"] for test in cv_results["test"]])
+            rmse = np.array([test["rmse"] for test in cv_results["test"]])
+            medae = np.array([test["medae"] for test in cv_results["test"]])
             if score == "rmse":
                 loss = rmse
             elif score == "medae":
@@ -739,17 +758,23 @@ def fit_hyperparams(
 
         return result_dict
 
+    rng = check_random_state(random_state)
+
     best = fmin(
-        hp_objective, hp_space, algo=tpe.suggest, max_evals=max_evals, trials=trials
+        hp_objective,
+        hp_space,
+        algo=tpe.suggest,
+        max_evals=max_evals,
+        trials=trials,
+        show_progressbar=verbose > 0,
+        rstate=rng,
     )
 
     if mongo_handle is None and save_trials_pickle is not None:
         with open(save_trials_pickle, "wb") as fp:
             pickle.dump(trials, fp)
 
-    HPResults = namedtuple("HPResults", "best_fit trials space")
-
-    return HPResults(best_fit=best, trials=trials, space=hp_space)
+    return dict(best_fit=best, trials=trials, space=hp_space)
 
 
 @registered
@@ -818,8 +843,11 @@ def fit_hyperparams_cv(
         MongoJobs instance. If None, fmin will not parallelize its search
         using mongodb.
 
-    random_state : None, int or RandomState, default=None
-        Random state to be used to generate random state for each repetition.
+    random_state : int, numpy.RandomState instance or None, optional (default=None)
+        If int, random_state is the seed used by the random number generator;
+        If numpy.RandomState instance, random_state is the random number generator;
+        If None, the random number generator is the RandomState instance used
+        by `np.random`.
 
     verbose : int, default=0
         Verbosity flag for CV loop
@@ -844,6 +872,11 @@ def fit_hyperparams_cv(
         )
 
     if trials_pickle_dir is not None:
+        if not isinstance(random_state, int):
+            raise ValueError(
+                "If `trials_pickle_dir` is provided, `random_state` must be of type int."
+            )
+
         os.makedirs(op.abspath(trials_pickle_dir), exist_ok=True)
         configfile = op.join(op.abspath(trials_pickle_dir), "params.ini")
         config = configparser.ConfigParser()
@@ -885,17 +918,18 @@ def fit_hyperparams_cv(
             with open(configfile, "w") as cfile:
                 config.write(cfile)
 
+    rng = check_random_state(random_state)
+
     if loss_type == "logloss":
         cv = RepeatedStratifiedKFold(
-            n_splits=n_splits, n_repeats=n_repeats, random_state=random_state
+            n_splits=n_splits, n_repeats=n_repeats, random_state=rng
         )
     else:
-        cv = RepeatedKFold(
-            n_splits=n_splits, n_repeats=n_repeats, random_state=random_state
-        )
+        cv = RepeatedKFold(n_splits=n_splits, n_repeats=n_repeats, random_state=rng)
 
     if verbose:
         splitter = tqdm(enumerate(cv.split(x, y)), total=cv.get_n_splits())
+        verbose -= 1
     else:
         splitter = enumerate(cv.split(x, y))
 
@@ -941,13 +975,17 @@ def fit_hyperparams_cv(
             mongo_handle=mongo_handle,
             mongo_exp_key=mongo_exp_key,
             save_trials_pickle=pickle_name,
+            random_state=rng,
+            verbose=verbose,
         )
 
-        alpha1 = hp_res.best_fit["alpha1"]
-        alpha2 = hp_res.best_fit["alpha2"]
-        eta = hp_res.best_fit.get("eta", 1.0)
+        alpha1 = hp_res["best_fit"]["alpha1"]
+        alpha2 = hp_res["best_fit"]["alpha2"]
+        eta = hp_res["best_fit"].get("eta", 1.0)
         if loss_type != "logloss":
-            transform_type = space_eval(hp_res.space, hp_res.best_fit)["transform_type"]
+            transform_type = space_eval(hp_res["space"], hp_res["best_fit"])[
+                "transform_type"
+            ]
         else:
             transform_type = None
 
@@ -968,9 +1006,15 @@ def fit_hyperparams_cv(
             transform_type=transform_type,
             loss_type=loss_type,
             clf_threshold=clf_threshold,
+            random_state=random_state,
+            cb_trace=True,
         )
 
-        beta0 = sgl.beta_hat
+        beta0 = sgl["beta_hat"]
+
+        sgl["hp_trials"] = hp_res["trials"]
+        sgl["hp_space"] = hp_res["space"]
+        sgl["hp_best_fit"] = hp_res["best_fit"]
 
         cv_results.append(sgl)
 
