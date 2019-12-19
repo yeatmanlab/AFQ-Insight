@@ -1,0 +1,21 @@
+name: afq-insight-paper
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python>=3.6
+  - requests
+  - jupyterlab
+  - ipywidgets
+  - numpy
+  - matplotlib
+  - palettable
+  - bokeh
+  - fury
+  - dipy
+  - pip
+  - deepdish
+  - pip:
+    - pybeeswarm
+    - "git+git://github.com/richford/AFQ-Insight.git#egg=afqinsight"
