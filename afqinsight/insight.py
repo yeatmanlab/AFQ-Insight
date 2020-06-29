@@ -323,11 +323,11 @@ def sgl_estimator(
         )
 
     if loss_type == "logloss":
-        f = cp.utils.LogLoss(x_train, y_train)
+        f = cp.loss.LogLoss(x_train, y_train)
     elif loss_type == "huber":
-        f = cp.utils.HuberLoss(x_train, y_train)
+        f = cp.loss.HuberLoss(x_train, y_train)
     else:
-        f = cp.utils.SquareLoss(x_train, y_train)
+        f = cp.loss.SquareLoss(x_train, y_train)
 
     step_size = 1.0 / f.lipschitz
 
