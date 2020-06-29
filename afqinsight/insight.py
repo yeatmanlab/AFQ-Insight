@@ -329,8 +329,6 @@ def sgl_estimator(
     else:
         f = cp.utils.SquareLoss(x_train, y_train)
 
-    step_size = 1.0 / f.lipschitz
-
     if cb_trace:
         cb_tos = cp.utils.Trace(f)
     else:
@@ -352,7 +350,6 @@ def sgl_estimator(
             f.f_grad,
             beta0,
             sg1.prox,
-            step_size=step_size,
             max_iter=max_iter,
             tol=tol,
             verbose=verbose,
