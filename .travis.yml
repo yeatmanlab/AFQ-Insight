@@ -12,6 +12,7 @@ install:
   - pip --version
   - travis_retry pip install -e .[dev]
   - pip install codacy-coverage
+  - pip install 'pytest-cov>=2.4.0,<2.6'
 script:
   - flake8 `find . -name \*.py | grep -v setup.py | grep -v
     version.py | grep -v __init__.py | grep -v /doc/`
