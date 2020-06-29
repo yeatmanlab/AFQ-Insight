@@ -68,7 +68,7 @@ MICRO = _version_micro
 VERSION = __version__
 PACKAGE_DATA = {"afqinsight": [pjoin("data", "*", "*")]}
 REQUIRES = [
-    "copt @ git+git://github.com/openopt/copt.git",
+    "copt==0.8.4",
     "numpy>=1.16.3",
     "pandas>=0.22.0",
     "tables",
