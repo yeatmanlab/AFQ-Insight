@@ -433,7 +433,7 @@ def multicol2sets(columns, tract_symmetry=True):
     col_sets : numpy.ndarray
         An array of sets containing the tuples of the input MultiIndex
     """
-    col_vals = columns.get_values()
+    col_vals = columns.to_numpy()
 
     if tract_symmetry:
         tract_idx = columns.names.index("tractID")
@@ -470,7 +470,7 @@ def multicol2dicts(columns, tract_symmetry=True):
     col_dicts : numpy.ndarray
         An array of dicts containing the tuples of the input MultiIndex
     """
-    col_vals = columns.get_values()
+    col_vals = columns.to_numpy()
     col_names = columns.names
 
     if tract_symmetry:

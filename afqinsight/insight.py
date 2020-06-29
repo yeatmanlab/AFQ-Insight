@@ -893,8 +893,9 @@ def fit_hyperparams_cv(
                 raise ValueError(
                     "Stored trial parameters do not match input parameters. "
                     "This could contaminate the train/test split for previous "
-                    "trials. Either set n_splits={ns:s}, random_state={rs:s}, "
-                    "score={score:s}, loss_type={loss_type:s} or specify a "
+                    "trials. Either set n_splits={ns:s}, n_repeats={nr:s}, "
+                    "random_state={rs:s}, score={score:s}, "
+                    "loss_type={loss_type:s} or specify a "
                     "new trials directory".format(
                         ns=params["n_splits"],
                         nr=params["n_repeats"],
