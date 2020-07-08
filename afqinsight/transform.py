@@ -613,7 +613,7 @@ def beta_hat_by_groups(beta_hat, columns, drop_zeros=False):
 
 
 @registered
-def unfold_beta_hat_by_metrics(beta_hat, columns):
+def unfold_beta_hat_by_metrics(beta_hat, columns, tract_names=None):
     """Transform one-dimensional beta_hat array into OrderedDict
 
     Organize by tract-metric groups
@@ -625,6 +625,9 @@ def unfold_beta_hat_by_metrics(beta_hat, columns):
 
     columns : pd.MultiIndex
         MultiIndex columns of the feature matrix
+
+    tract_names : list or None, default=None
+        Names of the tracts. If None, use utils.canonical_tract_names
 
     Returns
     -------
@@ -646,9 +649,14 @@ def unfold_beta_hat_by_metrics(beta_hat, columns):
 
     betas_by_groups = beta_hat_by_groups(beta_hat, columns, drop_zeros=False)
 
+    if tract_names is not None:
+        tracts = tract_names
+    else:
+        tracts = canonical_tract_names
+
     for metric in columns.levels[columns.names.index("metric")]:
         betas[metric] = []
-        for tract in canonical_tract_names:
+        for tract in tracts:
             betas[metric].append(betas_by_groups[tract][metric])
 
         betas[metric] = np.concatenate(betas[metric])
