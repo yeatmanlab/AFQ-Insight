@@ -226,7 +226,12 @@ def plot_classification_probabilities(
 
 @registered
 def plot_unfolded_beta(
-    unfolded_beta, output_html=None, width=500, height=500, sizing_mode="stretch_both"
+    unfolded_beta,
+    output_html=None,
+    width=500,
+    height=500,
+    sizing_mode="stretch_both",
+    tract_names=None,
 ):
     """Plot the regression coefficients on the "unfolded" brain.
 
@@ -258,6 +263,9 @@ def plot_unfolded_beta(
         fill the available space. Default is "stretch_both". For more
         information on the different modes see
         https://bokeh.pydata.org/en/latest/docs/reference/models/layouts.html#bokeh.models.layouts.LayoutDOM
+
+    tract_names : list or None, default=None
+        Names of the tracts. If None, use utils.canonical_tract_names
     """
     p = figure(plot_width=width, plot_height=height, toolbar_location="above")
     p.title.text = 'Feature weights in the "unfolded" brain'
@@ -269,8 +277,13 @@ def plot_unfolded_beta(
         "right",
     )
 
+    if tract_names is not None:
+        tracts = tract_names
+    else:
+        tract = utils.canonical_tract_names
+
     len_alltracts = len(unfolded_beta[list(unfolded_beta.keys())[0]])
-    n_tracts = len(utils.canonical_tract_names)
+    n_tracts = len(tracts)
     n_nodes = len_alltracts / n_tracts
     ticks = np.arange(0, len_alltracts, n_nodes)
 
@@ -300,7 +313,7 @@ def plot_unfolded_beta(
                 y=10,
                 x_units="data",
                 y_units="screen",
-                text=utils.canonical_tract_names[i],
+                text=tracts[i],
                 render_mode="canvas",
                 border_line_alpha=0.0,
                 background_fill_alpha=0.0,
