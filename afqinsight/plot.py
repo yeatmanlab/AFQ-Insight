@@ -280,7 +280,7 @@ def plot_unfolded_beta(
     if tract_names is not None:
         tracts = tract_names
     else:
-        tract = utils.canonical_tract_names
+        tracts = utils.canonical_tract_names
 
     len_alltracts = len(unfolded_beta[list(unfolded_beta.keys())[0]])
     n_tracts = len(tracts)
