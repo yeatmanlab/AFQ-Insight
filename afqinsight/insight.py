@@ -185,8 +185,8 @@ def sgl_estimator(
     groups,
     bias_index=None,
     beta0=None,
-    alpha1=0.0,
-    alpha2=0.0,
+    alpha=0.0,
+    lambda_=0.0,
     eta=1.0,
     transform_type=None,
     max_iter=5000,
@@ -232,12 +232,12 @@ def sgl_estimator(
     beta0 : numpy.ndarray
         Initial guess for coefficient array
 
-    alpha1 : float, default=0.0
-        Group lasso regularization parameter. This encourages groupwise
-        sparsity.
+    alpha : float, default=0.0
+        Combination between group lasso and lasso. alpha = 0 gives the group
+        lasso and alpha = 1 gives the lasso.
 
-    alpha2 : float, default=0.0
-        Lasso regularization parameter. This encourages within group sparsity.
+    lambda_ : float, default=0.0
+        Regularization parameter, overall strength of regularization.
 
     eta : float, default=1.0
         Target variable transformation parameter.
@@ -284,8 +284,8 @@ def sgl_estimator(
     -------
     dict
         dict with keys:
-        alpha1 - group lasso regularization parameter,
-        alpha2 - lasso regularization parameter,
+        alpha - the lasso / group lasso combination factor
+        lambda_ - overall regularization parameter,
         eta - target variable transformation parameter,
         beta_hat - estimate of the optimal beta,
         test - scores dict for test set,
@@ -299,6 +299,9 @@ def sgl_estimator(
         Statistics, vol. 22:2, pp. 231-245, 2012
         DOI: 10.1080/10618600.2012.681250
     """
+    if not 0 <= alpha <= 1:
+        raise ValueError("alpha must be between 0 and 1.")
+
     n_features = x_train.shape[1]
 
     rng = check_random_state(random_state)
@@ -307,7 +310,7 @@ def sgl_estimator(
     if beta0 is None:
         beta0 = np.zeros(n_features)
 
-    sg1 = SparseGroupL1(alpha1, alpha2, groups, bias_index=bias_index)
+    sg1 = SparseGroupL1(alpha, lambda_, groups, bias_index=bias_index)
 
     if loss_type not in ["logloss", "square", "huber"]:
         raise ValueError("loss_type must be one of " "['logloss', 'square', 'huber'].")
@@ -350,6 +353,8 @@ def sgl_estimator(
             f.f_grad,
             beta0,
             sg1.prox,
+            jac=True,
+            step="backtracking",
             max_iter=max_iter,
             tol=tol,
             verbose=verbose,
@@ -389,8 +394,8 @@ def sgl_estimator(
         )
 
     return dict(
-        alpha1=alpha1,
-        alpha2=alpha2,
+        alpha=alpha,
+        lambda_=lambda_,
         eta=eta,
         transform_type=transform_type,
         beta_hat=beta_hat,
@@ -408,8 +413,8 @@ def sgl_estimator_cv(
     groups,
     bias_index=None,
     beta0=None,
-    alpha1=0.0,
-    alpha2=0.0,
+    alpha=0.0,
+    lambda_=0.0,
     eta=1.0,
     transform_type=None,
     max_iter=5000,
@@ -449,12 +454,12 @@ def sgl_estimator_cv(
     beta0 : numpy.ndarray
         Initial guess for coefficient array
 
-    alpha1 : float, default=0.0
-        Group lasso regularization parameter. This encourages group-wise
-        sparsity.
+    alpha : float, default=0.0
+        Combination between group lasso and lasso. alpha = 0 gives the group
+        lasso and alpha = 1 gives the lasso.
 
-    alpha2 : float, default=0.0
-        Lasso regularization parameter. This encourages within group sparsity.
+    lambda_ : float, default=0.0
+        Regularization parameter, overall strength of regularization.
 
     eta : float, default=1.0
         Target variable transformation parameter.
@@ -499,8 +504,8 @@ def sgl_estimator_cv(
     -------
     dict
         dict with keys:
-        alpha1 - group lasso regularization parameter,
-        alpha2 - lasso regularization parameter,
+        alpha - the lasso / group lasso combination factor
+        lambda_ - overall regularization parameter,
         eta - target variable transformation parameter,
         beta_hat - list of estimates of the optimal beta,
         test - list of scores dicts for test set,
@@ -511,6 +516,9 @@ def sgl_estimator_cv(
     --------
     pgd_classify
     """
+    if not 0 <= alpha <= 1:
+        raise ValueError("alpha must be between 0 and 1.")
+
     rng = check_random_state(random_state)
 
     if loss_type == "logloss":
@@ -539,8 +547,9 @@ def sgl_estimator_cv(
 
         x_train = scaler.fit_transform(x_train)
         x_test = scaler.transform(x_test)
-        x_train[:, bias_index] = 1.0
-        x_test[:, bias_index] = 1.0
+        if bias_index is not None:
+            x_train[:, bias_index] = 1.0
+            x_test[:, bias_index] = 1.0
 
         res = sgl_estimator(
             x_train=x_train,
@@ -550,8 +559,8 @@ def sgl_estimator_cv(
             groups=groups,
             bias_index=bias_index,
             beta0=beta0,
-            alpha1=alpha1,
-            alpha2=alpha2,
+            alpha=alpha,
+            lambda_=lambda_,
             eta=eta,
             transform_type=transform_type,
             max_iter=max_iter,
@@ -567,8 +576,8 @@ def sgl_estimator_cv(
         beta0 = res["beta_hat"]
 
     return dict(
-        alpha1=alpha1,
-        alpha2=alpha2,
+        alpha=alpha,
+        lambda_=lambda_,
         eta=eta,
         transform_type=transform_type,
         beta_hat=[res["beta_hat"] for res in clf_results],
@@ -676,8 +685,8 @@ def fit_hyperparams(
 
     # Define the search space
     hp_space = {
-        "alpha1": hp.uniform("alpha1", 0.0, 1.0),
-        "alpha2": hp.loguniform("alpha2", -7, 3),
+        "alpha": hp.uniform("alpha", 0.0, 1.0),
+        "lambda_": hp.loguniform("lambda_", -7, 3),
         "eta": hp.uniform("eta", 1.0, 3.0),
         "transform_type": hp.choice(
             "transform_type", ["power", "exponentiation", None]
@@ -977,8 +986,8 @@ def fit_hyperparams_cv(
             verbose=verbose,
         )
 
-        alpha1 = hp_res["best_fit"]["alpha1"]
-        alpha2 = hp_res["best_fit"]["alpha2"]
+        alpha = hp_res["best_fit"]["alpha"]
+        lambda_ = hp_res["best_fit"]["lambda_"]
         eta = hp_res["best_fit"].get("eta", 1.0)
         if loss_type != "logloss":
             transform_type = space_eval(hp_res["space"], hp_res["best_fit"])[
@@ -989,8 +998,9 @@ def fit_hyperparams_cv(
 
         x_train = scaler.fit_transform(x_train)
         x_test = scaler.transform(x_test)
-        x_train[:, bias_index] = 1.0
-        x_test[:, bias_index] = 1.0
+        if bias_index is not None:
+            x_train[:, bias_index] = 1.0
+            x_test[:, bias_index] = 1.0
 
         sgl = sgl_estimator(
             x_train,
@@ -998,8 +1008,8 @@ def fit_hyperparams_cv(
             x_test,
             y_test,
             groups,
-            alpha1=alpha1,
-            alpha2=alpha2,
+            alpha=alpha,
+            lambda_=lambda_,
             eta=eta,
             transform_type=transform_type,
             loss_type=loss_type,
