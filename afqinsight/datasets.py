@@ -8,7 +8,7 @@ import os.path as op
 import pandas as pd
 from collections import namedtuple
 from shutil import copyfile
-from sklearn.datasets.samples_generator import _generate_hypercube
+from sklearn.datasets._samples_generator import _generate_hypercube
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils import check_random_state
 from sklearn.utils import shuffle as util_shuffle
@@ -466,6 +466,10 @@ def make_sparse_group_classification(
         The generated samples.
     y : array of shape [n_samples]
         The integer labels for class membership of each sample.
+    groups : array of shape [n_features]
+        The group number for each feature
+    indices : array of shape [n_features]
+        A boolean array indicating which features are useful. Returned only if `useful_indices` is True.
 
     Notes
     -----
@@ -575,9 +579,9 @@ def make_sparse_group_classification(
             idx = idx[permute_group_map]
 
     if useful_indices:
-        return X, y, idx
+        return X, y, group_idx_map, idx
     else:
-        return X, y
+        return X, y, group_idx_map
 
 
 @registered
