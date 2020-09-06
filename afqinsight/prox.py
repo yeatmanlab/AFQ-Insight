@@ -96,7 +96,7 @@ class SparseGroupL1(object):
             \text{prox}_{\sigma P_1 + \sigma P_2} (u) = \left(
             \text{prox}_{\sigma P_2} \circ \text{prox}_{\sigma P_1}
             \right)(u)
-        
+
         where :math:`sigma` is a step size
 
         Parameters
