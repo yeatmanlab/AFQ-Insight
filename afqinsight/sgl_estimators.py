@@ -36,6 +36,14 @@ class SGLEstimator(BaseEstimator):
     lambd : float, default=0.0
         Hyper-parameter : overall regularization strength.
 
+    groups : {array-like}, total number of elements (n_features), default=None
+        Array of non-overlapping indices for each group. For example, if
+        nine features are grouped into equal contiguous groups of three,
+        then groups would be an nd.array like [[0, 1, 2], [3, 4, 5], [6,
+        7, 8]]. If None, all features will belong to their own singleton
+        group. We set groups in ``__init__`` so that it can be reused in
+        model selection and CV routines.
+
     fit_intercept : bool, default=True
         Specifies if a constant (a.k.a. bias or intercept) should be
         added to the linear predictor (X @ coef + intercept).
@@ -95,6 +103,7 @@ class SGLEstimator(BaseEstimator):
         self,
         alpha=1.0,
         lambd=0.0,
+        groups=None,
         fit_intercept=True,
         max_iter=5000,
         tol=1e-6,
@@ -105,6 +114,7 @@ class SGLEstimator(BaseEstimator):
     ):
         self.alpha = alpha
         self.lambd = lambd
+        self.groups = groups
         self.fit_intercept = fit_intercept
         self.max_iter = max_iter
         self.tol = tol
@@ -113,7 +123,7 @@ class SGLEstimator(BaseEstimator):
         self.suppress_solver_warnings = suppress_solver_warnings
         self.include_solver_trace = include_solver_trace
 
-    def fit(self, X, y, groups=None, loss="squared_loss"):
+    def fit(self, X, y, loss="squared_loss"):
         """Fit a linear model using the sparse group lasso
 
         Parameters
@@ -124,13 +134,6 @@ class SGLEstimator(BaseEstimator):
         y : array-like, shape (n_samples,) or (n_samples, n_outputs)
             The target values (class labels in classification, real numbers in
             regression).
-
-        groups : {array-like}, total number of elements (n_features), default=None
-            Array of non-overlapping indices for each group. For example, if
-            nine features are grouped into equal contiguous groups of three,
-            then groups would be an nd.array like [[0, 1, 2], [3, 4, 5], [6,
-            7, 8]]. If None, all features will belong to their own singleton
-            group.
 
         loss : ["squared_loss", "huber", "log"]
             The type of loss function to use in the PGD solver.
@@ -173,18 +176,18 @@ class SGLEstimator(BaseEstimator):
 
         n_samples, n_features = X.shape
         if self.fit_intercept:
-            X = np.hstack([np.ones((n_samples, 1)), X])
+            X = np.hstack([X, np.ones((n_samples, 1))])
 
         if self.warm_start and hasattr(self, "coef_"):
             if self.fit_intercept:
-                coef = np.concatenate((np.array([self.intercept_]), self.coef_))
+                coef = np.concatenate((self.coef_, np.array([self.intercept_])))
             else:
                 coef = self.coef_
         else:
             if self.fit_intercept:
                 coef = np.zeros(n_features + 1)
                 # Initial bias condition gives 50/50 for binary classification
-                coef[0] = 0.5
+                coef[-1] = 0.5
             else:
                 coef = np.zeros(n_features)
 
@@ -205,12 +208,13 @@ class SGLEstimator(BaseEstimator):
         else:
             ctx_mgr = contextlib.suppress()
 
+        groups = self.groups
         if groups is None:
             # If no groups provided, assign each feature to its own singleton group
             # e.g. for 5 features, groups = array([[0], [1], [2], [3], [4]])
             groups = np.arange(n_features).reshape((-1, 1))
 
-        bias_index = 0 if self.fit_intercept else None
+        bias_index = n_features if self.fit_intercept else None
         sg1 = SparseGroupL1(self.alpha, self.lambd, groups, bias_index=bias_index)
 
         with ctx_mgr:
@@ -235,8 +239,8 @@ class SGLEstimator(BaseEstimator):
             )
 
         if self.fit_intercept:
-            self.intercept_ = pgd.x[0]
-            self.coef_ = pgd.x[1:]
+            self.intercept_ = pgd.x[-1]
+            self.coef_ = pgd.x[:-1]
         else:
             # set intercept to zero as the other linear models do
             self.intercept_ = 0.0
@@ -246,6 +250,38 @@ class SGLEstimator(BaseEstimator):
 
         self.is_fitted_ = True
         return self
+
+    @property
+    def chosen_features_(self):
+        """An index array of chosen features"""
+        return np.nonzero(self.coef_)[0]
+
+    @property
+    def sparsity_mask_(self):
+        """A boolean array indicating which features survived regularization"""
+        return self.coef_ != 0
+
+    def like_nonzero_mask_(self, rtol=1e-8):
+        """A boolean array indicating which features are zero or close to zero
+
+        Parameters
+        ----------
+        rtol : float
+            Relative tolerance. Any features that are larger in magnitude
+            than ``rtol`` times the mean coefficient value are considered
+            nonzero-like.
+        """
+        mean_abs_coef = abs(self.coef_.mean())
+        return np.abs(self.coef_) > rtol * mean_abs_coef
+
+    @property
+    def chosen_groups_(self):
+        """A set of the group IDs that survived regularization"""
+        group_mask = [
+            bool(set(grp).intersection(set(self.chosen_features_)))
+            for grp in self.groups
+        ]
+        return np.nonzero(group_mask)[0]
 
 
 @registered
@@ -265,6 +301,14 @@ class SGLRegressor(SGLEstimator, RegressorMixin, LinearModel):
 
     lambd : float, default=1.0
         Hyper-parameter : overall regularization strength.
+
+    groups : {array-like}, total number of elements (n_features), default=None
+        Array of non-overlapping indices for each group. For example, if
+        nine features are grouped into equal contiguous groups of three,
+        then groups would be an nd.array like [[0, 1, 2], [3, 4, 5], [6,
+        7, 8]]. If None, all features will belong to their own singleton
+        group. We set groups in ``__init__`` so that it can be reused in
+        model selection and CV routines.
 
     fit_intercept : bool, default=True
         Specifies if a constant (a.k.a. bias or intercept) should be
@@ -313,7 +357,7 @@ class SGLRegressor(SGLEstimator, RegressorMixin, LinearModel):
 
     """
 
-    def fit(self, X, y, groups=None, loss="squared_loss"):
+    def fit(self, X, y, loss="squared_loss"):
         """Fit a linear model using the sparse group lasso
 
         Parameters
@@ -325,13 +369,6 @@ class SGLRegressor(SGLEstimator, RegressorMixin, LinearModel):
             The target values (class labels in classification, real numbers in
             regression).
 
-        groups : {array-like}, total number of elements (n_features), default=None
-            Array of non-overlapping indices for each group. For example, if
-            nine features are grouped into equal contiguous groups of three,
-            then groups would be an nd.array like [[0, 1, 2], [3, 4, 5], [6,
-            7, 8]]. If None, all features will belong to their own singleton
-            group.
-
         loss : ["squared_loss", "huber"]
             The type of loss function to use in the PGD solver.
 
@@ -340,7 +377,7 @@ class SGLRegressor(SGLEstimator, RegressorMixin, LinearModel):
         self : object
             Returns self.
         """
-        return super().fit(X=X, y=y, groups=groups, loss=loss)
+        return super().fit(X=X, y=y, loss=loss)
 
     def predict(self, X):
         """Predict targets for test vectors in ``X``.
@@ -378,6 +415,14 @@ class SGLClassifier(SGLEstimator, LinearClassifierMixin):
 
     lambd : float, default=0.0
         Hyper-parameter : overall regularization strength.
+
+    groups : {array-like}, total number of elements (n_features), default=None
+        Array of non-overlapping indices for each group. For example, if
+        nine features are grouped into equal contiguous groups of three,
+        then groups would be an nd.array like [[0, 1, 2], [3, 4, 5], [6,
+        7, 8]]. If None, all features will belong to their own singleton
+        group. We set groups in ``__init__`` so that it can be reused in
+        model selection and CV routines.
 
     fit_intercept : bool, default=True
         Specifies if a constant (a.k.a. bias or intercept) should be
@@ -429,7 +474,7 @@ class SGLClassifier(SGLEstimator, LinearClassifierMixin):
 
     """
 
-    def fit(self, X, y, groups=None):
+    def fit(self, X, y):
         """Fit a linear model using the sparse group lasso
 
         Parameters
@@ -441,19 +486,12 @@ class SGLClassifier(SGLEstimator, LinearClassifierMixin):
             The target values (class labels in classification, real numbers in
             regression).
 
-        groups : {array-like}, total number of elements (n_features), default=None
-            Array of non-overlapping indices for each group. For example, if
-            nine features are grouped into equal contiguous groups of three,
-            then groups would be an nd.array like [[0, 1, 2], [3, 4, 5], [6,
-            7, 8]]. If None, all features will belong to their own singleton
-            group.
-
         Returns
         -------
         self : object
             Returns self.
         """
-        return super().fit(X=X, y=y, groups=groups, loss="log")
+        return super().fit(X=X, y=y, loss="log")
 
     def decision_function(self, X):
         """

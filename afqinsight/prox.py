@@ -5,6 +5,8 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 
+from itertools import compress
+
 __all__ = []
 
 
@@ -40,6 +42,7 @@ class SparseGroupL1(object):
         would be an nd.array like [[0, 1, 2], [3, 4, 5], [6, 7, 8]]. If the
         feature matrix contains a bias or intercept feature, do not include it
         as a group.
+        TODO: Change to [array([0, 1, 2]), array([3, 4, 5]), array([6, 7, 8])]
 
     bias_index : int or None, default=None
         If None, regularize all coefficients. Otherwise, this is the index
@@ -59,9 +62,13 @@ class SparseGroupL1(object):
         self.alpha = alpha
         self.lambda_ = lambda_
         self.groups = groups
-        self.sqrt_group_lengths = np.sqrt(
-            np.sum(np.ones_like(np.array(groups)), axis=1)
+        self.feature2group_map = np.concatenate(
+            [
+                [grp_idx] * feature_indices.size
+                for grp_idx, feature_indices in enumerate(groups)
+            ]
         )
+        self.sqrt_group_lengths = np.sqrt([grp.size for grp in groups])
         self.bias_index = bias_index
 
     def __call__(self, x):
@@ -122,23 +129,31 @@ class SparseGroupL1(object):
             out[self.bias_index] = x[self.bias_index]
 
         norms = (
-            np.linalg.norm(l1_prox[np.array(self.groups)], axis=1)
+            np.array([np.linalg.norm(l1_prox[grp]) for grp in self.groups])
             / self.sqrt_group_lengths
         )
 
         norm_mask = norms > (1.0 - self.alpha) * self.lambda_ * step_size
-        mask_idx_true = np.where(norm_mask)[0]
-        mask_idx_false = np.where(np.logical_not(norm_mask))[0]
-        groups_true = np.array(self.groups)[mask_idx_true]
-        groups_false = np.array(self.groups)[mask_idx_false]
+        all_norm = all(norm_mask)
+        if not all_norm:
+            idx_true = np.array([], dtype=int)
+        else:
+            idx_true = np.concatenate(list(compress(self.groups, norm_mask)))
 
-        out[groups_true] -= (
+        if all_norm:
+            idx_false = np.array([], dtype=int)
+        else:
+            idx_false = np.concatenate(
+                list(compress(self.groups, np.logical_not(norm_mask)))
+            )
+
+        out[idx_true] -= (
             step_size
             * (1.0 - self.alpha)
             * self.lambda_
-            * out[groups_true]
-            / norms[mask_idx_true, np.newaxis]
+            * out[idx_true]
+            / norms[self.feature2group_map][idx_true]
         )
-        out[groups_false] = 0.0
+        out[idx_false] = 0.0
 
         return out
