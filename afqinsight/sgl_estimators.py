@@ -33,7 +33,7 @@ class SGLEstimator(BaseEstimator):
         Hyper-parameter : Combination between group lasso and lasso. alpha=0
         gives the group lasso and alpha=1 gives the lasso.
 
-    lambd : float, default=1.0
+    lambd : float, default=0.0
         Hyper-parameter : overall regularization strength.
 
     fit_intercept : bool, default=True
@@ -94,7 +94,7 @@ class SGLEstimator(BaseEstimator):
     def __init__(
         self,
         alpha=1.0,
-        lambd=1.0,
+        lambd=0.0,
         fit_intercept=True,
         max_iter=5000,
         tol=1e-6,
@@ -376,7 +376,7 @@ class SGLClassifier(SGLEstimator, LinearClassifierMixin):
         Hyper-parameter : Combination between group lasso and lasso. alpha=0
         gives the group lasso and alpha=1 gives the lasso.
 
-    lambd : float, default=1.0
+    lambd : float, default=0.0
         Hyper-parameter : overall regularization strength.
 
     fit_intercept : bool, default=True
