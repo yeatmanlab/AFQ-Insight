@@ -206,6 +206,8 @@ class SGLEstimator(BaseEstimator):
             ctx_mgr = contextlib.suppress()
 
         if groups is None:
+            # If no groups provided, assign each feature to its own singleton group
+            # e.g. for 5 features, groups = array([[0], [1], [2], [3], [4]])
             groups = np.arange(n_features).reshape((-1, 1))
 
         bias_index = 0 if self.fit_intercept else None
