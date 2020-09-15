@@ -133,7 +133,7 @@ class SGLEstimator(BaseEstimator):
             group.
 
         loss : ["squared_loss", "huber", "log"]
-            The type of loss function to use.
+            The type of loss function to use in the PGD solver.
 
         Returns
         -------
@@ -146,10 +146,14 @@ class SGLEstimator(BaseEstimator):
                 " got {0}".format(self.warm_start)
             )
 
-        allowed_losses = ["squared_loss", "huber", "log"]
-        if loss not in allowed_losses:
+        allowed_losses = ["squared_loss", "huber"]
+        if is_classifier(self) and loss.lower() != "log":
             raise ValueError(
-                "The argument loss must be one of {0};"
+                "For classification, loss must be 'log';" "got {0}".format(loss)
+            )
+        elif is_regressor(self) and loss.lower() not in allowed_losses:
+            raise ValueError(
+                "For regression, the argument loss must be one of {0};"
                 "got {1}".format(allowed_losses, loss)
             )
 
@@ -179,7 +183,8 @@ class SGLEstimator(BaseEstimator):
         else:
             if self.fit_intercept:
                 coef = np.zeros(n_features + 1)
-                coef[0] = 1.0
+                # Initial bias condition gives 50/50 for binary classification
+                coef[0] = 0.5
             else:
                 coef = np.zeros(n_features)
 
@@ -325,21 +330,18 @@ class SGLRegressor(SGLEstimator, RegressorMixin, LinearModel):
             7, 8]]. If None, all features will belong to their own singleton
             group.
 
+        loss : ["squared_loss", "huber"]
+            The type of loss function to use in the PGD solver.
+
         Returns
         -------
         self : object
             Returns self.
         """
-        allowed_losses = ["squared_loss", "huber"]
-        if loss not in allowed_losses:
-            raise ValueError(
-                "The argument loss must be one of {0};"
-                "got {1}".format(allowed_losses, loss)
-            )
         return super().fit(X=X, y=y, groups=groups, loss=loss)
 
     def predict(self, X):
-        """A reference implementation of a predicting function.
+        """Predict targets for test vectors in ``X``.
 
         Parameters
         ----------
@@ -503,10 +505,6 @@ class SGLClassifier(SGLEstimator, LinearClassifierMixin):
         else:
             indices = scores.argmax(axis=1)
 
-        print(X)
-        print(indices)
-        print(self.classes_)
-        print(self.classes_[indices])
         return self.classes_[indices]
 
     def predict_proba(self, X):
