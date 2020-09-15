@@ -3,7 +3,13 @@ import copt as cp
 import numpy as np
 import warnings
 
-from sklearn.base import BaseEstimator, RegressorMixin, is_classifier, is_regressor
+from sklearn.base import (
+    BaseEstimator,
+    RegressorMixin,
+    TransformerMixin,
+    is_classifier,
+    is_regressor,
+)
 from sklearn.linear_model._base import LinearClassifierMixin, LinearModel
 from sklearn.utils.extmath import safe_sparse_dot
 from sklearn.utils.multiclass import check_classification_targets
@@ -19,7 +25,7 @@ def registered(fn):
     return fn
 
 
-class SGLBaseEstimator(BaseEstimator):
+class SGLBaseEstimator(BaseEstimator, TransformerMixin):
     """
     An sklearn compatible sparse group lasso estimator.
 
@@ -282,6 +288,21 @@ class SGLBaseEstimator(BaseEstimator):
             for grp in self.groups
         ]
         return np.nonzero(group_mask)[0]
+
+    def transform(self, X):
+        """Remove columns corresponding to zeroed-out coefficients"""
+        # Check is fit had been called
+        check_is_fitted(self, "is_fitted_")
+
+        # Input validation
+        X = check_array(X, accept_sparse=True)
+
+        # Check that the input is of the same shape as the one passed
+        # during fit.
+        if X.shape[1] != self.coef_.size:
+            raise ValueError("Shape of input is different from what was seen in `fit`")
+
+        return X[:, self.sparsity_mask_]
 
 
 @registered
