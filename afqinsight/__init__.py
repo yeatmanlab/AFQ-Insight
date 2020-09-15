@@ -6,5 +6,5 @@ from . import utils  # noqa
 from .datasets import *  # noqa
 from .insight import *  # noqa
 from .transform import *  # noqa
-from .sgl_estimators import *  # noqa
+from .sgl import *  # noqa
 from .version import __version__  # noqa

@@ -19,7 +19,7 @@ def registered(fn):
     return fn
 
 
-class SGLEstimator(BaseEstimator):
+class SGLBaseEstimator(BaseEstimator):
     """
     An sklearn compatible sparse group lasso estimator.
 
@@ -285,7 +285,7 @@ class SGLEstimator(BaseEstimator):
 
 
 @registered
-class SGLRegressor(SGLEstimator, RegressorMixin, LinearModel):
+class SGL(SGLBaseEstimator, RegressorMixin, LinearModel):
     """
     An sklearn compatible sparse group lasso regressor.
 
@@ -399,7 +399,7 @@ class SGLRegressor(SGLEstimator, RegressorMixin, LinearModel):
 
 
 @registered
-class SGLClassifier(SGLEstimator, LinearClassifierMixin):
+class LogisticSGL(SGLBaseEstimator, LinearClassifierMixin):
     """
     An sklearn compatible sparse group lasso classifier.
 

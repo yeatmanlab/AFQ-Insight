@@ -1,14 +1,14 @@
 import pytest
 
-from afqinsight.sgl_estimators import SGLEstimator
-from afqinsight import SGLClassifier
-from afqinsight import SGLRegressor
+from afqinsight.sgl import SGLBaseEstimator
+from afqinsight import SGL
+from afqinsight import LogisticSGL
 
 from sklearn.utils.estimator_checks import check_estimator
 from sklearn.utils._testing import assert_array_almost_equal
 
 
-@pytest.mark.parametrize("Estimator", [SGLEstimator, SGLRegressor, SGLClassifier])
+@pytest.mark.parametrize("Estimator", [SGLBaseEstimator, SGL, LogisticSGL])
 def test_all_estimators(Estimator):
     return check_estimator(Estimator)
 
@@ -24,25 +24,25 @@ def test_lasso_toy():
     y = [-1, 0, 1]  # just a straight line
     T = [[2], [3], [4]]  # test sample
 
-    clf = SGLRegressor(lambd=1e-8)
+    clf = SGL(lambd=1e-8)
     clf.fit(X, y)
     pred = clf.predict(T)
     assert_array_almost_equal(clf.coef_, [1])
     assert_array_almost_equal(pred, [2, 3, 4])
 
-    clf = SGLRegressor(lambd=0.1)
+    clf = SGL(lambd=0.1)
     clf.fit(X, y)
     pred = clf.predict(T)
     assert_array_almost_equal(clf.coef_, [0.85])
     assert_array_almost_equal(pred, [1.7, 2.55, 3.4])
 
-    clf = SGLRegressor(lambd=0.5)
+    clf = SGL(lambd=0.5)
     clf.fit(X, y)
     pred = clf.predict(T)
     assert_array_almost_equal(clf.coef_, [0.25])
     assert_array_almost_equal(pred, [0.5, 0.75, 1.0])
 
-    clf = SGLRegressor(lambd=1)
+    clf = SGL(lambd=1)
     clf.fit(X, y)
     pred = clf.predict(T)
     assert_array_almost_equal(clf.coef_, [0.0])
