@@ -3,7 +3,7 @@ import copt as cp
 import numpy as np
 import warnings
 
-from sklearn.base import BaseEstimator, RegressorMixin, is_classifier
+from sklearn.base import BaseEstimator, RegressorMixin, is_classifier, is_regressor
 from sklearn.linear_model._base import LinearClassifierMixin, LinearModel
 from sklearn.utils.extmath import safe_sparse_dot
 from sklearn.utils.multiclass import check_classification_targets
