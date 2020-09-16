@@ -35,11 +35,11 @@ class SGLBaseEstimator(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    alpha : float, default=1.0
-        Hyper-parameter : Combination between group lasso and lasso. alpha=0
-        gives the group lasso and alpha=1 gives the lasso.
+    l1_ratio : float, default=1.0
+        Hyper-parameter : Combination between group lasso and lasso. l1_ratio=0
+        gives the group lasso and l1_ratio=1 gives the lasso.
 
-    lambd : float, default=0.0
+    alpha : float, default=0.0
         Hyper-parameter : overall regularization strength.
 
     groups : {array-like}, total number of elements (n_features), default=None
@@ -107,8 +107,8 @@ class SGLBaseEstimator(BaseEstimator, TransformerMixin):
 
     def __init__(
         self,
-        alpha=1.0,
-        lambd=0.0,
+        l1_ratio=1.0,
+        alpha=0.0,
         groups=None,
         fit_intercept=True,
         max_iter=5000,
@@ -118,8 +118,8 @@ class SGLBaseEstimator(BaseEstimator, TransformerMixin):
         suppress_solver_warnings=True,
         include_solver_trace=False,
     ):
+        self.l1_ratio = l1_ratio
         self.alpha = alpha
-        self.lambd = lambd
         self.groups = groups
         self.fit_intercept = fit_intercept
         self.max_iter = max_iter
@@ -217,7 +217,12 @@ class SGLBaseEstimator(BaseEstimator, TransformerMixin):
             groups = np.arange(n_features).reshape((-1, 1))
 
         bias_index = n_features if self.fit_intercept else None
-        sg1 = SparseGroupL1(self.alpha, self.lambd, groups, bias_index=bias_index)
+        sg1 = SparseGroupL1(
+            l1_ratio=self.l1_ratio,
+            alpha=self.alpha,
+            groups=groups,
+            bias_index=bias_index,
+        )
 
         with ctx_mgr:
             # For some metaparameters, minimize_PGD might not reach the desired
@@ -312,11 +317,11 @@ class SGL(SGLBaseEstimator, RegressorMixin, LinearModel):
 
     Parameters
     ----------
-    alpha : float, default=1.0
-        Hyper-parameter : Combination between group lasso and lasso. alpha=0
-        gives the group lasso and alpha=1 gives the lasso.
+    l1_ratio : float, default=1.0
+        Hyper-parameter : Combination between group lasso and lasso. l1_ratio=0
+        gives the group lasso and l1_ratio=1 gives the lasso.
 
-    lambd : float, default=1.0
+    alpha : float, default=1.0
         Hyper-parameter : overall regularization strength.
 
     groups : {array-like}, total number of elements (n_features), default=None
@@ -426,11 +431,11 @@ class LogisticSGL(SGLBaseEstimator, LinearClassifierMixin):
 
     Parameters
     ----------
-    alpha : float, default=1.0
-        Hyper-parameter : Combination between group lasso and lasso. alpha=0
-        gives the group lasso and alpha=1 gives the lasso.
+    l1_ratio : float, default=1.0
+        Hyper-parameter : Combination between group lasso and lasso. l1_ratio=0
+        gives the group lasso and l1_ratio=1 gives the lasso.
 
-    lambd : float, default=0.0
+    alpha : float, default=0.0
         Hyper-parameter : overall regularization strength.
 
     groups : {array-like}, total number of elements (n_features), default=None

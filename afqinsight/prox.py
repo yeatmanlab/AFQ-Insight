@@ -22,27 +22,26 @@ class SparseGroupL1(object):
     Implements the sparse group lasso penalty [1]_
 
     .. math::
-        (1 - \alpha) * \lambda \displaystyle \sum_{g \in G} || \beta_g ||_2
-        + \alpha * \lambda || \beta ||_1
+        (1 - \rho) * \alpha \displaystyle \sum_{g \in G} || \beta_g ||_2
+        + \rho * \alpha || \beta ||_1
 
     where :math:`G` is a partition of the features into groups.
 
     Parameters
     ----------
-    alpha : float
-        Combination between group lasso and lasso. alpha = 0 gives the group
-        lasso and alpha = 1 gives the lasso.
+    l1_ratio : float
+        Combination between group lasso and lasso. l1_ratio = 0 gives the
+        group lasso and l1_ratio = 1 gives the lasso. ``l1_ratio``
+        corresponds to `\rho` in the equation above
 
-    lambda_ : float
+    alpha : float
         Regularization parameter, overall strength of regularization.
 
-    groups : numpy.ndarray
+    groups : list of numpy.ndarray
         array of non-overlapping indices for each group. For example, if nine
         features are grouped into equal contiguous groups of three, then groups
-        would be an nd.array like [[0, 1, 2], [3, 4, 5], [6, 7, 8]]. If the
-        feature matrix contains a bias or intercept feature, do not include it
-        as a group.
-        TODO: Change to [array([0, 1, 2]), array([3, 4, 5]), array([6, 7, 8])]
+        would be [array([0, 1, 2]), array([3, 4, 5]), array([6, 7, 8])]. If the
+        feature matrix contains a bias or intercept feature, do not include it as a group.
 
     bias_index : int or None, default=None
         If None, regularize all coefficients. Otherwise, this is the index
@@ -58,9 +57,9 @@ class SparseGroupL1(object):
         DOI: 10.1080/10618600.2012.681250
     """  # noqa: W605
 
-    def __init__(self, alpha, lambda_, groups, bias_index=None):
+    def __init__(self, l1_ratio, alpha, groups, bias_index=None):
+        self.l1_ratio = l1_ratio
         self.alpha = alpha
-        self.lambda_ = lambda_
         self.groups = groups
         self.feature2group_map = np.concatenate(
             [
@@ -73,8 +72,8 @@ class SparseGroupL1(object):
 
     def __call__(self, x):
         penalty = (
-            (1.0 - self.alpha)
-            * self.lambda_
+            (1.0 - self.l1_ratio)
+            * self.alpha
             * np.sum([np.linalg.norm(x[g]) for g in self.groups])
         )
 
@@ -82,7 +81,7 @@ class SparseGroupL1(object):
         if self.bias_index is not None:
             ind[self.bias_index] = False
 
-        penalty += self.alpha * self.lambda_ * np.abs(x[ind]).sum()
+        penalty += self.l1_ratio * self.alpha * np.abs(x[ind]).sum()
         return penalty
 
     def prox(self, x, step_size):
@@ -93,8 +92,8 @@ class SparseGroupL1(object):
         .. math::
             P(\beta) = P_1(\beta) + P_2(\beta)
 
-        where :math:`P_2 = \alpha \lambda || \beta ||_1` is the lasso
-        penalty and :math:`P_1 = (1 - \alpha) \lambda \displaystyle
+        where :math:`P_2 = \rho \alpha || \beta ||_1` is the lasso
+        penalty and :math:`P_1 = (1 - \rho) \alpha \displaystyle
         \sum_{g \in G} || \beta_g ||_2` is the group lasso penalty.
 
         Then the proximal operator is given by
@@ -120,8 +119,8 @@ class SparseGroupL1(object):
             proximal operator of sparse group lasso penalty evaluated on
             input `x` with step size `step_size`
         """  # noqa: W605
-        l1_prox = np.fmax(x - self.alpha * self.lambda_ * step_size, 0) - np.fmax(
-            -x - self.alpha * self.lambda_ * step_size, 0
+        l1_prox = np.fmax(x - self.l1_ratio * self.alpha * step_size, 0) - np.fmax(
+            -x - self.l1_ratio * self.alpha * step_size, 0
         )
         out = l1_prox.copy()
 
@@ -133,7 +132,7 @@ class SparseGroupL1(object):
             / self.sqrt_group_lengths
         )
 
-        norm_mask = norms > (1.0 - self.alpha) * self.lambda_ * step_size
+        norm_mask = norms > (1.0 - self.l1_ratio) * self.alpha * step_size
         all_norm = all(norm_mask)
         if not all_norm:
             idx_true = np.array([], dtype=int)
@@ -149,8 +148,8 @@ class SparseGroupL1(object):
 
         out[idx_true] -= (
             step_size
-            * (1.0 - self.alpha)
-            * self.lambda_
+            * (1.0 - self.l1_ratio)
+            * self.alpha
             * out[idx_true]
             / norms[self.feature2group_map][idx_true]
         )
