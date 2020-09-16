@@ -427,9 +427,9 @@ def make_sparse_group_regression(
         exceeds 1.
 
     effective_rank : int or None, optional (default=None)
-        If not None, provides the number of singular vectors to explain the 
+        If not None, provides the number of singular vectors to explain the
         input data.
- 
+
     shift : float, array of shape [n_features] or None, optional (default=0.0)
         Shift features by the specified value. If None, then features
         are shifted by a random value drawn in [-class_sep, class_sep].
