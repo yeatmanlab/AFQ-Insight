@@ -156,11 +156,7 @@ class SGLBaseEstimator(BaseEstimator, TransformerMixin):
             )
 
         allowed_losses = ["squared_loss", "huber"]
-        if is_classifier(self) and loss.lower() != "log":
-            raise ValueError(
-                "For classification, loss must be 'log';" "got {0}".format(loss)
-            )
-        elif is_regressor(self) and loss.lower() not in allowed_losses:
+        if is_regressor(self) and loss.lower() not in allowed_losses:
             raise ValueError(
                 "For regression, the argument loss must be one of {0};"
                 "got {1}".format(allowed_losses, loss)
