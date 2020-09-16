@@ -8,7 +8,7 @@ import os.path as op
 import pandas as pd
 from collections import namedtuple
 from shutil import copyfile
-from sklearn.datasets import make_classification
+from sklearn.datasets import make_classification, make_regression
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils import check_random_state
 from sklearn.utils import shuffle as util_shuffle
@@ -350,6 +350,133 @@ def make_sparse_group_classification(
         return X, y, group_idx_map, idx
     else:
         return X, y, group_idx_map
+
+
+def make_sparse_group_regression(
+    n_samples=100,
+    n_groups=20,
+    n_informative_groups=2,
+    n_features_per_group=20,
+    n_informative_per_group=2,
+    n_redundant_per_group=2,
+    n_repeated_per_group=0,
+    weights=None,
+    effective_rank=None,
+    shift=0.0,
+    scale=1.0,
+    shuffle=True,
+    useful_indices=False,
+    random_state=None,
+):
+    """Generate a random n-class sparse group classification problem.
+
+    This initially creates clusters of points normally distributed (std=1)
+    about vertices of an ``n_informative``-dimensional hypercube with sides of
+    length ``2*class_sep`` and assigns an equal number of clusters to each
+    class. It introduces interdependence between these features and adds
+    various types of further noise to the data.
+
+    Prior to shuffling, ``X`` stacks a number of these primary "informative"
+    features, "redundant" linear combinations of these, "repeated" duplicates
+    of sampled features, and arbitrary noise for and remaining features.
+    This method uses sklearn.datasets.make_classification to construct a
+    giant unshuffled classification problem of size
+    ``n_groups * n_features_per_group`` and then distributes the returned
+    features to each group. It then optionally shuffles each group.
+
+    Parameters
+    ----------
+    n_samples : int, optional (default=100)
+        The number of samples.
+
+    n_groups : int, optional (default=10)
+        The number of feature groups.
+
+    n_informative_groups : int, optional (default=2)
+        The total number of informative groups. All other groups will be
+        just noise.
+
+    n_features_per_group : int, optional (default=20)
+        The total number of features_per_group. These comprise `n_informative`
+        informative features, `n_redundant` redundant features, `n_repeated`
+        duplicated features and `n_features-n_informative-n_redundant-
+        n_repeated` useless features drawn at random.
+
+    n_informative_per_group : int, optional (default=2)
+        The number of informative features_per_group. Each class is composed
+        of a number of gaussian clusters each located around the vertices of a
+        hypercube in a subspace of dimension `n_informative_per_group`. For
+        each cluster, informative features are drawn independently from
+        N(0, 1) and then randomly linearly combined within each cluster in
+        order to add covariance. The clusters are then placed on the vertices
+        of the hypercube.
+
+    n_redundant_per_group : int, optional (default=2)
+        The number of redundant features per group. These features are
+        generated as random linear combinations of the informative features.
+
+    n_repeated_per_group : int, optional (default=0)
+        The number of duplicated features per group, drawn randomly from the
+        informative and the redundant features.
+
+    weights : list of floats or None (default=None)
+        The proportions of samples assigned to each class. If None, then
+        classes are balanced. Note that if `len(weights) == n_classes - 1`,
+        then the last class weight is automatically inferred.
+        More than `n_samples` samples may be returned if the sum of `weights`
+        exceeds 1.
+
+    effective_rank : int or None, optional (default=None)
+        If not None, provides the number of singular vectors to explain the 
+        input data.
+ 
+    shift : float, array of shape [n_features] or None, optional (default=0.0)
+        Shift features by the specified value. If None, then features
+        are shifted by a random value drawn in [-class_sep, class_sep].
+
+    scale : float, array of shape [n_features] or None, optional (default=1.0)
+        Multiply features by the specified value. If None, then features
+        are scaled by a random value drawn in [1, 100]. Note that scaling
+        happens after shifting.
+
+    shuffle : boolean, optional (default=True)
+        Shuffle the samples and the features.
+
+    useful_indices : boolean, optional (default=False)
+        If True, a boolean array indicating useful features is returned
+
+    random_state : int, RandomState instance or None, optional (default=None)
+        If int, random_state is the seed used by the random number generator;
+        If RandomState instance, random_state is the random number generator;
+        If None, the random number generator is the RandomState instance used
+        by `np.random`.
+
+    Returns
+    -------
+    X : array of shape [n_samples, n_features]
+        The generated samples.
+    y : array of shape [n_samples]
+        The integer labels for class membership of each sample.
+    groups : array of shape [n_features]
+        The group number for each feature
+    indices : array of shape [n_features]
+        A boolean array indicating which features are useful. Returned only if `useful_indices` is True.
+
+    Notes
+    -----
+    The algorithm is adapted from Guyon [1] and was designed to generate
+    the "Madelon" dataset.
+
+    References
+    ----------
+    .. [1] I. Guyon, "Design of experiments for the NIPS 2003 variable
+           selection benchmark", 2003.
+
+    See also
+    --------
+    make_regression: non-group-sparse version
+    """
+    pass
 
 
 @registered
