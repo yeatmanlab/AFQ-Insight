@@ -476,7 +476,13 @@ def make_sparse_group_regression(
     --------
     make_regression: non-group-sparse version
     """
-    pass
+
+    X, y = make_regression(
+        n_samples=n_samples,
+        effective_rank=effective_rank,
+        shuffle=shuffle,
+        random_state=random_state
+    )
 
 
 @registered
