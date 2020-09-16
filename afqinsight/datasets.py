@@ -8,7 +8,7 @@ import os.path as op
 import pandas as pd
 from collections import namedtuple
 from shutil import copyfile
-from sklearn.datasets._samples_generator import _generate_hypercube
+from sklearn.datasets.samples_generator import _generate_hypercube
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils import check_random_state
 from sklearn.utils import shuffle as util_shuffle
