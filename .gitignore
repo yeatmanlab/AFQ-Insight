@@ -69,6 +69,7 @@ target/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+./*.ipynb
 
 # pyenv
 .python-version
@@ -105,3 +106,14 @@ ENV/
 
 # conda environment file
 environment.yml
+
+# misc
+*.DS_Store
+*.idea
+
+# build files
+src
+
+# local data
+data
+data_with_weights
