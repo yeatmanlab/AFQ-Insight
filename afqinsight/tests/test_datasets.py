@@ -1,66 +1,62 @@
 from __future__ import absolute_import, division, print_function
 
 import numpy as np
-from afqinsight.datasets import make_classification
-from collections import defaultdict
-from functools import partial
-from sklearn.utils.testing import assert_equal
-from sklearn.utils.testing import assert_array_almost_equal
-from sklearn.utils.testing import assert_raises
+from afqinsight.datasets import make_sparse_group_classification
+# from collections import defaultdict
+# from functools import partial
+# from sklearn.utils._testing import assert_array_almost_equal
+# from sklearn.utils._testing import assert_raises
 
 
-# def test_make_classification():
-#     weights = [0.1, 0.25]
-#     X, y = make_classification(
-#         n_samples=100,
-#         n_features=20,
-#         n_informative=5,
-#         n_redundant=1,
-#         n_repeated=1,
-#         n_classes=3,
-#         n_clusters_per_class=1,
-#         hypercube=False,
-#         shift=None,
-#         scale=None,
-#         weights=weights,
-#         random_state=0,
-#     )
+def test_make_group_sparse_classification():
+    weights = [0.10, 0.25]
+    X, y, groups, = make_sparse_group_classification(
+        n_samples=100,
+        n_groups=10,
+        n_features_per_group=2,
+        n_informative_groups=5,
+        n_redundant_per_group=1,
+        n_repeated_per_group=1,
+        n_classes=3,
+        n_clusters_per_class=1,
+        hypercube=False,
+        shift=None,
+        scale=None,
+        weights=weights,
+        random_state=0,
+    )
 
-#     assert_equal(weights, [0.1, 0.25])
-#     assert_equal(X.shape, (100, 20), "X shape mismatch")
-#     assert_equal(y.shape, (100,), "y shape mismatch")
-#     assert_equal(np.unique(y).shape, (3,), "Unexpected number of classes")
-#     assert_equal(sum(y == 0), 10, "Unexpected number of samples in class #0")
-#     assert_equal(sum(y == 1), 25, "Unexpected number of samples in class #1")
-#     assert_equal(sum(y == 2), 65, "Unexpected number of samples in class #2")
+    assert weights == [0.1, 0.25]
+    assert X.shape == (100, 20), "X shape mismatch"
+    assert y.shape == (100,), "y shape mismatch"
+    assert np.unique(y).shape == (3,), "Unexpected number of classes"
+    assert sum(y == 0) == 11, "Unexpected number of samples in class #0"
+    assert sum(y == 1) == 25, "Unexpected number of samples in class #1"
+    assert sum(y == 2) == 64, "Unexpected number of samples in class #2"
 
-#     # Test for n_features > 30
-#     X, y = make_classification(
-#         n_samples=2000,
-#         n_features=31,
-#         n_informative=31,
-#         n_redundant=0,
-#         n_repeated=0,
-#         hypercube=True,
-#         scale=0.5,
-#         random_state=0,
-#     )
+    # Test for n_features > 30
+    X, y, groups = make_sparse_group_classification(
+        n_samples=2000,
+        n_groups=11,
+        n_features_per_group=3,
+        n_informative_groups=11,
+        n_redundant_per_group=0,
+        n_repeated_per_group=0,
+        hypercube=True,
+        scale=0.5,
+        random_state=0,
+    )
 
-#     assert_equal(X.shape, (2000, 31), "X shape mismatch")
-#     assert_equal(y.shape, (2000,), "y shape mismatch")
-#     assert_equal(
-#         np.unique(X.view([("", X.dtype)] * X.shape[1]))
-#         .view(X.dtype)
-#         .reshape(-1, X.shape[1])
-#         .shape[0],
-#         2000,
-#         "Unexpected number of unique rows",
-#     )
+    assert X.shape == (2000, 33), "X shape mismatch"
+    assert y.shape == (2000,), "y shape mismatch"
+    assert (np.unique(X.view([('', X.dtype)]*X.shape[1])).view(X.dtype)
+            .reshape(-1, X.shape[1]).shape[0] == 2000), (
+                "Unexpected number of unique rows")
 
-#     assert_raises(
-#         ValueError, make_classification, n_features=2, n_informative=2, n_redundant=3
-#     )
-#     assert_raises(ValueError, make_classification, weights=weights, n_classes=5)
+    # assert_raises(
+    #     ValueError, make_sparse_group_classification, n_features_per_group=2, n_informative_groups=2, n_redundant_per_group=3
+    # )
+    # assert_raises(ValueError, make_sparse_group_classification, weights=weights, n_classes=5)
 
 
 # def test_make_classification_informative_features():
