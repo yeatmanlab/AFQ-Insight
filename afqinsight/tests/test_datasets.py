@@ -29,6 +29,7 @@ def test_make_group_sparse_classification():
     assert weights == [0.1, 0.25]
     assert X.shape == (100, 20), "X shape mismatch"
     assert y.shape == (100,), "y shape mismatch"
+    assert groups.shape == (20,), "groups shape mismatch"
     assert np.unique(y).shape == (3,), "Unexpected number of classes"
     assert sum(y == 0) == 11, "Unexpected number of samples in class #0"
     assert sum(y == 1) == 25, "Unexpected number of samples in class #1"
@@ -53,6 +54,7 @@ def test_make_group_sparse_classification():
 
     assert X.shape == (2000, 33), "X shape mismatch"
     assert y.shape == (2000,), "y shape mismatch"
+    assert groups.shape == (33,), "groups shape mismatch"
     # assert (np.unique(X.view([('', X.dtype)]*X.shape[1])).view(X.dtype)
     #         .reshape(-1, X.shape[1]).shape[0] == 2000), (
     #             "Unexpected number of unique rows")
