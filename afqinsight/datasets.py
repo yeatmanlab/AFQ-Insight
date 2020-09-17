@@ -345,13 +345,11 @@ def make_sparse_group_classification(
 
         if useful_indices:
             idx = idx[permute_group_map]
-    else: 
+    else:
         group_idx_map = np.concatenate(
             [
                 np.ones(n_features_per_group, dtype=np.int32) * i
-                for i in np.random.choice(
-                    np.arange(n_groups), size=n_groups, replace=False
-                )
+                for i in range(n_groups)
             ]
         )
 
