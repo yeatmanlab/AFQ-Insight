@@ -1,11 +1,11 @@
 from __future__ import absolute_import, division, print_function
 
 import numpy as np
-from afqinsight.datasets import make_sparse_group_classification
+from afqinsight.datasets import make_sparse_group_classification, make_sparse_group_regression
 # from collections import defaultdict
 # from functools import partial
 # from sklearn.utils._testing import assert_array_almost_equal
-# from sklearn.utils._testing import assert_raises
+from sklearn.utils._testing import assert_raises
 
 
 def test_make_group_sparse_classification():
@@ -42,21 +42,27 @@ def test_make_group_sparse_classification():
         n_informative_groups=11,
         n_redundant_per_group=0,
         n_repeated_per_group=0,
+        n_clusters_per_class=1,
+        n_classes=3,
         hypercube=True,
+        flip_y=0,
+        shift=None,
         scale=0.5,
         random_state=0,
     )
 
     assert X.shape == (2000, 33), "X shape mismatch"
     assert y.shape == (2000,), "y shape mismatch"
-    assert (np.unique(X.view([('', X.dtype)]*X.shape[1])).view(X.dtype)
-            .reshape(-1, X.shape[1]).shape[0] == 2000), (
-                "Unexpected number of unique rows")
+    # assert (np.unique(X.view([('', X.dtype)]*X.shape[1])).view(X.dtype)
+    #         .reshape(-1, X.shape[1]).shape[0] == 2000), (
+    #             "Unexpected number of unique rows")
 
     # assert_raises(
-    #     ValueError, make_sparse_group_classification, n_features_per_group=2, n_informative_groups=2, n_redundant_per_group=3
+    #     ValueError, make_sparse_group_classification, n_features_per_group=2,
+    #     n_informative_groups=2,
+    #     n_redundant_per_group=1
     # )
-    # assert_raises(ValueError, make_sparse_group_classification, weights=weights, n_classes=5)
+    assert_raises(ValueError, make_sparse_group_classification, weights=weights, n_classes=5)
 
 
 # def test_make_classification_informative_features():
@@ -172,3 +178,26 @@ def test_make_group_sparse_classification():
 #         n_classes=3,
 #         n_clusters_per_class=2,
 #     )
+
+def test_make_sparse_group_regression():
+    X, y, groups = make_sparse_group_regression(
+        n_samples=100,
+        n_groups=2,
+        n_informative_groups=1,
+        n_features_per_group=5,
+        n_informative_per_group=2,
+        effective_rank=5,
+        random_state=0,
+    )
+
+    assert X.shape == (100, 10), "X shape mismatch"
+    assert y.shape == (100,), "y shape mismatch"
+    assert groups.shape == (10,), "groups shape mismatch"
+    # assert sum(c != 0.0) == 2, "Unexpected number of informative features"
+
+    # Test that y ~= np.dot(X, c) + bias + N(0, 1.0).
+    # assert_almost_equal(np.std(y - np.dot(X, c)), 1.0, decimal=1)
+
+    # Test with small number of features.
+    # X, y = make_sparse_group_regression(n_samples=100, n_groups=1,n_informative_groups=1)  # n_informative=3
+    # assert X.shape == (100, 1)
