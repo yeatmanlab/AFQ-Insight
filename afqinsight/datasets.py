@@ -362,11 +362,9 @@ def make_sparse_group_classification(
 def make_sparse_group_regression(
     n_samples=100,
     n_groups=20,
-    n_informative_groups=2,
+    n_informative_groups=5,
     n_features_per_group=20,
-    n_informative_per_group=2,
-    n_redundant_per_group=2,
-    n_repeated_per_group=0,
+    n_informative_per_group=5,
     weights=None,
     effective_rank=None,
     shift=0.0,
@@ -417,14 +415,6 @@ def make_sparse_group_regression(
         N(0, 1) and then randomly linearly combined within each cluster in
         order to add covariance. The clusters are then placed on the vertices
         of the hypercube.
-
-    n_redundant_per_group : int, optional (default=2)
-        The number of redundant features per group. These features are
-        generated as random linear combinations of the informative features.
-
-    n_repeated_per_group : int, optional (default=0)
-        The number of duplicated features per group, drawn randomly from the
-        informative and the redundant features.
 
     weights : list of floats or None (default=None)
         The proportions of samples assigned to each class. If None, then
@@ -483,13 +473,53 @@ def make_sparse_group_regression(
     --------
     make_regression: non-group-sparse version
     """
+    generator = check_random_state(random_state)
+
+    total_features = n_groups * n_features_per_group
+    total_informative = n_informative_groups * n_informative_per_group
 
     X, y = make_regression(
         n_samples=n_samples,
+        n_features=total_features,
+        n_informative=total_informative,
         effective_rank=effective_rank,
-        shuffle=shuffle,
-        random_state=random_state
+        shuffle=False,
+        coef=False,
+        random_state=generator,
     )
+
+    idx = np.arange(total_features) < total_informative
+
+    # Evenly distribute the first `n_informative_groups * n_features_per_group`
+    # features into the first `n_informative_groups` groups
+    n_info_grp_features = n_informative_groups * n_features_per_group
+    idx_range = np.arange(n_info_grp_features)
+
+    idx_map_consolidated_2_grouped = (
+        np.concatenate(
+            [np.arange(0, n_info_grp_features, n_informative_groups)]
+            * n_informative_groups
+        )
+        + idx_range // n_features_per_group
+    )
+
+    X = np.concatenate(
+        [X[:, idx_map_consolidated_2_grouped], X[:, n_info_grp_features:]], axis=1
+    )
+
+    if useful_indices:
+        idx = np.concatenate(
+            [idx[idx_map_consolidated_2_grouped], idx[n_info_grp_features:]]
+        )
+
+    group_idx_map = np.concatenate(
+        [
+            np.ones(n_features_per_group, dtype=np.int32) * i
+            for i in range(n_groups)
+        ]
+    )
+
+    return X, y, group_idx_map
 
 
 @registered
