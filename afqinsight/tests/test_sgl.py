@@ -69,3 +69,10 @@ def test_sgl_toy(loss):
     pred = clf.predict(T)
     assert_array_almost_equal(clf.coef_, [0.0])
     assert_array_almost_equal(pred, [0, 0, 0])
+
+
+def test_alpha_grid():
+    # TODO: Run _alpha_grid on a few problems
+    # TODO: Confirm that the highest alpha yields coef_ == 0
+    # TODO: Smoke test that n_alphas and eps gives the expected output
+    pass

@@ -15,6 +15,38 @@ def registered(fn):
     return fn
 
 
+def _soft_threshold(z, alpha):
+    """Apply the element-wise soft thresholding operator
+
+    The soft-thresholding operator is
+
+    .. math::
+        S(z_i, alpha) = \begin{cases}
+            z_i + alpha & z_i < -T \\
+            0 & -alpha \le z_i \le alpha \\
+            z_i - alpha & alpha < z_i
+        \end{cases}
+        (
+        \text{prox}_{\sigma P_2} \circ \text{prox}_{\sigma P_1}
+        \right)(u)
+
+
+    Parameters
+    ----------
+    z : array-like
+        Input array
+
+    alpha : float
+        threshold value
+
+    Returns
+    -------
+    np.ndarray
+        Element-wise soft-thresholded array
+    """  # noqa: W605
+    return np.fmax(z - alpha, 0) - np.fmax(-z - alpha, 0)
+
+
 @registered
 class SparseGroupL1(object):
     """Sparse group lasso penalty class for use with openopt/copt package.
@@ -38,10 +70,11 @@ class SparseGroupL1(object):
         Regularization parameter, overall strength of regularization.
 
     groups : list of numpy.ndarray
-        array of non-overlapping indices for each group. For example, if nine
-        features are grouped into equal contiguous groups of three, then groups
-        would be [array([0, 1, 2]), array([3, 4, 5]), array([6, 7, 8])]. If the
-        feature matrix contains a bias or intercept feature, do not include it as a group.
+        list of arrays of non-overlapping indices for each group. For
+        example, if nine features are grouped into equal contiguous groups of
+        three, then groups would be ``[array([0, 1, 2]), array([3, 4, 5]),
+        array([6, 7, 8])]``. If the feature matrix contains a bias or
+        intercept feature, do not include it as a group.
 
     bias_index : int or None, default=None
         If None, regularize all coefficients. Otherwise, this is the index
@@ -119,9 +152,7 @@ class SparseGroupL1(object):
             proximal operator of sparse group lasso penalty evaluated on
             input `x` with step size `step_size`
         """  # noqa: W605
-        l1_prox = np.fmax(x - self.l1_ratio * self.alpha * step_size, 0) - np.fmax(
-            -x - self.l1_ratio * self.alpha * step_size, 0
-        )
+        l1_prox = _soft_threshold(x, self.l1_ratio * self.alpha * step_size)
         out = l1_prox.copy()
 
         if self.bias_index is not None:

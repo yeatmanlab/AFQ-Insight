@@ -3,6 +3,9 @@ import copt as cp
 import numpy as np
 import warnings
 
+from functools import partial
+from scipy import sparse
+from scipy.optimize import root_scalar
 from sklearn.base import (
     BaseEstimator,
     RegressorMixin,
@@ -10,12 +13,17 @@ from sklearn.base import (
     is_classifier,
     is_regressor,
 )
-from sklearn.linear_model._base import LinearClassifierMixin, LinearModel
+from sklearn.linear_model._base import (
+    LinearClassifierMixin,
+    LinearModel,
+    _preprocess_data,
+)
+from sklearn.linear_model._coordinate_descent import _alpha_grid as _lasso_alpha_grid
 from sklearn.utils.extmath import safe_sparse_dot
 from sklearn.utils.multiclass import check_classification_targets
 from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
 
-from .prox import SparseGroupL1
+from .prox import SparseGroupL1, _soft_threshold
 
 __all__ = []
 
@@ -42,13 +50,15 @@ class SGLBaseEstimator(BaseEstimator, TransformerMixin):
     alpha : float, default=0.0
         Hyper-parameter : overall regularization strength.
 
-    groups : {array-like}, total number of elements (n_features), default=None
-        Array of non-overlapping indices for each group. For example, if
-        nine features are grouped into equal contiguous groups of three,
-        then groups would be an nd.array like [[0, 1, 2], [3, 4, 5], [6,
-        7, 8]]. If None, all features will belong to their own singleton
-        group. We set groups in ``__init__`` so that it can be reused in
-        model selection and CV routines.
+    groups : list of numpy.ndarray
+        list of arrays of non-overlapping indices for each group. For
+        example, if nine features are grouped into equal contiguous groups of
+        three, then groups would be ``[array([0, 1, 2]), array([3, 4, 5]),
+        array([6, 7, 8])]``. If the feature matrix contains a bias or
+        intercept feature, do not include it as a group. If None, all
+        features will belong to their own singleton group. We set groups in
+        ``__init__`` so that it can be reused in model selection and CV
+        routines.
 
     fit_intercept : bool, default=True
         Specifies if a constant (a.k.a. bias or intercept) should be
@@ -160,6 +170,12 @@ class SGLBaseEstimator(BaseEstimator, TransformerMixin):
             raise ValueError(
                 "For regression, the argument loss must be one of {0};"
                 "got {1}".format(allowed_losses, loss)
+            )
+
+        if not 0 <= self.l1_ratio <= 1:
+            raise ValueError(
+                "The parameter l1_ratio must satisfy 0 <= l1_ratio <= 1;"
+                "got {0}".format(self.l1_ratio)
             )
 
         X, y = check_X_y(
@@ -284,11 +300,14 @@ class SGLBaseEstimator(BaseEstimator, TransformerMixin):
     @property
     def chosen_groups_(self):
         """A set of the group IDs that survived regularization"""
-        group_mask = [
-            bool(set(grp).intersection(set(self.chosen_features_)))
-            for grp in self.groups
-        ]
-        return np.nonzero(group_mask)[0]
+        if self.groups is not None:
+            group_mask = [
+                bool(set(grp).intersection(set(self.chosen_features_)))
+                for grp in self.groups
+            ]
+            return np.nonzero(group_mask)[0]
+        else:
+            return self.chosen_features_
 
     def transform(self, X):
         """Remove columns corresponding to zeroed-out coefficients"""
@@ -324,13 +343,15 @@ class SGL(SGLBaseEstimator, RegressorMixin, LinearModel):
     alpha : float, default=1.0
         Hyper-parameter : overall regularization strength.
 
-    groups : {array-like}, total number of elements (n_features), default=None
-        Array of non-overlapping indices for each group. For example, if
-        nine features are grouped into equal contiguous groups of three,
-        then groups would be an nd.array like [[0, 1, 2], [3, 4, 5], [6,
-        7, 8]]. If None, all features will belong to their own singleton
-        group. We set groups in ``__init__`` so that it can be reused in
-        model selection and CV routines.
+    groups : list of numpy.ndarray
+        list of arrays of non-overlapping indices for each group. For
+        example, if nine features are grouped into equal contiguous groups of
+        three, then groups would be ``[array([0, 1, 2]), array([3, 4, 5]),
+        array([6, 7, 8])]``. If the feature matrix contains a bias or
+        intercept feature, do not include it as a group. If None, all
+        features will belong to their own singleton group. We set groups in
+        ``__init__`` so that it can be reused in model selection and CV
+        routines.
 
     fit_intercept : bool, default=True
         Specifies if a constant (a.k.a. bias or intercept) should be
@@ -438,13 +459,15 @@ class LogisticSGL(SGLBaseEstimator, LinearClassifierMixin):
     alpha : float, default=0.0
         Hyper-parameter : overall regularization strength.
 
-    groups : {array-like}, total number of elements (n_features), default=None
-        Array of non-overlapping indices for each group. For example, if
-        nine features are grouped into equal contiguous groups of three,
-        then groups would be an nd.array like [[0, 1, 2], [3, 4, 5], [6,
-        7, 8]]. If None, all features will belong to their own singleton
-        group. We set groups in ``__init__`` so that it can be reused in
-        model selection and CV routines.
+    groups : list of numpy.ndarray
+        list of arrays of non-overlapping indices for each group. For
+        example, if nine features are grouped into equal contiguous groups of
+        three, then groups would be ``[array([0, 1, 2]), array([3, 4, 5]),
+        array([6, 7, 8])]``. If the feature matrix contains a bias or
+        intercept feature, do not include it as a group. If None, all
+        features will belong to their own singleton group. We set groups in
+        ``__init__`` so that it can be reused in model selection and CV
+        routines.
 
     fit_intercept : bool, default=True
         Specifies if a constant (a.k.a. bias or intercept) should be
@@ -616,3 +639,154 @@ class LogisticSGL(SGLBaseEstimator, LinearClassifierMixin):
 
     def _more_tags(self):
         return {"binary_only": True}
+
+
+def _alpha_grid(
+    X,
+    y,
+    Xy=None,
+    groups=None,
+    l1_ratio=1.0,
+    fit_intercept=True,
+    eps=1e-3,
+    n_alphas=100,
+    normalize=False,
+    copy_X=True,
+):
+    """Compute the grid of alpha values for elastic net parameter search
+
+    Parameters
+    ----------
+    X : {array-like, sparse matrix} of shape (n_samples, n_features)
+        Training data. Pass directly as Fortran-contiguous data to avoid
+        unnecessary memory duplication
+
+    y : ndarray of shape (n_samples,)
+        Target values
+
+    Xy : array-like of shape (n_features,), default=None
+        Xy = np.dot(X.T, y) that can be precomputed.
+
+    groups : list of numpy.ndarray
+        list of arrays of non-overlapping indices for each group. For
+        example, if nine features are grouped into equal contiguous groups of
+        three, then groups would be ``[array([0, 1, 2]), array([3, 4, 5]),
+        array([6, 7, 8])]``. If the feature matrix contains a bias or
+        intercept feature, do not include it as a group. If None, all
+        features will belong to their own singleton group.
+
+    l1_ratio : float, default=1.0
+        The elastic net mixing parameter, with ``0 < l1_ratio <= 1``.
+        For ``l1_ratio = 0`` the penalty is an L2 penalty. (currently not
+        supported) ``For l1_ratio = 1`` it is an L1 penalty. For
+        ``0 < l1_ratio <1``, the penalty is a combination of L1 and L2.
+
+    eps : float, default=1e-3
+        Length of the path. ``eps=1e-3`` means that
+        ``alpha_min / alpha_max = 1e-3``
+
+    n_alphas : int, default=100
+        Number of alphas along the regularization path
+
+    fit_intercept : bool, default=True
+        Whether to fit an intercept or not
+
+    normalize : bool, default=False
+        This parameter is ignored when ``fit_intercept`` is set to False.
+        If True, the regressors X will be normalized before regression by
+        subtracting the mean and dividing by the l2-norm.
+        If you wish to standardize, please use
+        :class:`sklearn.preprocessing.StandardScaler` before calling ``fit``
+        on an estimator with ``normalize=False``.
+
+    copy_X : bool, default=True
+        If ``True``, X will be copied; else, it may be overwritten.
+    """
+    if l1_ratio == 1.0:
+        return _lasso_alpha_grid(
+            X=X,
+            y=y,
+            Xy=Xy,
+            l1_ratio=l1_ratio,
+            fit_intercept=fit_intercept,
+            eps=eps,
+            n_alphas=n_alphas,
+            normalize=normalize,
+            copy_X=copy_X,
+        )
+
+    n_samples = len(y)
+    sparse_center = False
+    if Xy is None:
+        X_sparse = sparse.isspmatrix(X)
+        sparse_center = X_sparse and (fit_intercept or normalize)
+        X = check_array(
+            X, accept_sparse="csc", copy=(copy_X and fit_intercept and not X_sparse)
+        )
+        if not X_sparse:
+            # X can be touched inplace thanks to the above line
+            X, y, _, _, _ = _preprocess_data(X, y, fit_intercept, normalize, copy=False)
+        Xy = safe_sparse_dot(X.T, y, dense_output=True)
+
+        if sparse_center:
+            # Workaround to find alpha_max for sparse matrices.
+            # since we should not destroy the sparsity of such matrices.
+            _, _, X_offset, _, X_scale = _preprocess_data(
+                X, y, fit_intercept, normalize, return_mean=True
+            )
+            mean_dot = X_offset * np.sum(y)
+
+    if Xy.ndim == 1:
+        Xy = Xy[:, np.newaxis]
+
+    if sparse_center:
+        if fit_intercept:
+            Xy -= mean_dot[:, np.newaxis]
+        if normalize:
+            Xy /= X_scale[:, np.newaxis]
+
+    # When l1_ratio < 1 (i.e. not the lasso), then for each group, the
+    # smallest alpha for which coef_ = 0 minimizes the objective will be
+    # achieved when
+    #
+    # || S(Xy / n_samples, l1_ratio * alpha) ||_2 == sqrt(p_l) * (1 - l1_ratio) * alpha
+    #
+    # where S() is the element-wise soft-thresholding operator and p_l is
+    # the group size
+    def beta_zero_root(alpha, group):
+        soft = _soft_threshold(Xy[group] / n_samples, l1_ratio * alpha)
+        return np.linalg.norm(soft) - (1 - l1_ratio) * alpha * np.sqrt(group.size)
+
+    # We use the brentq method to find the root, which requires a bracket
+    # within which to find the root. We know that ``beta_zero_root`` will
+    # be positive when alpha=0. In order to ensure that the upper limit
+    # brackets the root, we increase the upper limit until
+    # ``beta_zero_root`` returns a negative number for all groups
+    def bracket_too_low(alpha):
+        return any([beta_zero_root(alpha, group=grp) > 0 for grp in groups])
+
+    upper_bracket_lim = 1e1
+    while bracket_too_low(upper_bracket_lim):
+        upper_bracket_lim *= 10
+
+    min_alphas = np.array(
+        [
+            root_scalar(
+                partial(beta_zero_root, group=grp),
+                bracket=[0, upper_bracket_lim],
+                method="brentq",
+            ).root
+            for grp in groups
+        ]
+    )
+    # Add a little just to make sure we're on the right side of the root
+    alpha_max = np.max(min_alphas + 1e-1)
+
+    if alpha_max <= np.finfo(float).resolution:
+        alphas = np.empty(n_alphas)
+        alphas.fill(np.finfo(float).resolution)
+        return alphas
+
+    return np.logspace(np.log10(alpha_max * eps), np.log10(alpha_max), num=n_alphas)[
+        ::-1
+    ]
