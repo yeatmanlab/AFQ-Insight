@@ -61,14 +61,13 @@ def test_make_group_sparse_classification():
     assert y.shape == (2000,), "y shape mismatch"  # nosec
     assert groups.shape == (33,), "groups shape mismatch"  # nosec
 
-    unique_X_rows = np.unique(X, axis=0)
-    assert unique_X_rows.shape == (2000, 33), "unique X shape mismatch"  # nosec
-    unique_X = np.unique(X).reshape(-1, X.shape[1])
-    assert unique_X.shape == (2000, 33), "unique X shape mismatch"  # nosec
-
-    # assert (np.unique(X.view([('', X.dtype)]*X.shape[1])).view(X.dtype)
-    #         .reshape(-1, X.shape[1]).shape[0] == 2000), (
-    #             "Unexpected number of unique rows")
+    assert (
+        np.unique(X.view([("", X.dtype)] * X.shape[1]))
+        .view(X.dtype)
+        .reshape(-1, X.shape[1])
+        .shape[0]
+        == 2000
+    ), "Unexpected number of unique rows"  # nosec
 
     assert_raises(
         ValueError,
