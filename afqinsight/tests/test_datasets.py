@@ -229,6 +229,7 @@ def test_make_group_regression():
         effective_rank=10,
         noise=1.0,
         coef=True,
+        shuffle=True,
         random_state=0,
     )
 
