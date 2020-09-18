@@ -368,7 +368,7 @@ def make_sparse_group_regression(
     noise=0.0,
     shift=0.0,
     scale=1.0,
-    shuffle=True,
+    shuffle=False,
     useful_indices=False,
     coef=False,
     random_state=None,
@@ -426,8 +426,9 @@ def make_sparse_group_regression(
         are scaled by a random value drawn in [1, 100]. Note that scaling
         happens after shifting.
 
-    shuffle : boolean, optional (default=True)
+    shuffle : boolean, optional (default=False)
         Shuffle the samples and the features.
+        # TODO
 
     useful_indices : boolean, optional (default=False)
         If True, a boolean array indicating useful features is returned
@@ -518,11 +519,22 @@ def make_sparse_group_regression(
         [np.ones(n_features_per_group, dtype=np.int32) * i for i in range(n_groups)]
     )
 
-    X = np.ascontiguousarray(X)
     if coef:
         reg_coefs = np.concatenate(
             [reg_coefs[idx_map_consolidated_2_grouped], reg_coefs[n_info_grp_features:]]
         )
+
+    # Randomly permute samples and features
+    if shuffle:
+        X, y = util_shuffle(X, y, random_state=generator)
+
+        indices = np.arange(total_features)
+        generator.shuffle(indices)
+        X[:, :] = X[:, indices]
+        reg_coefs = reg_coefs[indices]
+
+    X = np.ascontiguousarray(X)
+    if coef:
         return X, y, group_idx_map, reg_coefs
     else:
         return X, y, group_idx_map
