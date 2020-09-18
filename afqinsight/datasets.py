@@ -365,6 +365,7 @@ def make_sparse_group_regression(
     n_informative_per_group=5,
     weights=None,
     effective_rank=None,
+    noise=0.0,
     shift=0.0,
     scale=1.0,
     shuffle=True,
@@ -412,6 +413,9 @@ def make_sparse_group_regression(
     effective_rank : int or None, optional (default=None)
         If not None, provides the number of singular vectors to explain the
         input data.
+
+    noise : float, optional (default=0.0)
+         The standard deviation of the gaussian noise applied to the output.
 
     shift : float, array of shape [n_features] or None, optional (default=0.0)
         Shift features by the specified value. If None, then features
@@ -474,6 +478,8 @@ def make_sparse_group_regression(
             n_features=total_features,
             n_informative=total_informative,
             effective_rank=effective_rank,
+            bias=0.0,
+            noise=noise,
             shuffle=False,
             coef=True,
             random_state=generator,
@@ -484,6 +490,8 @@ def make_sparse_group_regression(
             n_features=total_features,
             n_informative=total_informative,
             effective_rank=effective_rank,
+            bias=0.0,
+            noise=noise,
             shuffle=False,
             coef=False,
             random_state=generator,
