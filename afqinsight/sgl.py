@@ -335,7 +335,7 @@ class SGLBaseEstimator(BaseEstimator, TransformerMixin):
 
         return X[:, self.sparsity_mask_]
 
-    def _more_tags(self):  # pylint: disable=some-message,another-one
+    def _more_tags(self):  # pylint: disable=no-self-use
         return {"requires_y": True}
 
 
@@ -651,7 +651,7 @@ class LogisticSGL(SGLBaseEstimator, LinearClassifierMixin):
         """
         return np.log(self.predict_proba(X))
 
-    def _more_tags(self):  # pylint: disable=some-message,another-one
+    def _more_tags(self):  # pylint: disable=no-self-use
         return {"binary_only": True, "requires_y": True}
 
 
@@ -1418,5 +1418,5 @@ class SGLCV(LinearModel, RegressorMixin, TransformerMixin):
 
         return X[:, self.sparsity_mask_]
 
-    def _more_tags(self):  # pylint: disable=some-message,another-one
+    def _more_tags(self):  # pylint: disable=no-self-use
         return {"multioutput": False, "requires_y": True}
