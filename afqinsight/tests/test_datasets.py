@@ -216,6 +216,23 @@ def test_make_sparse_group_regression():
     assert coefs.shape == (10,), "coef shape mismatch"
     assert sum(coefs != 0.0) == 2, "Unexpected number of informative features"
 
+    X, y, groups, coefs = make_sparse_group_regression(
+        n_samples=100,
+        n_groups=2,
+        n_informative_groups=2,
+        n_features_per_group=5,
+        n_informative_per_group=3,
+        effective_rank=10,
+        coef=True,
+        random_state=0,
+    )
+
+    assert X.shape == (100, 10), "X shape mismatch"  # nosec
+    assert y.shape == (100,), "y shape mismatch"  # nosec
+    assert groups.shape == (10,), "groups shape mismatch"  # nosec
+    assert coefs.shape == (10,), "coef shape mismatch"
+    assert sum(coefs != 0.0) == 6, "Unexpected number of informative features"
+
     # Test that y ~= np.dot(X, c) + bias + N(0, 1.0).
     # assert_almost_equal(np.std(y - np.dot(X, c)), 1.0, decimal=1)
 
