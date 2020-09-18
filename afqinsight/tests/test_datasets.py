@@ -41,6 +41,7 @@ def test_make_group_sparse_classification():
         n_groups=11,
         n_features_per_group=3,
         n_informative_groups=11,
+        n_informative_per_group=3,
         n_redundant_per_group=0,
         n_repeated_per_group=0,
         n_clusters_per_class=1,
@@ -55,15 +56,23 @@ def test_make_group_sparse_classification():
     assert X.shape == (2000, 33), "X shape mismatch"
     assert y.shape == (2000,), "y shape mismatch"
     assert groups.shape == (33,), "groups shape mismatch"
+
+    unique_X_rows = np.unique(X, axis=0)
+    assert unique_X_rows.shape == (2000, 33), "unique X shape mismatch"
+    unique_X = np.unique(X).reshape(-1, X.shape[1])
+    assert unique_X.shape == (2000, 33), "unique X shape mismatch"
+
     # assert (np.unique(X.view([('', X.dtype)]*X.shape[1])).view(X.dtype)
     #         .reshape(-1, X.shape[1]).shape[0] == 2000), (
     #             "Unexpected number of unique rows")
 
-    # assert_raises(
-    #     ValueError, make_sparse_group_classification, n_features_per_group=2,
-    #     n_informative_groups=2,
-    #     n_redundant_per_group=1
-    # )
+    assert_raises(
+        ValueError, make_sparse_group_classification, n_groups=20,
+        n_features_per_group=2,
+        n_informative_groups=20,
+        n_redundant_per_group=1,
+        n_repeated_per_group=2
+    )
     assert_raises(ValueError, make_sparse_group_classification, weights=weights, n_classes=5)
 
 
