@@ -12,6 +12,7 @@ import warnings
 from functools import partial
 from hyperopt import fmin, tpe, hp, space_eval, STATUS_OK, Trials
 from hyperopt.mongoexp import MongoTrials
+from tqdm.auto import tqdm
 
 from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.metrics import accuracy_score, average_precision_score, f1_score
@@ -20,8 +21,6 @@ from sklearn.metrics import median_absolute_error
 from sklearn.model_selection import RepeatedKFold, RepeatedStratifiedKFold
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils import check_random_state
-
-from tqdm.auto import tqdm
 
 from .prox import SparseGroupL1
 
@@ -302,6 +301,12 @@ def sgl_estimator(
         Statistics, vol. 22:2, pp. 231-245, 2012
         DOI: 10.1080/10618600.2012.681250
     """
+    warnings.warn(
+        "This function is deprecated, please us the sklearn compatible "
+        "estimators in ``afqinsight.sgl``.",
+        DeprecationWarning,
+    )
+
     if not 0 <= alpha <= 1:
         raise ValueError("alpha must be between 0 and 1.")
 
