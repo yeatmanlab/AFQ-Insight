@@ -975,7 +975,7 @@ def sgl_path(
     )
 
     if verbose and verbose == 1:
-        alpha_sequence = tqdm(alphas)
+        alpha_sequence = tqdm(alphas, desc="Reg path", total=n_alphas)
     else:
         alpha_sequence = alphas
 
@@ -1284,6 +1284,9 @@ class SGLCV(LinearModel, RegressorMixin, TransformerMixin):
         # "precompute" has no effect but it is expected by _path_residuals
         path_params["precompute"] = False
 
+        if isinstance(self.verbose, int):
+            path_params["verbose"] = self.verbose - 1
+
         # init cross-validation generator
         cv = check_cv(self.cv)
 
@@ -1306,13 +1309,22 @@ class SGLCV(LinearModel, RegressorMixin, TransformerMixin):
                 X_order="F",
                 dtype=X.dtype.type,
             )
-            for this_l1_ratio, this_alphas in tqdm(zip(l1_ratios, alphas))
-            for train, test in folds
+            for this_l1_ratio, this_alphas in zip(
+                tqdm(l1_ratios, desc="L1_ratios", total=n_l1_ratio), alphas
+            )
+            for train, test in tqdm(folds, desc="CV folds", total=len(folds))
         )
+
+        if isinstance(self.verbose, int):
+            parallel_verbosity = self.verbose - 2
+            if parallel_verbosity < 0:
+                parallel_verbosity = 0
+        else:
+            parallel_verbosity = self.verbose
 
         mse_paths = Parallel(
             n_jobs=self.n_jobs,
-            verbose=self.verbose,
+            verbose=parallel_verbosity,
             **_joblib_parallel_args(prefer="threads")
         )(jobs)
 
