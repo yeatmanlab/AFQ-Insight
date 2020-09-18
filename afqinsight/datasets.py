@@ -488,7 +488,6 @@ def make_sparse_group_regression(
             coef=False,
             random_state=generator,
         )
-    idx = np.arange(total_features) < total_informative
 
     # Evenly distribute the first `n_informative_groups * n_features_per_group`
     # features into the first `n_informative_groups` groups
@@ -517,7 +516,7 @@ def make_sparse_group_regression(
             [reg_coefs[idx_map_consolidated_2_grouped], reg_coefs[n_info_grp_features:]]
         )
         return X, y, group_idx_map, reg_coefs
-    else: 
+    else:
         return X, y, group_idx_map
 
 
