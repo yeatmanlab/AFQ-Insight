@@ -376,19 +376,12 @@ def make_sparse_group_regression(
     coef=False,
     random_state=None,
 ):
-    """Generate a random n-class sparse group classification problem.
-
-    This initially creates clusters of points normally distributed (std=1)
-    about vertices of an ``n_informative``-dimensional hypercube with sides of
-    length ``2*class_sep`` and assigns an equal number of clusters to each
-    class. It introduces interdependence between these features and adds
-    various types of further noise to the data.
+    """Generate a sparse group regression problem.
 
     Prior to shuffling, ``X`` stacks a number of these primary "informative"
-    features, "redundant" linear combinations of these, "repeated" duplicates
-    of sampled features, and arbitrary noise for and remaining features.
-    This method uses sklearn.datasets.make_classification to construct a
-    giant unshuffled classification problem of size
+    features, and arbitrary noise for and remaining features.
+    This method uses sklearn.datasets.make_regression to construct a
+    giant unshuffled regression problem of size
     ``n_groups * n_features_per_group`` and then distributes the returned
     features to each group. It then optionally shuffles each group.
 
@@ -406,18 +399,12 @@ def make_sparse_group_regression(
 
     n_features_per_group : int, optional (default=20)
         The total number of features_per_group. These comprise `n_informative`
-        informative features, `n_redundant` redundant features, `n_repeated`
-        duplicated features and `n_features-n_informative-n_redundant-
-        n_repeated` useless features drawn at random.
+        informative features, and `n_features-n_informative` useless
+        features drawn at random.
 
     n_informative_per_group : int, optional (default=2)
-        The number of informative features_per_group. Each class is composed
-        of a number of gaussian clusters each located around the vertices of a
-        hypercube in a subspace of dimension `n_informative_per_group`. For
-        each cluster, informative features are drawn independently from
-        N(0, 1) and then randomly linearly combined within each cluster in
-        order to add covariance. The clusters are then placed on the vertices
-        of the hypercube.
+        The number of informative features_per_group that have a
+        non-zero regression coefficient.
 
     weights : list of floats or None (default=None)
         The proportions of samples assigned to each class. If None, then
@@ -446,8 +433,8 @@ def make_sparse_group_regression(
         If True, a boolean array indicating useful features is returned
 
     coef : boolean, optional (default=False)
-        If True, returns coefficient values used to generate samples via 
-        sklearn.datasets.make_regression
+        If True, returns coefficient values used to generate samples via
+        sklearn.datasets.make_regression.
 
     random_state : int, RandomState instance or None, optional (default=None)
         If int, random_state is the seed used by the random number generator;
