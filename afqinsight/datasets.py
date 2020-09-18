@@ -353,6 +353,8 @@ def make_sparse_group_classification(
             ]
         )
 
+    X = np.array(X)
+
     if useful_indices:
         return X, y, group_idx_map, idx
     else:
