@@ -2,8 +2,8 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 from afqinsight.datasets import (
-    make_sparse_group_classification,
-    make_sparse_group_regression,
+    make_group_classification,
+    make_group_regression,
 )
 
 # from collections import defaultdict
@@ -14,7 +14,7 @@ from sklearn.utils._testing import assert_raises
 
 def test_make_group_sparse_classification():
     weights = [0.10, 0.25]
-    X, y, groups, = make_sparse_group_classification(
+    X, y, groups, = make_group_classification(
         n_samples=100,
         n_groups=10,
         n_features_per_group=2,
@@ -40,7 +40,7 @@ def test_make_group_sparse_classification():
     assert sum(y == 2) == 64, "Unexpected number of samples in class #2"  # nosec
 
     # Test for n_features > 30
-    X, y, groups = make_sparse_group_classification(
+    X, y, groups = make_group_classification(
         n_samples=2000,
         n_groups=11,
         n_features_per_group=3,
@@ -75,7 +75,7 @@ def test_make_group_sparse_classification():
 
     assert_raises(
         ValueError,
-        make_sparse_group_classification,
+        make_group_classification,
         n_groups=20,
         n_features_per_group=2,
         n_informative_groups=20,
@@ -83,7 +83,7 @@ def test_make_group_sparse_classification():
         n_repeated_per_group=2,
     )
     assert_raises(
-        ValueError, make_sparse_group_classification, weights=weights, n_classes=5
+        ValueError, make_group_classification, weights=weights, n_classes=5
     )
 
 
@@ -202,8 +202,8 @@ def test_make_group_sparse_classification():
 #     )
 
 
-def test_make_sparse_group_regression():
-    X, y, groups, coefs = make_sparse_group_regression(
+def test_make_group_regression():
+    X, y, groups, coefs = make_group_regression(
         n_samples=100,
         n_groups=2,
         n_informative_groups=1,
@@ -220,7 +220,7 @@ def test_make_sparse_group_regression():
     assert coefs.shape == (10,), "coef shape mismatch"
     assert sum(coefs != 0.0) == 2, "Unexpected number of informative features"
 
-    X, y, groups, coefs = make_sparse_group_regression(
+    X, y, groups, coefs = make_group_regression(
         n_samples=100,
         n_groups=2,
         n_informative_groups=2,
@@ -242,7 +242,7 @@ def test_make_sparse_group_regression():
     assert_array_almost_equal(np.std(y - np.dot(X, coefs)), 1.0, decimal=1)
 
     # Test with small number of features.
-    X, y, groups = make_sparse_group_regression(
+    X, y, groups = make_group_regression(
         n_samples=100,
         n_groups=1,
         n_informative_groups=1,

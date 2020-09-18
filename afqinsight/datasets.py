@@ -113,7 +113,7 @@ def load_afq_data(
     return AFQData(x=x, y=y, groups=groups, columns=columns, bias_index=bias_index)
 
 
-def make_sparse_group_classification(
+def make_group_classification(
     n_samples=100,
     n_groups=20,
     n_informative_groups=2,
@@ -357,7 +357,7 @@ def make_sparse_group_classification(
         return X, y, group_idx_map
 
 
-def make_sparse_group_regression(
+def make_group_regression(
     n_samples=100,
     n_groups=20,
     n_informative_groups=5,
