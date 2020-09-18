@@ -1,7 +1,11 @@
 from __future__ import absolute_import, division, print_function
 
 import numpy as np
-from afqinsight.datasets import make_sparse_group_classification, make_sparse_group_regression
+from afqinsight.datasets import (
+    make_sparse_group_classification,
+    make_sparse_group_regression,
+)
+
 # from collections import defaultdict
 # from functools import partial
 # from sklearn.utils._testing import assert_array_almost_equal
@@ -26,14 +30,14 @@ def test_make_group_sparse_classification():
         random_state=0,
     )
 
-    assert weights == [0.1, 0.25]
-    assert X.shape == (100, 20), "X shape mismatch"
-    assert y.shape == (100,), "y shape mismatch"
-    assert groups.shape == (20,), "groups shape mismatch"
-    assert np.unique(y).shape == (3,), "Unexpected number of classes"
-    assert sum(y == 0) == 11, "Unexpected number of samples in class #0"
-    assert sum(y == 1) == 25, "Unexpected number of samples in class #1"
-    assert sum(y == 2) == 64, "Unexpected number of samples in class #2"
+    assert weights == [0.1, 0.25]  # nosec
+    assert X.shape == (100, 20), "X shape mismatch"  # nosec
+    assert y.shape == (100,), "y shape mismatch"  # nosec
+    assert groups.shape == (20,), "groups shape mismatch"  # nosec
+    assert np.unique(y).shape == (3,), "Unexpected number of classes"  # nosec
+    assert sum(y == 0) == 11, "Unexpected number of samples in class #0"  # nosec
+    assert sum(y == 1) == 25, "Unexpected number of samples in class #1"  # nosec
+    assert sum(y == 2) == 64, "Unexpected number of samples in class #2"  # nosec
 
     # Test for n_features > 30
     X, y, groups = make_sparse_group_classification(
@@ -53,27 +57,31 @@ def test_make_group_sparse_classification():
         random_state=0,
     )
 
-    assert X.shape == (2000, 33), "X shape mismatch"
-    assert y.shape == (2000,), "y shape mismatch"
-    assert groups.shape == (33,), "groups shape mismatch"
+    assert X.shape == (2000, 33), "X shape mismatch"  # nosec
+    assert y.shape == (2000,), "y shape mismatch"  # nosec
+    assert groups.shape == (33,), "groups shape mismatch"  # nosec
 
     unique_X_rows = np.unique(X, axis=0)
-    assert unique_X_rows.shape == (2000, 33), "unique X shape mismatch"
+    assert unique_X_rows.shape == (2000, 33), "unique X shape mismatch"  # nosec
     unique_X = np.unique(X).reshape(-1, X.shape[1])
-    assert unique_X.shape == (2000, 33), "unique X shape mismatch"
+    assert unique_X.shape == (2000, 33), "unique X shape mismatch"  # nosec
 
     # assert (np.unique(X.view([('', X.dtype)]*X.shape[1])).view(X.dtype)
     #         .reshape(-1, X.shape[1]).shape[0] == 2000), (
     #             "Unexpected number of unique rows")
 
     assert_raises(
-        ValueError, make_sparse_group_classification, n_groups=20,
+        ValueError,
+        make_sparse_group_classification,
+        n_groups=20,
         n_features_per_group=2,
         n_informative_groups=20,
         n_redundant_per_group=1,
-        n_repeated_per_group=2
+        n_repeated_per_group=2,
     )
-    assert_raises(ValueError, make_sparse_group_classification, weights=weights, n_classes=5)
+    assert_raises(
+        ValueError, make_sparse_group_classification, weights=weights, n_classes=5
+    )
 
 
 # def test_make_classification_informative_features():
@@ -190,6 +198,7 @@ def test_make_group_sparse_classification():
 #         n_clusters_per_class=2,
 #     )
 
+
 def test_make_sparse_group_regression():
     X, y, groups = make_sparse_group_regression(
         n_samples=100,
@@ -201,9 +210,9 @@ def test_make_sparse_group_regression():
         random_state=0,
     )
 
-    assert X.shape == (100, 10), "X shape mismatch"
-    assert y.shape == (100,), "y shape mismatch"
-    assert groups.shape == (10,), "groups shape mismatch"
+    assert X.shape == (100, 10), "X shape mismatch"  # nosec
+    assert y.shape == (100,), "y shape mismatch"  # nosec
+    assert groups.shape == (10,), "groups shape mismatch"  # nosec
     # assert sum(c != 0.0) == 2, "Unexpected number of informative features"
 
     # Test that y ~= np.dot(X, c) + bias + N(0, 1.0).
