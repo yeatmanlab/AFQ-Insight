@@ -468,16 +468,26 @@ def make_sparse_group_regression(
     total_features = n_groups * n_features_per_group
     total_informative = n_informative_groups * n_informative_per_group
 
-    X, y = make_regression(
-        n_samples=n_samples,
-        n_features=total_features,
-        n_informative=total_informative,
-        effective_rank=effective_rank,
-        shuffle=False,
-        coef=False,
-        random_state=generator,
-    )
-
+    if coef:
+        X, y, reg_coefs = make_regression(
+            n_samples=n_samples,
+            n_features=total_features,
+            n_informative=total_informative,
+            effective_rank=effective_rank,
+            shuffle=False,
+            coef=True,
+            random_state=generator,
+        )
+    else:
+        X, y = make_regression(
+            n_samples=n_samples,
+            n_features=total_features,
+            n_informative=total_informative,
+            effective_rank=effective_rank,
+            shuffle=False,
+            coef=False,
+            random_state=generator,
+        )
     idx = np.arange(total_features) < total_informative
 
     # Evenly distribute the first `n_informative_groups * n_features_per_group`
@@ -497,17 +507,18 @@ def make_sparse_group_regression(
         [X[:, idx_map_consolidated_2_grouped], X[:, n_info_grp_features:]], axis=1
     )
 
-    if useful_indices:
-        idx = np.concatenate(
-            [idx[idx_map_consolidated_2_grouped], idx[n_info_grp_features:]]
-        )
-
     group_idx_map = np.concatenate(
         [np.ones(n_features_per_group, dtype=np.int32) * i for i in range(n_groups)]
     )
 
     X = np.ascontiguousarray(X)
-    return X, y, group_idx_map
+    if coef:
+        reg_coefs = np.concatenate(
+            [reg_coefs[idx_map_consolidated_2_grouped], reg_coefs[n_info_grp_features:]]
+        )
+        return X, y, group_idx_map, reg_coefs
+    else: 
+        return X, y, group_idx_map
 
 
 @registered
