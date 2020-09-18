@@ -8,7 +8,7 @@ from afqinsight.datasets import (
 
 # from collections import defaultdict
 # from functools import partial
-# from sklearn.utils._testing import assert_array_almost_equal
+from sklearn.utils._testing import assert_array_almost_equal
 from sklearn.utils._testing import assert_raises
 
 
@@ -237,8 +237,8 @@ def test_make_sparse_group_regression():
     assert coefs.shape == (10,), "coef shape mismatch"
     assert sum(coefs != 0.0) == 6, "Unexpected number of informative features"
 
-    # Test that y ~= np.dot(X, c) + bias + N(0, 1.0).
-    # assert_almost_equal(np.std(y - np.dot(X, c)), 1.0, decimal=1)
+    # Test that y ~= np.dot(X, coefs) + bias + N(0, 1.0).
+    assert_array_almost_equal(np.std(y - np.dot(X, coefs)), 1.0, decimal=1)
 
     # Test with small number of features.
     X, y, groups = make_sparse_group_regression(
