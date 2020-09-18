@@ -934,7 +934,7 @@ def sgl_path(
             )
         groups = check_groups(groups, X, allow_overlap=False, fit_intercept=False)
 
-    n_samples, n_features = X.shape
+    _, n_features = X.shape
 
     fit_intercept = params.get("fit_intercept", True)
 
@@ -1003,11 +1003,8 @@ def sgl_path(
 
 @registered
 class SGLCV(LinearModel, RegressorMixin, TransformerMixin):
-    """Base class for iterative model fitting along a regularization path"""
+    """Class for iterative SGL model fitting along a regularization path
 
-    """Elastic Net model with iterative fitting along a regularization path.
-    See glossary entry for :term:`cross-validation estimator`.
-    Read more in the :ref:`User Guide <elastic_net>`.
     Parameters
     ----------
     l1_ratio : float or list of float, default=1.0
@@ -1033,7 +1030,6 @@ class SGLCV(LinearModel, RegressorMixin, TransformerMixin):
         features will belong to their own singleton group. We set groups in
         ``__init__`` so that it can be reused in model selection and CV
         routines.
-
 
     eps : float, default=1e-3
         Length of the path. ``eps=1e-3`` means that
