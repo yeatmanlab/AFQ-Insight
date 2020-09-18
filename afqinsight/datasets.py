@@ -347,14 +347,10 @@ def make_sparse_group_classification(
             idx = idx[permute_group_map]
     else:
         group_idx_map = np.concatenate(
-            [
-                np.ones(n_features_per_group, dtype=np.int32) * i
-                for i in range(n_groups)
-            ]
+            [np.ones(n_features_per_group, dtype=np.int32) * i for i in range(n_groups)]
         )
 
-    X = np.array(X)
-
+    X = np.ascontiguousarray(X)
     if useful_indices:
         return X, y, group_idx_map, idx
     else:
@@ -507,12 +503,10 @@ def make_sparse_group_regression(
         )
 
     group_idx_map = np.concatenate(
-        [
-            np.ones(n_features_per_group, dtype=np.int32) * i
-            for i in range(n_groups)
-        ]
+        [np.ones(n_features_per_group, dtype=np.int32) * i for i in range(n_groups)]
     )
 
+    X = np.ascontiguousarray(X)
     return X, y, group_idx_map
 
 
