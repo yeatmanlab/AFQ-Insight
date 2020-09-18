@@ -446,8 +446,8 @@ def make_sparse_group_regression(
         The integer labels for class membership of each sample.
     groups : array of shape [n_features]
         The group number for each feature
-    indices : array of shape [n_features]
-        A boolean array indicating which features are useful. Returned only if `useful_indices` is True.
+    coef : array of shape [n_features]
+        A numpy array containing true regression coefficient values. Returned only if `coef` is True.
 
     Notes
     -----
