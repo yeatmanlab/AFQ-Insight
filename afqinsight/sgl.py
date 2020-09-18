@@ -211,6 +211,7 @@ class SGLBaseEstimator(BaseEstimator, TransformerMixin):
             X = np.hstack([X, np.ones((n_samples, 1))])
 
         if self.warm_start and hasattr(self, "coef_"):
+            # pylint: disable=access-member-before-definition
             if self.fit_intercept:
                 coef = np.concatenate((self.coef_, np.array([self.intercept_])))
             else:
@@ -334,7 +335,7 @@ class SGLBaseEstimator(BaseEstimator, TransformerMixin):
 
         return X[:, self.sparsity_mask_]
 
-    def _more_tags(self):
+    def _more_tags(self):  # pylint: disable=some-message,another-one
         return {"requires_y": True}
 
 
@@ -532,7 +533,7 @@ class LogisticSGL(SGLBaseEstimator, LinearClassifierMixin):
 
     """
 
-    def fit(self, X, y):
+    def fit(self, X, y):  # pylint: disable=arguments-differ
         """Fit a linear model using the sparse group lasso
 
         Parameters
@@ -650,7 +651,7 @@ class LogisticSGL(SGLBaseEstimator, LinearClassifierMixin):
         """
         return np.log(self.predict_proba(X))
 
-    def _more_tags(self):
+    def _more_tags(self):  # pylint: disable=some-message,another-one
         return {"binary_only": True, "requires_y": True}
 
 
@@ -1417,5 +1418,5 @@ class SGLCV(LinearModel, RegressorMixin, TransformerMixin):
 
         return X[:, self.sparsity_mask_]
 
-    def _more_tags(self):
+    def _more_tags(self):  # pylint: disable=some-message,another-one
         return {"multioutput": False, "requires_y": True}
