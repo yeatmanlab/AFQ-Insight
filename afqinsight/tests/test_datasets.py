@@ -69,7 +69,7 @@ def test_make_group_sparse_classification():
         == 2000
     ), "Unexpected number of unique rows"  # nosec
 
-    assert (np.unique(X.view([('', X.dtype)]*X.shape[1])).view(X.dtype)
+    assert (np.unique(X.view([('', X.dtype)] * X.shape[1])).view(X.dtype)
             .reshape(-1, X.shape[1]).shape[0] == 2000), (
                 "Unexpected number of unique rows")
 
