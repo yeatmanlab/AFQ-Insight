@@ -98,3 +98,41 @@ def plot_ecdf(data, reverse=False):
 
     # Display the plot
     plt.show()
+
+
+def check_groups(groups, X, allow_overlap=False, fit_intercept=True):
+    """Validate group indices"""
+    _, n_features = X.shape
+
+    if fit_intercept:
+        n_features -= 1
+
+    if groups is None:
+        # If no groups provided, assign each feature to its own singleton group
+        # e.g. for 5 features, groups = array([[0], [1], [2], [3], [4]])
+        return np.arange(n_features).reshape((-1, 1))
+
+    all_indices = np.concatenate(groups)
+
+    if set(all_indices) < set(range(n_features)):
+        raise ValueError(
+            "Some features are unaccounted for in groups; Columns "
+            "{0} are absent from groups.".format(
+                set(range(n_features)) - set(all_indices)
+            )
+        )
+
+    if set(all_indices) > set(range(n_features)):
+        raise ValueError(
+            "There are feature indices in groups that exceed the dimensions "
+            "of X; X has {0} features but groups refers to indices {1}".format(
+                n_features, set(all_indices) - set(range(n_features))
+            )
+        )
+
+    if not allow_overlap:
+        _, counts = np.unique(all_indices, return_counts=True)
+        if set(counts) != {1}:
+            raise ValueError("Overlapping groups detected.")
+
+    return tuple(groups)

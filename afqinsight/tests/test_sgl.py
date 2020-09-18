@@ -1,16 +1,15 @@
 import pytest
 
 from afqinsight.sgl import SGLBaseEstimator
-from afqinsight import SGL
-from afqinsight import LogisticSGL
+from afqinsight import LogisticSGL, SGL, SGLCV
 
 from sklearn.utils.estimator_checks import check_estimator
 from sklearn.utils._testing import assert_array_almost_equal
 
 
-@pytest.mark.parametrize("Estimator", [SGLBaseEstimator, SGL, LogisticSGL])
+@pytest.mark.parametrize("Estimator", [SGLBaseEstimator, SGL, LogisticSGL, SGLCV])
 def test_all_estimators(Estimator):
-    return check_estimator(Estimator)
+    return check_estimator(Estimator())
 
 
 def test_sgl_input_validation():
