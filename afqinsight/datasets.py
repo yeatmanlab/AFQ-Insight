@@ -373,6 +373,7 @@ def make_sparse_group_regression(
     scale=1.0,
     shuffle=True,
     useful_indices=False,
+    coef=False,
     random_state=None,
 ):
     """Generate a random n-class sparse group classification problem.
@@ -443,6 +444,10 @@ def make_sparse_group_regression(
 
     useful_indices : boolean, optional (default=False)
         If True, a boolean array indicating useful features is returned
+
+    coef : boolean, optional (default=False)
+        If True, returns coefficient values used to generate samples via 
+        sklearn.datasets.make_regression
 
     random_state : int, RandomState instance or None, optional (default=None)
         If int, random_state is the seed used by the random number generator;
