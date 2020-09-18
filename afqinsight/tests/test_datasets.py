@@ -241,5 +241,11 @@ def test_make_sparse_group_regression():
     # assert_almost_equal(np.std(y - np.dot(X, c)), 1.0, decimal=1)
 
     # Test with small number of features.
-    # X, y = make_sparse_group_regression(n_samples=100, n_groups=1,n_informative_groups=1)  # n_informative=3
-    # assert X.shape == (100, 1)
+    X, y, groups = make_sparse_group_regression(
+        n_samples=100,
+        n_groups=1,
+        n_informative_groups=1,
+        n_features_per_group=1,
+        n_informative_per_group=1,
+    )  # n_informative=3
+    assert X.shape == (100, 1)
