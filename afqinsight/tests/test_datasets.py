@@ -227,6 +227,7 @@ def test_make_sparse_group_regression():
         n_features_per_group=5,
         n_informative_per_group=3,
         effective_rank=10,
+        noise=1.0,
         coef=True,
         random_state=0,
     )
