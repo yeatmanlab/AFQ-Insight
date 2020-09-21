@@ -76,6 +76,15 @@ class SparseGroupL1(object):
         array([6, 7, 8])]``. If the feature matrix contains a bias or
         intercept feature, do not include it as a group.
 
+    scale_l2_by : ["group_length", None], default="group_length"
+        Scaling technique for the group-wise L2 penalty.
+        By default, ``scale_l2_by="group_length`` and the L2 penalty is
+        scaled by the square root of the group length so that each variable
+        has the same effect on the penalty. This may not be appropriate for
+        one-hot encoded features and ``scale_l2_by=None`` would be more
+        appropriate for that case. ``scale_l2_by=None`` will also reproduce
+        ElasticNet results when all features belong to one group.
+
     bias_index : int or None, default=None
         If None, regularize all coefficients. Otherwise, this is the index
         of the bias (i.e. intercept) feature, which should not be regularized.
@@ -90,7 +99,9 @@ class SparseGroupL1(object):
         DOI: 10.1080/10618600.2012.681250
     """  # noqa: W605
 
-    def __init__(self, l1_ratio, alpha, groups, bias_index=None):
+    def __init__(
+        self, l1_ratio, alpha, groups, bias_index=None, scale_l2_by="group_length"
+    ):
         self.l1_ratio = l1_ratio
         self.alpha = alpha
         self.groups = groups
@@ -100,13 +111,18 @@ class SparseGroupL1(object):
                 for grp_idx, feature_indices in enumerate(groups)
             ]
         )
-        self.sqrt_group_lengths = np.sqrt([grp.size for grp in groups])
+        if scale_l2_by == "group_length":
+            self.group_scale = np.sqrt([grp.size for grp in groups])
+        else:
+            self.group_scale = np.array([1.0 for grp in groups])
+
         self.bias_index = bias_index
 
     def __call__(self, x):
         penalty = (
             (1.0 - self.l1_ratio)
             * self.alpha
+            * self.group_scale
             * np.sum([np.linalg.norm(x[g]) for g in self.groups])
         )
 
@@ -160,7 +176,7 @@ class SparseGroupL1(object):
 
         norms = (
             np.array([np.linalg.norm(l1_prox[grp]) for grp in self.groups])
-            / self.sqrt_group_lengths
+            / self.group_scale
         )
 
         norm_mask = norms > (1.0 - self.l1_ratio) * self.alpha * step_size

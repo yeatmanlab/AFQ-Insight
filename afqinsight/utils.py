@@ -108,9 +108,8 @@ def check_groups(groups, X, allow_overlap=False, fit_intercept=True):
         n_features -= 1
 
     if groups is None:
-        # If no groups provided, assign each feature to its own singleton group
-        # e.g. for 5 features, groups = array([[0], [1], [2], [3], [4]])
-        return np.arange(n_features).reshape((-1, 1))
+        # If no groups provided, put all features in one group
+        return [np.arange(n_features)]
 
     all_indices = np.concatenate(groups)
 

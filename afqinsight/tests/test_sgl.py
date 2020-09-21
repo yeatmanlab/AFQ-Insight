@@ -1,9 +1,11 @@
+import numpy as np
 import pytest
 
 from afqinsight.sgl import SGLBaseEstimator
 from afqinsight import LogisticSGL, SGL, SGLCV
 
 from sklearn.utils.estimator_checks import check_estimator
+from sklearn.datasets import make_regression
 from sklearn.utils._testing import assert_array_almost_equal
 
 
@@ -21,6 +23,12 @@ def test_sgl_input_validation():
 
     with pytest.raises(ValueError):
         SGL(l1_ratio=1.0, alpha=0.1).fit(X, y, loss="error")
+
+    with pytest.raises(ValueError):
+        SGL(l1_ratio=100, alpha=0.1).fit(X, y)
+
+    with pytest.raises(ValueError):
+        SGL(l1_ratio=0.5, alpha=0.1, scale_l2_by="error").fit(X, y)
 
 
 def test_sgl_zero():
@@ -68,6 +76,57 @@ def test_sgl_toy(loss):
     pred = clf.predict(T)
     assert_array_almost_equal(clf.coef_, [0.0])
     assert_array_almost_equal(pred, [0, 0, 0])
+
+
+def build_dataset(n_samples=50, n_features=200, n_informative_features=10, n_targets=1):
+    """
+    build an ill-posed linear regression problem with many noisy features and
+    comparatively few samples
+    """
+    random_state = np.random.RandomState(0)
+    if n_targets > 1:
+        w = random_state.randn(n_features, n_targets)
+    else:
+        w = random_state.randn(n_features)
+    w[n_informative_features:] = 0.0
+    X = random_state.randn(n_samples, n_features)
+    y = np.dot(X, w)
+    X_test = random_state.randn(n_samples, n_features)
+    y_test = np.dot(X_test, w)
+    return X, y, X_test, y_test
+
+
+@pytest.mark.parametrize("fit_intercept", [True, False])
+def test_warm_start(fit_intercept):
+    X, y, _, _ = build_dataset()
+    max_iter = 5
+    sgl = SGL(
+        l1_ratio=0.5,
+        alpha=0.1,
+        warm_start=True,
+        max_iter=max_iter,
+        fit_intercept=fit_intercept,
+        include_solver_trace=True,
+    )
+    sgl.fit(X, y)
+    tr_0 = sgl.solver_trace_
+    sgl.fit(X, y)
+    tr_1 = sgl.solver_trace_
+
+    sgl = SGL(
+        l1_ratio=0.5,
+        alpha=0.1,
+        max_iter=max_iter + 1,
+        fit_intercept=fit_intercept,
+        include_solver_trace=True,
+    )
+    sgl.fit(X, y)
+    tr_2 = sgl.solver_trace_
+
+    fx_cold_start = np.array(tr_2.trace_fx)
+    fx_warm_start = np.array(tr_0.trace_fx + tr_1.trace_fx)[: fx_cold_start.size]
+
+    assert_array_almost_equal(fx_warm_start, fx_cold_start)
 
 
 def test_alpha_grid():

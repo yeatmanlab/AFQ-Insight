@@ -68,9 +68,17 @@ class SGLBaseEstimator(BaseEstimator, TransformerMixin):
         three, then groups would be ``[array([0, 1, 2]), array([3, 4, 5]),
         array([6, 7, 8])]``. If the feature matrix contains a bias or
         intercept feature, do not include it as a group. If None, all
-        features will belong to their own singleton group. We set groups in
-        ``__init__`` so that it can be reused in model selection and CV
-        routines.
+        features will belong to one group. We set groups in ``__init__`` so
+        that it can be reused in model selection and CV routines.
+
+    scale_l2_by : ["group_length", None], default="group_length"
+        Scaling technique for the group-wise L2 penalty.
+        By default, ``scale_l2_by="group_length`` and the L2 penalty is
+        scaled by the square root of the group length so that each variable
+        has the same effect on the penalty. This may not be appropriate for
+        one-hot encoded features and ``scale_l2_by=None`` would be more
+        appropriate for that case. ``scale_l2_by=None`` will also reproduce
+        ElasticNet results when all features belong to one group.
 
     fit_intercept : bool, default=True
         Specifies if a constant (a.k.a. bias or intercept) should be
@@ -132,6 +140,7 @@ class SGLBaseEstimator(BaseEstimator, TransformerMixin):
         l1_ratio=1.0,
         alpha=0.0,
         groups=None,
+        scale_l2_by="group_length",
         fit_intercept=True,
         max_iter=1000,
         tol=1e-7,
@@ -143,6 +152,7 @@ class SGLBaseEstimator(BaseEstimator, TransformerMixin):
         self.l1_ratio = l1_ratio
         self.alpha = alpha
         self.groups = groups
+        self.scale_l2_by = scale_l2_by
         self.fit_intercept = fit_intercept
         self.max_iter = max_iter
         self.tol = tol
@@ -241,7 +251,15 @@ class SGLBaseEstimator(BaseEstimator, TransformerMixin):
         else:
             ctx_mgr = contextlib.suppress()
 
-        groups = check_groups(self.groups, X, allow_overlap=False)
+        groups = check_groups(
+            self.groups, X, allow_overlap=False, fit_intercept=self.fit_intercept
+        )
+
+        if self.scale_l2_by not in ["group_length", None]:
+            raise ValueError(
+                "scale_l2_by must be 'group_length' or None; "
+                "got {0}".format(self.scale_l2_by)
+            )
 
         bias_index = n_features if self.fit_intercept else None
         sg1 = SparseGroupL1(
@@ -249,6 +267,7 @@ class SGLBaseEstimator(BaseEstimator, TransformerMixin):
             alpha=self.alpha,
             groups=groups,
             bias_index=bias_index,
+            scale_l2_by=self.scale_l2_by,
         )
 
         with ctx_mgr:
@@ -363,9 +382,17 @@ class SGL(SGLBaseEstimator, RegressorMixin, LinearModel):
         three, then groups would be ``[array([0, 1, 2]), array([3, 4, 5]),
         array([6, 7, 8])]``. If the feature matrix contains a bias or
         intercept feature, do not include it as a group. If None, all
-        features will belong to their own singleton group. We set groups in
-        ``__init__`` so that it can be reused in model selection and CV
-        routines.
+        features will belong to one group. We set groups in ``__init__`` so
+        that it can be reused in model selection and CV routines.
+
+    scale_l2_by : ["group_length", None], default="group_length"
+        Scaling technique for the group-wise L2 penalty.
+        By default, ``scale_l2_by="group_length`` and the L2 penalty is
+        scaled by the square root of the group length so that each variable
+        has the same effect on the penalty. This may not be appropriate for
+        one-hot encoded features and ``scale_l2_by=None`` would be more
+        appropriate for that case. ``scale_l2_by=None`` will also reproduce
+        ElasticNet results when all features belong to one group.
 
     fit_intercept : bool, default=True
         Specifies if a constant (a.k.a. bias or intercept) should be
@@ -479,9 +506,17 @@ class LogisticSGL(SGLBaseEstimator, LinearClassifierMixin):
         three, then groups would be ``[array([0, 1, 2]), array([3, 4, 5]),
         array([6, 7, 8])]``. If the feature matrix contains a bias or
         intercept feature, do not include it as a group. If None, all
-        features will belong to their own singleton group. We set groups in
-        ``__init__`` so that it can be reused in model selection and CV
-        routines.
+        features will belong to one group. We set groups in ``__init__`` so
+        that it can be reused in model selection and CV routines.
+
+    scale_l2_by : ["group_length", None], default="group_length"
+        Scaling technique for the group-wise L2 penalty.
+        By default, ``scale_l2_by="group_length`` and the L2 penalty is
+        scaled by the square root of the group length so that each variable
+        has the same effect on the penalty. This may not be appropriate for
+        one-hot encoded features and ``scale_l2_by=None`` would be more
+        appropriate for that case. ``scale_l2_by=None`` will also reproduce
+        ElasticNet results when all features belong to one group.
 
     fit_intercept : bool, default=True
         Specifies if a constant (a.k.a. bias or intercept) should be
@@ -660,6 +695,7 @@ def _alpha_grid(
     y,
     Xy=None,
     groups=None,
+    scale_l2_by="group_length",
     l1_ratio=1.0,
     fit_intercept=True,
     eps=1e-3,
@@ -687,7 +723,16 @@ def _alpha_grid(
         three, then groups would be ``[array([0, 1, 2]), array([3, 4, 5]),
         array([6, 7, 8])]``. If the feature matrix contains a bias or
         intercept feature, do not include it as a group. If None, all
-        features will belong to their own singleton group.
+        features will belong to one group.
+
+    scale_l2_by : ["group_length", None], default="group_length"
+        Scaling technique for the group-wise L2 penalty.
+        By default, ``scale_l2_by="group_length`` and the L2 penalty is
+        scaled by the square root of the group length so that each variable
+        has the same effect on the penalty. This may not be appropriate for
+        one-hot encoded features and ``scale_l2_by=None`` would be more
+        appropriate for that case. ``scale_l2_by=None`` will also reproduce
+        ElasticNet results when all features belong to one group.
 
     l1_ratio : float, default=1.0
         The elastic net mixing parameter, with ``0 < l1_ratio <= 1``.
@@ -761,6 +806,11 @@ def _alpha_grid(
 
     groups = check_groups(groups, X, allow_overlap=False, fit_intercept=False)
 
+    if scale_l2_by not in ["group_length", None]:
+        raise ValueError(
+            "scale_l2_by must be 'group_length' or None; " "got {0}".format(scale_l2_by)
+        )
+
     # When l1_ratio < 1 (i.e. not the lasso), then for each group, the
     # smallest alpha for which coef_ = 0 minimizes the objective will be
     # achieved when
@@ -768,10 +818,11 @@ def _alpha_grid(
     # || S(Xy / n_samples, l1_ratio * alpha) ||_2 == sqrt(p_l) * (1 - l1_ratio) * alpha
     #
     # where S() is the element-wise soft-thresholding operator and p_l is
-    # the group size
+    # the group size (or 1 if ``scale_l2_by is None``)
     def beta_zero_root(alpha, group):
         soft = _soft_threshold(Xy[group] / n_samples, l1_ratio * alpha)
-        return np.linalg.norm(soft) - (1 - l1_ratio) * alpha * np.sqrt(group.size)
+        scale = np.sqrt(group.size) if scale_l2_by == "group_length" else 1
+        return np.linalg.norm(soft) - (1 - l1_ratio) * alpha * scale
 
     # We use the brentq method to find the root, which requires a bracket
     # within which to find the root. We know that ``beta_zero_root`` will
@@ -814,6 +865,7 @@ def sgl_path(
     y,
     l1_ratio=0.5,
     groups=None,
+    scale_l2_by="group_length",
     eps=1e-3,
     n_alphas=100,
     alphas=None,
@@ -850,9 +902,16 @@ def sgl_path(
         three, then groups would be ``[array([0, 1, 2]), array([3, 4, 5]),
         array([6, 7, 8])]``. If the feature matrix contains a bias or
         intercept feature, do not include it as a group. If None, all
-        features will belong to their own singleton group. We set groups in
-        ``__init__`` so that it can be reused in model selection and CV
-        routines.
+        features will belong to one group.
+
+    scale_l2_by : ["group_length", None], default="group_length"
+        Scaling technique for the group-wise L2 penalty.
+        By default, ``scale_l2_by="group_length`` and the L2 penalty is
+        scaled by the square root of the group length so that each variable
+        has the same effect on the penalty. This may not be appropriate for
+        one-hot encoded features and ``scale_l2_by=None`` would be more
+        appropriate for that case. ``scale_l2_by=None`` will also reproduce
+        ElasticNet results when all features belong to one group.
 
     eps : float, default=1e-3
         Length of the path. ``eps=1e-3`` means that
@@ -945,6 +1004,7 @@ def sgl_path(
             y=y,
             Xy=Xy,
             groups=groups,
+            scale_l2_by=scale_l2_by,
             l1_ratio=l1_ratio,
             fit_intercept=fit_intercept,
             eps=eps,
@@ -966,6 +1026,7 @@ def sgl_path(
         l1_ratio=l1_ratio,
         alpha=alphas[0],
         groups=groups,
+        scale_l2_by=scale_l2_by,
         fit_intercept=fit_intercept,
         max_iter=max_iter,
         tol=tol,
@@ -1028,9 +1089,17 @@ class SGLCV(LinearModel, RegressorMixin, TransformerMixin):
         three, then groups would be ``[array([0, 1, 2]), array([3, 4, 5]),
         array([6, 7, 8])]``. If the feature matrix contains a bias or
         intercept feature, do not include it as a group. If None, all
-        features will belong to their own singleton group. We set groups in
-        ``__init__`` so that it can be reused in model selection and CV
-        routines.
+        features will belong to one group. We set groups in ``__init__`` so
+        that it can be reused in model selection and CV routines.
+
+    scale_l2_by : ["group_length", None], default="group_length"
+        Scaling technique for the group-wise L2 penalty.
+        By default, ``scale_l2_by="group_length`` and the L2 penalty is
+        scaled by the square root of the group length so that each variable
+        has the same effect on the penalty. This may not be appropriate for
+        one-hot encoded features and ``scale_l2_by=None`` would be more
+        appropriate for that case. ``scale_l2_by=None`` will also reproduce
+        ElasticNet results when all features belong to one group.
 
     eps : float, default=1e-3
         Length of the path. ``eps=1e-3`` means that
@@ -1128,6 +1197,7 @@ class SGLCV(LinearModel, RegressorMixin, TransformerMixin):
         self,
         l1_ratio=1.0,
         groups=None,
+        scale_l2_by="group_length",
         eps=1e-3,
         n_alphas=100,
         alphas=None,
@@ -1143,6 +1213,7 @@ class SGLCV(LinearModel, RegressorMixin, TransformerMixin):
     ):
         self.l1_ratio = l1_ratio
         self.groups = groups
+        self.scale_l2_by = scale_l2_by
         self.eps = eps
         self.n_alphas = n_alphas
         self.alphas = alphas
@@ -1255,6 +1326,7 @@ class SGLCV(LinearModel, RegressorMixin, TransformerMixin):
                     X=X,
                     y=y,
                     groups=groups,
+                    scale_l2_by=self.scale_l2_by,
                     l1_ratio=l1_ratio,
                     fit_intercept=self.fit_intercept,
                     eps=self.eps,

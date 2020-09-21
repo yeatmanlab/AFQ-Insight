@@ -8,12 +8,17 @@ lint: flake
 
 test:
     # Unit testing using pytest
-	py.test --pyargs afqinsight --cov-report term-missing --cov-config .coveragerc --cov=afqinsight
+	pytest --pyargs afqinsight --cov-report term-missing --cov-config .coveragerc --cov=afqinsight
 
 devtest:
     # Unit testing with the -x option, aborts testing after first failure
     # Useful for development when tests are long
-	py.test -x --pyargs afqinsight --cov-report term-missing --cov-config .coveragerc --cov=afqinsight
+	pytest -x --pyargs afqinsight --cov-report term-missing --cov-config .coveragerc --cov=afqinsight
+
+test-no-sglcv-check:
+    # Unit testing with the -x option, aborts testing after first failure
+    # Useful for development when tests are long
+	pytest --pyargs afqinsight --cov-report term-missing --cov-config .coveragerc --cov=afqinsight -k 'not test_all_estimators[SGLCV]'
 
 clean: clean-build clean-pyc ## remove all build, test, coverage and Python artifacts
 
