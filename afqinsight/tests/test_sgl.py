@@ -5,7 +5,6 @@ from afqinsight.sgl import SGLBaseEstimator
 from afqinsight import LogisticSGL, SGL, SGLCV
 
 from sklearn.utils.estimator_checks import check_estimator
-from sklearn.datasets import make_regression
 from sklearn.utils._testing import assert_array_almost_equal
 
 
