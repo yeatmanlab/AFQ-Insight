@@ -130,8 +130,8 @@ def test_warm_start(fit_intercept):
 
 
 def test_sgl_cv():
-    X, y, groups, coef = make_group_regression(coef=True, random_state=42)
+    X, y, groups = make_group_regression(random_state=42)
 
     sglcv = SGLCV(l1_ratio=[0.5, 0.9, 1.0], groups=groups, cv=3).fit(X, y)
 
-    assert sglcv.score(X, y) > 0.99
+    assert sglcv.score(X, y) > 0.99  # nosec
