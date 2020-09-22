@@ -35,7 +35,7 @@ def test_make_group_sparse_classification(shuffle, return_idx):
 
     if return_idx:
         X, y, groups, idx = clf_res
-        assert np.sum(idx) == 20
+        assert np.sum(idx) == 20  # nosec
     else:
         X, y, groups = clf_res
 
@@ -70,13 +70,13 @@ def test_make_group_sparse_classification(shuffle, return_idx):
     assert y.shape == (2000,), "y shape mismatch"  # nosec
     assert groups.shape == (33,), "groups shape mismatch"  # nosec
 
-    assert (
+    assert (  # nosec
         np.unique(X.view([("", X.dtype)] * X.shape[1]))
         .view(X.dtype)
         .reshape(-1, X.shape[1])
         .shape[0]
         == 2000
-    ), "Unexpected number of unique rows"  # nosec
+    ), "Unexpected number of unique rows"
 
     assert_raises(
         ValueError,
@@ -105,11 +105,11 @@ def test_make_group_regression():
     assert X.shape == (100, 10), "X shape mismatch"  # nosec
     assert y.shape == (100,), "y shape mismatch"  # nosec
     assert groups.shape == (10,), "groups shape mismatch"  # nosec
-    assert coefs.shape == (10,), "coef shape mismatch"
-    assert sum(coefs != 0.0) == 2, "Unexpected number of informative features"
+    assert coefs.shape == (10,), "coef shape mismatch"  # nosec
+    assert sum(coefs != 0.0) == 2, "Unexpected number of informative features"  # nosec
 
     X, y, groups, coefs = make_group_regression(
-        n_samples=100,
+        n_samples=2000,
         n_groups=2,
         n_informative_groups=2,
         n_features_per_group=5,
@@ -121,11 +121,18 @@ def test_make_group_regression():
         random_state=0,
     )
 
-    assert X.shape == (100, 10), "X shape mismatch"  # nosec
-    assert y.shape == (100,), "y shape mismatch"  # nosec
+    assert X.shape == (2000, 10), "X shape mismatch"  # nosec
+    assert y.shape == (2000,), "y shape mismatch"  # nosec
     assert groups.shape == (10,), "groups shape mismatch"  # nosec
-    assert coefs.shape == (10,), "coef shape mismatch"
-    assert sum(coefs != 0.0) == 6, "Unexpected number of informative features"
+    assert coefs.shape == (10,), "coef shape mismatch"  # nosec
+    assert sum(coefs != 0.0) == 6, "Unexpected number of informative features"  # nosec
+    assert (  # nosec
+        np.unique(X.view([("", X.dtype)] * X.shape[1]))
+        .view(X.dtype)
+        .reshape(-1, X.shape[1])
+        .shape[0]
+        == 2000
+    ), "Unexpected number of unique rows"
 
     # Test that y ~= np.dot(X, coefs) + bias + N(0, 1.0).
     assert_array_almost_equal(np.std(y - np.dot(X, coefs)), 1.0, decimal=1)
@@ -138,4 +145,4 @@ def test_make_group_regression():
         n_features_per_group=1,
         n_informative_per_group=1,
     )  # n_informative=3
-    assert X.shape == (100, 1)
+    assert X.shape == (100, 1)  # nosec
