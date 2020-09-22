@@ -265,6 +265,16 @@ def make_group_classification(
     total_redundant = n_informative_groups * n_redundant_per_group
     total_repeated = n_informative_groups * n_repeated_per_group
 
+    # Count features, clusters and samples
+    if (
+        n_informative_per_group + n_redundant_per_group + n_repeated_per_group
+        > n_features_per_group
+    ):
+        raise ValueError(
+            "Number of informative, redundant and repeated features per group"
+            " must sum to less than the number of total features per group."
+        )
+
     # Generate a big classification problem for the total number of features
     # The `shuffle` argument is False so that the feature matrix X has
     # features stacked in the order: informative, redundant, repeated, useless
