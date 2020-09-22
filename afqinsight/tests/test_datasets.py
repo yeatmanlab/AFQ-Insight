@@ -42,7 +42,7 @@ def test_make_group_sparse_classification(shuffle, return_idx):
     assert weights == [0.1, 0.25]  # nosec
     assert X.shape == (100, 80), "X shape mismatch"  # nosec
     assert y.shape == (100,), "y shape mismatch"  # nosec
-    assert groups.shape == (80,), "groups shape mismatch"  # nosec
+    assert len(groups) == 10, "groups shape mismatch"  # nosec
     assert np.unique(y).shape == (3,), "Unexpected number of classes"  # nosec
     assert sum(y == 0) == 10, "Unexpected number of samples in class #0"  # nosec
     assert sum(y == 1) == 25, "Unexpected number of samples in class #1"  # nosec
@@ -68,7 +68,7 @@ def test_make_group_sparse_classification(shuffle, return_idx):
 
     assert X.shape == (2000, 33), "X shape mismatch"  # nosec
     assert y.shape == (2000,), "y shape mismatch"  # nosec
-    assert groups.shape == (33,), "groups shape mismatch"  # nosec
+    assert len(groups) == 11, "groups shape mismatch"  # nosec
 
     assert (  # nosec
         np.unique(X.view([("", X.dtype)] * X.shape[1]))
@@ -104,7 +104,7 @@ def test_make_group_regression():
 
     assert X.shape == (100, 10), "X shape mismatch"  # nosec
     assert y.shape == (100,), "y shape mismatch"  # nosec
-    assert groups.shape == (10,), "groups shape mismatch"  # nosec
+    assert len(groups) == 2, "groups shape mismatch"  # nosec
     assert coefs.shape == (10,), "coef shape mismatch"  # nosec
     assert sum(coefs != 0.0) == 2, "Unexpected number of informative features"  # nosec
 
@@ -123,7 +123,7 @@ def test_make_group_regression():
 
     assert X.shape == (2000, 10), "X shape mismatch"  # nosec
     assert y.shape == (2000,), "y shape mismatch"  # nosec
-    assert groups.shape == (10,), "groups shape mismatch"  # nosec
+    assert len(groups) == 2, "groups shape mismatch"  # nosec
     assert coefs.shape == (10,), "coef shape mismatch"  # nosec
     assert sum(coefs != 0.0) == 6, "Unexpected number of informative features"  # nosec
     assert (  # nosec

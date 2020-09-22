@@ -3,6 +3,7 @@ import pytest
 
 from afqinsight.sgl import SGLBaseEstimator
 from afqinsight import LogisticSGL, SGL, SGLCV
+from afqinsight.datasets import make_group_regression
 
 from sklearn.utils.estimator_checks import check_estimator
 from sklearn.utils._testing import assert_array_almost_equal
@@ -128,8 +129,9 @@ def test_warm_start(fit_intercept):
     assert_array_almost_equal(fx_warm_start, fx_cold_start)
 
 
-def test_alpha_grid():
-    # TODO: Run _alpha_grid on a few problems
-    # TODO: Confirm that the highest alpha yields coef_ == 0
-    # TODO: Smoke test that n_alphas and eps gives the expected output
-    pass
+def test_sgl_cv():
+    X, y, groups, coef = make_group_regression(coef=True, random_state=42)
+
+    sglcv = SGLCV(l1_ratio=[0.5, 0.9, 1.0], groups=groups, cv=3).fit(X, y)
+
+    assert sglcv.score(X, y) > 0.99

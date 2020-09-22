@@ -236,12 +236,16 @@ def make_group_classification(
     -------
     X : array of shape [n_samples, n_features]
         The generated samples.
+
     y : array of shape [n_samples]
         The integer labels for class membership of each sample.
-    groups : array of shape [n_features]
-        The group number for each feature
+
+    groups : list of arrays
+        Each element is an array of feature indices that belong to that group
+
     indices : array of shape [n_features]
-        A boolean array indicating which features are useful. Returned only if `useful_indices` is True.
+        A boolean array indicating which features are useful. Returned only
+        if `useful_indices` is True.
 
     Notes
     -----
@@ -361,11 +365,13 @@ def make_group_classification(
             [np.ones(n_features_per_group, dtype=np.int32) * i for i in range(n_groups)]
         )
 
+    groups = [np.where(group_idx_map == idx)[0] for idx in range(n_groups)]
+
     X = np.ascontiguousarray(X)
     if useful_indices:
-        return X, y, group_idx_map, idx
+        return X, y, groups, idx
     else:
-        return X, y, group_idx_map
+        return X, y, groups
 
 
 def make_group_regression(
@@ -414,13 +420,6 @@ def make_group_regression(
         The number of informative features_per_group that have a
         non-zero regression coefficient.
 
-    weights : list of floats or None (default=None)
-        The proportions of samples assigned to each class. If None, then
-        classes are balanced. Note that if `len(weights) == n_classes - 1`,
-        then the last class weight is automatically inferred.
-        More than `n_samples` samples may be returned if the sum of `weights`
-        exceeds 1.
-
     effective_rank : int or None, optional (default=None)
         If not None, provides the number of singular vectors to explain the
         input data.
@@ -428,21 +427,9 @@ def make_group_regression(
     noise : float, optional (default=0.0)
          The standard deviation of the gaussian noise applied to the output.
 
-    shift : float, array of shape [n_features] or None, optional (default=0.0)
-        Shift features by the specified value. If None, then features
-        are shifted by a random value drawn in [-class_sep, class_sep].
-
-    scale : float, array of shape [n_features] or None, optional (default=1.0)
-        Multiply features by the specified value. If None, then features
-        are scaled by a random value drawn in [1, 100]. Note that scaling
-        happens after shifting.
-
     shuffle : boolean, optional (default=False)
         Shuffle the samples and the features.
         # TODO
-
-    useful_indices : boolean, optional (default=False)
-        If True, a boolean array indicating useful features is returned
 
     coef : boolean, optional (default=False)
         If True, returns coefficient values used to generate samples via
@@ -458,10 +445,13 @@ def make_group_regression(
     -------
     X : array of shape [n_samples, n_features]
         The generated samples.
+
     y : array of shape [n_samples]
         The integer labels for class membership of each sample.
-    groups : array of shape [n_features]
-        The group number for each feature
+
+    groups : list of arrays
+        Each element is an array of feature indices that belong to that group
+
     coef : array of shape [n_features]
         A numpy array containing true regression coefficient values. Returned only if `coef` is True.
 
@@ -545,10 +535,11 @@ def make_group_regression(
         reg_coefs = reg_coefs[indices]
 
     X = np.ascontiguousarray(X)
+    groups = [np.where(group_idx_map == idx)[0] for idx in range(n_groups)]
     if coef:
-        return X, y, group_idx_map, reg_coefs
+        return X, y, groups, reg_coefs
     else:
-        return X, y, group_idx_map
+        return X, y, groups
 
 
 @registered
