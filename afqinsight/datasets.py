@@ -380,13 +380,11 @@ def make_group_regression(
     n_informative_groups=5,
     n_features_per_group=20,
     n_informative_per_group=5,
-    weights=None,
     effective_rank=None,
     noise=0.0,
     shift=0.0,
     scale=1.0,
     shuffle=False,
-    useful_indices=False,
     coef=False,
     random_state=None,
 ):
@@ -429,7 +427,6 @@ def make_group_regression(
 
     shuffle : boolean, optional (default=False)
         Shuffle the samples and the features.
-        # TODO
 
     coef : boolean, optional (default=False)
         If True, returns coefficient values used to generate samples via
