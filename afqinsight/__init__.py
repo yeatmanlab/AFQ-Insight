@@ -7,6 +7,7 @@ from .datasets import *  # noqa
 from .insight import *  # noqa
 from .transform import *  # noqa
 from .sgl import *  # noqa
+from .logistic_sgl import *  # noqa
 from .version import __version__  # noqa
 
 # Set default logging handler to avoid "No handler found" warnings.
