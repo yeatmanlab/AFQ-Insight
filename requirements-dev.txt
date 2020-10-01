@@ -1,4 +1,5 @@
 flake8==3.7.7
-pytest==4.5.0
-pytest-cov==2.7.1
+pytest==6.0.1
+pytest-xdits[psutil]==2.1.0
+pytest-cov==2.10.1
 pre-commit==1.16.1

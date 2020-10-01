@@ -69,17 +69,25 @@ VERSION = __version__
 PACKAGE_DATA = {"afqinsight": [pjoin("data", "*", "*")]}
 REQUIRES = [
     "copt==0.8.4",
-    "numpy>=1.16.3",
-    "pandas>=0.22.0",
-    "tables",
-    "scipy>=1.0.0",
-    "scikit-learn>=0.19.1",
-    "hyperopt>=0.1.2",
-    "matplotlib",
-    "bokeh",
-    "palettable",
-    "tqdm>=4.27.0",
-    "ipywidgets",
+    "numpy==1.16.3",
+    "pandas==0.24.2",
+    "tables==3.5.1",
+    "scipy==1.3.0",
+    "scikit-learn==0.23.2",
+    "hyperopt==0.1.2",
+    "matplotlib==3.1.0",
+    "bokeh==1.1.0",
+    "palettable==3.1.1",
+    "tqdm==4.32.1",
+    "ipywidgets==7.4.2",
 ]
-EXTRAS_REQUIRE = {"dev": ["flake8", "pytest", "pytest-cov", "pre-commit"]}
+EXTRAS_REQUIRE = {
+    "dev": [
+        "flake8==3.7.7",
+        "pytest==6.0.1",
+        "pytest-cov==2.10.1",
+        "pytest-xdist[psutil]==2.1.0",
+        "pre-commit==1.16.1",
+    ]
+}
 ENTRY_POINTS = {}
