@@ -477,6 +477,9 @@ class SGL(SGLBaseEstimator, RegressorMixin, LinearModel):
 
         return safe_sparse_dot(X, self.coef_.T, dense_output=True) + self.intercept_
 
+    def _more_tags(self):  # pylint: disable=no-self-use
+        return {"requires_y": True}
+
 
 def _alpha_grid(
     X,
@@ -490,6 +493,7 @@ def _alpha_grid(
     n_alphas=100,
     normalize=False,
     copy_X=True,
+    model=SGL,
 ):
     """Compute the grid of alpha values for elastic net parameter search
 
@@ -548,6 +552,12 @@ def _alpha_grid(
 
     copy_X : bool, default=True
         If ``True``, X will be copied; else, it may be overwritten.
+
+    model : class, default=SGL
+        The estimator class that will be used to confirm that alpha_max sets
+        all coef values to zero. The default value of ``model=SGL`` is
+        appropriate for regression while ``model=LogisticSGL`` is appropriate
+        for classification.
     """
     if l1_ratio == 1.0:
         return _lasso_alpha_grid(
@@ -634,8 +644,23 @@ def _alpha_grid(
             for grp in groups
         ]
     )
-    # Add a little just to make sure we're on the right side of the root
-    alpha_max = np.max(min_alphas + 1e-1)
+
+    alpha_max = np.max(min_alphas) * 1.2
+
+    # Test feature sparsity just to make sure we're on the right side of the root
+    while (
+        model(
+            groups=groups,
+            alpha=alpha_max,
+            l1_ratio=l1_ratio,
+            fit_intercept=fit_intercept,
+            scale_l2_by=scale_l2_by,
+        )
+        .fit(X, y)
+        .chosen_features_.size
+        > 0
+    ):
+        alpha_max *= 1.2
 
     if alpha_max <= np.finfo(float).resolution:
         alphas = np.empty(n_alphas)
@@ -713,7 +738,7 @@ def sgl_path(
         If None alphas are set automatically.
 
     Xy : array-like of shape (n_features,), default=None
-        Xy = np.dot(X.T, y) that can be precomputed. It is useful
+        Xy = np.dot(X.T, y) that can be precomputed.
 
     normalize : bool, default=False
         This parameter is ignored when ``fit_intercept`` is set to False.
@@ -997,7 +1022,6 @@ class SGLCV(LinearModel, RegressorMixin, TransformerMixin):
         cv=None,
         verbose=False,
         n_jobs=None,
-        random_state=None,
     ):
         self.l1_ratio = l1_ratio
         self.groups = groups
@@ -1013,7 +1037,6 @@ class SGLCV(LinearModel, RegressorMixin, TransformerMixin):
         self.cv = cv
         self.verbose = verbose
         self.n_jobs = n_jobs
-        self.random_state = random_state
 
     def fit(self, X, y):
         """Fit sparse group lasso linear model

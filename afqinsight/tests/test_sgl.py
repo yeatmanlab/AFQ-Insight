@@ -2,14 +2,17 @@ import numpy as np
 import pytest
 
 from afqinsight.sgl import SGLBaseEstimator
-from afqinsight import LogisticSGL, SGL, SGLCV
+from afqinsight import LogisticSGL, LogisticSGLCV, SGL, SGLCV
 from afqinsight.datasets import make_group_regression
+from afqinsight.sgl import _alpha_grid
 
 from sklearn.utils.estimator_checks import check_estimator
 from sklearn.utils._testing import assert_array_almost_equal
 
 
-@pytest.mark.parametrize("Estimator", [SGLBaseEstimator, SGL, LogisticSGL, SGLCV])
+@pytest.mark.parametrize(
+    "Estimator", [SGLBaseEstimator, SGL, LogisticSGL, SGLCV, LogisticSGLCV]
+)
 def test_all_estimators(Estimator):
     return check_estimator(Estimator())
 
@@ -135,3 +138,13 @@ def test_sgl_cv():
     sglcv = SGLCV(l1_ratio=[0.5, 0.9, 1.0], groups=groups, cv=3).fit(X, y)
 
     assert sglcv.score(X, y) > 0.99  # nosec
+
+
+@pytest.mark.parametrize("execution_number", range(5))
+@pytest.mark.parametrize("l1_ratio", np.random.default_rng(seed=42).uniform(size=4))
+def test_alpha_grid_starts_at_zero(execution_number, l1_ratio):
+    X, y, groups = make_group_regression()
+    agrid = _alpha_grid(X, y, groups=groups, l1_ratio=l1_ratio, n_alphas=10)
+    model = SGL(groups=groups, l1_ratio=l1_ratio, alpha=agrid[0]).fit(X, y)
+
+    assert model.chosen_features_.size == 0  # nosec
