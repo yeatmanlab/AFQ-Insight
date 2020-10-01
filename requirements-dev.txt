@@ -1,5 +1,5 @@
-flake8==3.7.7
-pytest==6.0.1
-pytest-xdits[psutil]==2.1.0
+flake8==3.8.3
+pre-commit==2.7.1
 pytest-cov==2.10.1
-pre-commit==1.16.1
+pytest-xdist[psutil]==2.1.0
+pytest==6.0.1

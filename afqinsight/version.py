@@ -68,26 +68,26 @@ MICRO = _version_micro
 VERSION = __version__
 PACKAGE_DATA = {"afqinsight": [pjoin("data", "*", "*")]}
 REQUIRES = [
+    "bokeh==2.2.0",
     "copt==0.8.4",
-    "numpy==1.16.3",
-    "pandas==0.24.2",
-    "tables==3.5.1",
-    "scipy==1.3.0",
+    "hyperopt==0.2.4",
+    "ipywidgets==7.5.1",
+    "matplotlib==3.3.0",
+    "numpy==1.19.1",
+    "palettable==3.3.0",
+    "pandas==1.1.1",
     "scikit-learn==0.23.2",
-    "hyperopt==0.1.2",
-    "matplotlib==3.1.0",
-    "bokeh==1.1.0",
-    "palettable==3.1.1",
-    "tqdm==4.32.1",
-    "ipywidgets==7.4.2",
+    "scipy==1.5.2",
+    "tables==3.6.1",
+    "tqdm==4.48.2",
 ]
 EXTRAS_REQUIRE = {
     "dev": [
-        "flake8==3.7.7",
-        "pytest==6.0.1",
+        "flake8==3.8.3",
+        "pre-commit==2.7.1",
         "pytest-cov==2.10.1",
         "pytest-xdist[psutil]==2.1.0",
-        "pre-commit==1.16.1",
+        "pytest==6.0.1",
     ]
 }
 ENTRY_POINTS = {}
