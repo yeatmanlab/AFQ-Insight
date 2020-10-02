@@ -1,4 +1,4 @@
-dist: xenial  # required for Python 3.7
+dist: xenial # required for Python 3.7
 language: python
 env:
   global:
@@ -14,10 +14,11 @@ install:
   - travis_retry pip install -e .[dev]
   - pip install codacy-coverage
   - pip install 'pytest-cov>=2.4.0,<2.6'
+  - pip install 'pytest-xdist[psutil]==2.1.0'
 script:
   - flake8 `find . -name \*.py | grep -v setup.py | grep -v
     version.py | grep -v __init__.py | grep -v /doc/`
-  - travis_wait 30 py.test --pyargs afqinsight --cov-report term-missing --cov-config .coveragerc --cov=afqinsight
+  - travis_wait 60 pytest --pyargs afqinsight --cov-report term-missing --cov-config .coveragerc --cov=afqinsight -n auto
   - coverage xml
 after_success:
   - python-codacy-coverage -r coverage.xml
