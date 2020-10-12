@@ -1,114 +1,96 @@
-"""
-Extract, transform, select, and shuffle AFQ data
-"""
-from __future__ import absolute_import, division, print_function
-
+"""Extract, transform, select, and shuffle AFQ data."""
 import numpy as np
 import pandas as pd
 from collections import OrderedDict
-from scipy.interpolate import interp1d
 from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn_pandas import DataFrameMapper
 
-from .utils import canonical_tract_names
+from .utils import CANONICAL_TRACT_NAMES
 
-__all__ = []
+__all__ = [
+    "AFQDataFrameMapper",
+    "GroupExtractor",
+    "remove_group",
+    "remove_groups",
+    "select_group",
+    "select_groups",
+    "shuffle_group",
+    "multicol2sets",
+    "multicol2dicts",
+    "sort_features",
+    "TopNGroupsExtractor",
+    "beta_hat_by_groups",
+    "unfold_beta_hat_by_metrics",
+]
 
 
-def registered(fn):
-    __all__.append(fn.__name__)
-    return fn
+class AFQDataFrameMapper(DataFrameMapper):
+    """Map pandas dataframe to sklearn feature matrix.
 
+    This object first converts an AFQ nodes.csv dataframe into a feature
+    matrix with rows corresponding to subjects and columns corresponding to
+    tract profile values. It interpolates along tracts to fill missing values
+    and then maps the dataframe onto a 2D feature matrix for ingestion into
+    sklearn-compatible estimators. It also maintains attributes for the
+    subject index, feature names, and groups of features.
 
-@registered
-class AFQFeatureTransformer(object):
-    """Transforms AFQ data from an input dataframe into a feature matrix
+    Parameters
+    ----------
+    df_mapper_params : kwargs, default=dict(features=[], default=None)
+        Keyword arguments passed to sklearn_pandas.DataFrameMapper. You will
+        probably not need to change these defaults.
 
-    Using an object interface for eventual inclusion into sklearn Pipelines
+    pd_interpolate_params : kwargs, default=dict(method="linear", limit_direction="both", limit_area="inside")
+        Keyword arguments passed to pandas.DataFrame.interpolate. Missing
+        values are interpolated within the tract profile so that no data is
+        used from other subjects, tracts, or metrics, minimizing the chance
+        of train/test leakage. You will probably not need to change these
+        defaults.
+
+    Attributes
+    ----------
+    subjects_ : list
+        List of subject IDs retrieved from pandas dataframe index.
+
+    groups_ : list of numpy.ndarray
+        List of arrays of non-overlapping indices for each group. For
+        example, if nine features are grouped into equal contiguous groups of
+        three, then groups would be ``[array([0, 1, 2]), array([3, 4, 5]),
+        array([6, 7, 8])]``.
+
+    feature_names_ : list of tuples
+        List of feature column names.
     """
 
-    def __init__(self):
-        pass
+    def __init__(
+        self,
+        dataframe_mapper_kwargs={"features": [], "default": None},
+        pd_interpolate_kwargs={
+            "method": "linear",
+            "limit_direction": "both",
+            "limit_area": "inside",
+        },
+    ):
+        self.subjects_ = []
+        self.groups_ = []
+        self.pd_interpolate_kwargs = pd_interpolate_kwargs
+        super().__init__(**dataframe_mapper_kwargs)
 
-    def transform(self, df, extrapolate=False, add_bias_feature=True):
-        """Transforms an AFQ dataframe
-
-        Parameters
-        ----------
-        df : pandas.DataFrame
-            input AFQ dataframe
-
-        extrapolate : bool, default=False
-            If True, use column-wise linear interpolation/extrapolation
-            for missing metric values. If False, use pandas built-in
-            `interpolate` method, which uses interpolation for interior points
-            and forward(back)-fill for exterior points.
-
-        add_bias_feature : bool, default=True
-            If True, add a bias (i.e. intercept) feature to the feature matrix
-            and return the bias index with the results.
-
-        Returns
-        -------
-        X : numpy.ndarray
-            feature matrix
-
-        groups : numpy.ndarray
-            array of indices for each group. For example, if nine features are
-            grouped into equal contiguous groups of three, then groups would
-            be an nd.array like [[0, 1, 2], [3, 4, 5], [6, 7, 8]].
-
-        columns : pandas.MultiIndex
-            multi-indexed columns of X
-
-        bias_index : int
-            the index of the bias feature
-        """
+    def _preprocess(self, X, set_attributes=True):
         # We'd like to interpolate the missing values, but first we need to
         # structure the data frame so that it does not interpolate from other
         # subjects, tracts, or metrics. It should only interpolate from nearby
         # nodes. So we want the nodeID as the row index and all the other
         # stuff as columns . After that we can interpolate along each column.
         by_node_idx = pd.pivot_table(
-            data=df.melt(id_vars=["subjectID", "tractID", "nodeID"], var_name="metric"),
+            data=X.melt(id_vars=["subjectID", "tractID", "nodeID"], var_name="metric"),
             index="nodeID",
             columns=["metric", "tractID", "subjectID"],
             values="value",
         )
 
-        if not extrapolate:
-            # We could use the built-in `.interpolate` method. This has some
-            # unexpected behavior when the NaN values are at the beginning or
-            # end of a series. For NaN values at the end of the series, it
-            # forward fills the most recent valid value. And for NaN values
-            # at the beginning of the series, it back fills the next valid
-            # value. For now, we accept this behavior because the execution
-            # time is much, much faster than doing column-wise linear
-            # extrapolation
-            interpolated = by_node_idx.interpolate(
-                method="linear", limit_direction="both"
-            )
-        else:
-            # Instead, we may want to interpolate NaN values with
-            # extrapolation at the end of the node range. But, pandas does
-            # not currently support extrapolation
-            # See this issue:
-            # https://github.com/pandas-dev/pandas/issues/16284
-            # And this stalled PR:
-            # https://github.com/pandas-dev/pandas/pull/16513
-            # Until that's fixed, we can perform the interpolation column by
-            # column using the apply method. This is SLOW, but it does the job
-            def interp_linear_with_extrap(series):
-                """Linearly interpolate a series with extrapolation...
-
-                ...outside the series range
-                """
-                x = series[~series.isnull()].index.values
-                y = series[~series.isnull()].values
-                f = interp1d(x, y, kind="linear", fill_value="extrapolate")
-                return f(series.index)
-
-            # Apply the interpolation across all columns
-            interpolated = by_node_idx.apply(interp_linear_with_extrap)
+        # Interpolate the missing values, using self.pd_interpolate_kwargs
+        interpolated = by_node_idx.interpolate(**self.pd_interpolate_kwargs)
 
         # Now we have the NaN values filled in, we want to structure the nodes
         # dataframe as a feature matrix with one row per subject and one
@@ -125,36 +107,78 @@ class AFQFeatureTransformer(object):
 
         features = features.loc[:, new_columns]
 
-        # Lastly, there may still be some nan values. After interpolating
-        # above, the only NaN values left should be the one created after
-        # stacking and unstacking due to a subject missing an entire tract.
-        # In this case, for each missing column, we take the median value
-        # of all other subjects as the fillna value
-        features.fillna(features.median(), inplace=True)
+        # Lastly, there may still be some NaN values. After interpolating
+        # above, the only NaN values left should be the ones created after
+        # stacking and unstacking due to a subject missing an entire tract. In
+        # this case, we do not fill these values and instead recommend that
+        # users use the sklearn.impute.SimpleImputer
 
-        # Construct bundle group membership
-        metric_level = features.columns.names.index("metric")
-        tract_level = features.columns.names.index("tractID")
-        n_tracts = len(features.columns.levels[tract_level])
-        bundle_group_membership = np.array(
-            features.columns.codes[metric_level].astype(np.int64) * n_tracts
-            + features.columns.codes[tract_level].astype(np.int64),
-            dtype=np.int64,
-        )
+        if set_attributes:
+            # Construct bundle group membership
+            metric_level = features.columns.names.index("metric")
+            tract_level = features.columns.names.index("tractID")
+            n_tracts = len(features.columns.levels[tract_level])
+            bundle_group_membership = np.array(
+                features.columns.codes[metric_level].astype(np.int64) * n_tracts
+                + features.columns.codes[tract_level].astype(np.int64),
+                dtype=np.int64,
+            )
 
-        groups = [
-            np.where(bundle_group_membership == gid)[0]
-            for gid in np.unique(bundle_group_membership)
-        ]
+            # Done, now let's extract the subject IDs from the index
+            self.subjects_ = features.index.tolist()
 
-        if add_bias_feature:
-            bias_index = features.values.shape[1]
-            x = np.hstack([features.values, np.ones((features.values.shape[0], 1))])
-        else:
-            bias_index = None
-            x = features.values
+            self.groups_ = [
+                np.where(bundle_group_membership == gid)[0]
+                for gid in np.unique(bundle_group_membership)
+            ]
 
-        return x, groups, features.columns, bias_index
+        return features
+
+    def fit(self, X, y=None):
+        """Fit a transform from the given dataframe.
+
+        Parameters
+        ----------
+        X : pandas.DataFrame
+            The data to fit
+
+        y : array-like of shape (n_samples,) or (n_samples, n_targets), optional
+            Target values. Unused in this transformer
+        """
+        features = self._preprocess(X, set_attributes=True)
+        return super().fit(features, y)
+
+    def transform(self, X):
+        """Transform the input data.
+
+        This assumes that ``fit`` or ``fit_transform`` has already been called.
+
+        Parameters
+        ----------
+        X : pandas.DataFrame
+            The data to transform
+        """
+        features = self._preprocess(X, set_attributes=False)
+        return super().transform(features)
+
+    def fit_transform(self, X, y=None):
+        """Fit a transform from the given dataframe and apply directly to given data.
+
+        Parameters
+        ----------
+        X : pandas.DataFrame
+            The data to fit
+
+        y : array-like of shape (n_samples,) or (n_samples, n_targets), optional
+            Target values. Unused in this transformer
+        """
+        features = self._preprocess(X, set_attributes=True)
+        return super().fit_transform(features, y)
+
+    @property
+    def feature_names_(self):
+        """Return the feature names."""
+        return self.transformed_names_
 
 
 def isiterable(obj):
@@ -167,9 +191,8 @@ def isiterable(obj):
         return True
 
 
-@registered
 class GroupExtractor(BaseEstimator, TransformerMixin):
-    """An sklearn-compatible group extractor
+    """An sklearn-compatible group extractor.
 
     Given a sequence of all group indices and a subsequence of desired
     group indices, this transformer returns the columns of the feature
@@ -182,20 +205,20 @@ class GroupExtractor(BaseEstimator, TransformerMixin):
 
     groups : numpy.ndarray or int, optional
         all group indices for feature matrix
-
-    Note
-    ----
-    Following
-    http://scikit-learn.org/dev/developers/contributing.html
-    We do not do have any parameter validation in __init__. All logic behind
-    estimator parameters is done in transform.
     """
 
     def __init__(self, extract=None, groups=None):
         self.extract = extract
         self.groups = groups
 
-    def transform(self, x, *_):
+    def transform(self, X, *_):
+        """Transform the input data.
+
+        Parameters
+        ----------
+        X : numpy.ndarray
+            The feature matrix
+        """
         if self.groups is not None and self.extract is not None:
             if isiterable(self.extract):
                 extract = np.array(self.extract)
@@ -212,28 +235,28 @@ class GroupExtractor(BaseEstimator, TransformerMixin):
             except AttributeError:
                 mask = np.array([item in extract for item in groups])
 
-            return x[:, mask]
+            return X[:, mask]
         else:
-            return x
+            return X
 
     def fit(self, *_):
+        """Fit a transform from the given data. This is a no-op."""
         return self
 
 
-@registered
-def remove_group(x, remove_label, label_sets):
-    """Remove all columns for group `remove_label`
+def remove_group(X, remove_label, label_sets):
+    """Remove all columns for group specified by ``remove_label``.
 
     Parameters
     ----------
-    x : ndarray
+    X : ndarray
         Feature matrix
 
     remove_label : string or sequence
-        label for any level of the MultiIndex columns of `x`
+        label for any level of the MultiIndex columns of `X`
 
     label_sets : ndarray of sets
-        Array of sets of labels for each column of `x`
+        Array of sets of labels for each column of `X`
 
     Returns
     -------
@@ -247,28 +270,27 @@ def remove_group(x, remove_label, label_sets):
         expected for the parameter `label_sets`
     """
     mask = np.logical_not(set(remove_label) <= label_sets)
-    if len(x.shape) == 2:
-        return np.copy(x[:, mask])
-    elif len(x.shape) == 1:
-        return np.copy(x[mask])
+    if len(X.shape) == 2:
+        return np.copy(X[:, mask])
+    elif len(X.shape) == 1:
+        return np.copy(X[mask])
     else:
-        raise ValueError("`x` must be a one- or two-dimensional ndarray.")
+        raise ValueError("`X` must be a one- or two-dimensional ndarray.")
 
 
-@registered
-def remove_groups(x, remove_labels, label_sets):
-    """Remove all columns for groups in `remove_labels`
+def remove_groups(X, remove_labels, label_sets):
+    """Remove all columns for groups specified by ``remove_labels``.
 
     Parameters
     ----------
-    x : ndarray
+    X : ndarray
         Feature matrix
 
     remove_labels : sequence
-        labels for any level of the MultiIndex columns of `x`
+        labels for any level of the MultiIndex columns of `X`
 
     label_sets : ndarray of sets
-        Array of sets of labels for each column of `x`
+        Array of sets of labels for each column of `X`
 
     Returns
     -------
@@ -285,28 +307,27 @@ def remove_groups(x, remove_labels, label_sets):
     for label in remove_labels:
         mask = np.logical_or(mask, np.logical_not(set(label) <= label_sets))
 
-    if len(x.shape) == 2:
-        return np.copy(x[:, mask])
-    elif len(x.shape) == 1:
-        return np.copy(x[mask])
+    if len(X.shape) == 2:
+        return np.copy(X[:, mask])
+    elif len(X.shape) == 1:
+        return np.copy(X[mask])
     else:
-        raise ValueError("`x` must be a one- or two-dimensional ndarray.")
+        raise ValueError("`X` must be a one- or two-dimensional ndarray.")
 
 
-@registered
-def select_group(x, select_label, label_sets):
-    """Select all columns for group `select_label`
+def select_group(X, select_label, label_sets):
+    """Select all columns for group specified by ``select_label``.
 
     Parameters
     ----------
-    x : ndarray
+    X : ndarray
         Feature matrix
 
     select_label : string or sequence
-        label for any level of the MultiIndex columns of `x`
+        label for any level of the MultiIndex columns of `X`
 
     label_sets : ndarray of sets
-        Array of sets of labels for each column of `x`
+        Array of sets of labels for each column of `X`
 
     Returns
     -------
@@ -320,28 +341,27 @@ def select_group(x, select_label, label_sets):
         expected for the parameter `label_sets`
     """
     mask = set(select_label) <= label_sets
-    if len(x.shape) == 2:
-        return np.copy(x[:, mask])
-    elif len(x.shape) == 1:
-        return np.copy(x[mask])
+    if len(X.shape) == 2:
+        return np.copy(X[:, mask])
+    elif len(X.shape) == 1:
+        return np.copy(X[mask])
     else:
-        raise ValueError("`x` must be a one- or two-dimensional ndarray.")
+        raise ValueError("`X` must be a one- or two-dimensional ndarray.")
 
 
-@registered
-def select_groups(x, select_labels, label_sets):
-    """Select all columns for groups in `select_labels`
+def select_groups(X, select_labels, label_sets):
+    """Select all columns for groups specified by ``select_labels``.
 
     Parameters
     ----------
-    x : ndarray
+    X : ndarray
         Feature matrix
 
     select_labels : sequence
-        labels for any level of the MultiIndex columns of `x`
+        labels for any level of the MultiIndex columns of `X`
 
     label_sets : ndarray of sets
-        Array of sets of labels for each column of `x`
+        Array of sets of labels for each column of `X`
 
     Returns
     -------
@@ -358,28 +378,27 @@ def select_groups(x, select_labels, label_sets):
     for label in select_labels:
         mask = np.logical_or(mask, set(label) <= label_sets)
 
-    if len(x.shape) == 2:
-        return np.copy(x[:, mask])
-    elif len(x.shape) == 1:
-        return np.copy(x[mask])
+    if len(X.shape) == 2:
+        return np.copy(X[:, mask])
+    elif len(X.shape) == 1:
+        return np.copy(X[mask])
     else:
-        raise ValueError("`x` must be a one- or two-dimensional ndarray.")
+        raise ValueError("`X` must be a one- or two-dimensional ndarray.")
 
 
-@registered
-def shuffle_group(x, label, label_sets, random_seed=None):
-    """Shuffle all elements for group `label`
+def shuffle_group(X, label, label_sets, random_seed=None):
+    """Shuffle all elements for group specified by ``label``.
 
     Parameters
     ----------
-    x : ndarray
+    X : ndarray
         Feature matrix
 
     label : string or sequence
-        label for any level of the MultiIndex columns of `x`
+        label for any level of the MultiIndex columns of `X`
 
     label_sets : ndarray of sets
-        Array of sets of labels for each column of `x`
+        Array of sets of labels for each column of `X`
 
     random_seed : int, optional
         Random seed for group shuffling
@@ -390,7 +409,7 @@ def shuffle_group(x, label, label_sets, random_seed=None):
     ndarray
         new feature matrix with all elements of group `shuffle_idx` permuted
     """
-    out = np.copy(x)
+    out = np.copy(X)
     mask = set(label) <= label_sets
     section = out[:, mask]
     section_shape = section.shape
@@ -413,9 +432,8 @@ def shuffle_group(x, label, label_sets, random_seed=None):
     return out
 
 
-@registered
 def multicol2sets(columns, tract_symmetry=True):
-    """Convert a pandas MultiIndex to an array of sets
+    """Convert a pandas MultiIndex to an array of sets.
 
     Parameters
     ----------
@@ -450,9 +468,8 @@ def multicol2sets(columns, tract_symmetry=True):
     return col_sets
 
 
-@registered
 def multicol2dicts(columns, tract_symmetry=True):
-    """Convert a pandas MultiIndex to an array of dicts
+    """Convert a pandas MultiIndex to an array of dicts.
 
     Parameters
     ----------
@@ -490,9 +507,8 @@ def multicol2dicts(columns, tract_symmetry=True):
     return col_dicts
 
 
-@registered
 def sort_features(features, scores):
-    """Sort features by importance
+    """Sort features by importance.
 
     Parameters
     ----------
@@ -517,9 +533,8 @@ def sort_features(features, scores):
     return res
 
 
-@registered
 class TopNGroupsExtractor(BaseEstimator, TransformerMixin):
-    """An sklearn-compatible group extractor
+    """An sklearn-compatible group extractor.
 
     Given a sequence of all group indices and a subsequence of desired
     group indices, this transformer returns the columns of the feature
@@ -532,13 +547,6 @@ class TopNGroupsExtractor(BaseEstimator, TransformerMixin):
 
     label_sets : ndarray of sets
         Array of sets of labels for each column of `X`
-
-    Note
-    ----
-    Following
-    http://scikit-learn.org/dev/developers/contributing.html
-    We do not do have any parameter validation in __init__. All logic behind
-    estimator parameters is done in transform.
     """
 
     def __init__(self, top_n=10, labels_by_importance=None, all_labels=None):
@@ -546,26 +554,33 @@ class TopNGroupsExtractor(BaseEstimator, TransformerMixin):
         self.labels_by_importance = labels_by_importance
         self.all_labels = all_labels
 
-    def transform(self, x, *_):
+    def transform(self, X, *_):
+        """Transform the input data.
+
+        Parameters
+        ----------
+        X : numpy.ndarray
+            The feature matrix
+        """
         input_provided = (
             self.labels_by_importance is not None and self.all_labels is not None
         )
 
         if input_provided:
             out = select_groups(
-                x, self.labels_by_importance[: self.top_n], self.all_labels
+                X, self.labels_by_importance[: self.top_n], self.all_labels
             )
             return out
         else:
-            return x
+            return X
 
     def fit(self, *_):
+        """Fit a transform from the given data. This is a no-op."""
         return self
 
 
-@registered
 def beta_hat_by_groups(beta_hat, columns, drop_zeros=False):
-    """Transform one-dimensional beta_hat array into OrderedDict
+    """Transform one-dimensional beta_hat array into OrderedDict.
 
     Organize by tract-metric groups
 
@@ -612,9 +627,8 @@ def beta_hat_by_groups(beta_hat, columns, drop_zeros=False):
     return betas
 
 
-@registered
 def unfold_beta_hat_by_metrics(beta_hat, columns, tract_names=None):
-    """Transform one-dimensional beta_hat array into OrderedDict
+    """Transform one-dimensional beta_hat array into OrderedDict.
 
     Organize by tract-metric groups
 
@@ -627,7 +641,7 @@ def unfold_beta_hat_by_metrics(beta_hat, columns, tract_names=None):
         MultiIndex columns of the feature matrix
 
     tract_names : list or None, default=None
-        Names of the tracts. If None, use utils.canonical_tract_names
+        Names of the tracts. If None, use utils.CANONICAL_TRACT_NAMES
 
     Returns
     -------
@@ -652,7 +666,7 @@ def unfold_beta_hat_by_metrics(beta_hat, columns, tract_names=None):
     if tract_names is not None:
         tracts = tract_names
     else:
-        tracts = canonical_tract_names
+        tracts = CANONICAL_TRACT_NAMES
 
     for metric in columns.levels[columns.names.index("metric")]:
         betas[metric] = []

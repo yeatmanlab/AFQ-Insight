@@ -1,18 +1,10 @@
-from __future__ import absolute_import, division, print_function
-
+"""Utility functions for AFQ-Insight."""
 import numpy as np
-import matplotlib.pyplot as plt
-from collections import namedtuple
 
-__all__ = []
+__all__ = ["ecdf"]
 
 
-def registered(fn):
-    __all__.append(fn.__name__)
-    return fn
-
-
-canonical_tract_names = [
+CANONICAL_TRACT_NAMES = [
     "Left Arcuate",
     "Left SLF",
     "Left Uncinate",
@@ -36,7 +28,6 @@ canonical_tract_names = [
 ]
 
 
-@registered
 def ecdf(data, reverse=False):
     """Compute ECDF for a one-dimensional array of measurements.
 
@@ -51,10 +42,10 @@ def ecdf(data, reverse=False):
 
     Returns
     -------
-    collections.namedtuple
-        namedtuple with fields:
-        x - sorted data
-        y - cumulative probability
+    x : numpy.ndarray
+        sorted data
+    y : numpy.ndarray
+        cumulative probability
     """
     # Number of data points: n
     n = len(data)
@@ -67,34 +58,4 @@ def ecdf(data, reverse=False):
     # y-data for the ECDF: y
     y = np.arange(1, n + 1) / n
 
-    ECDF = namedtuple("ECDF", "x y")
-    return ECDF(x=x, y=y)
-
-
-@registered
-def plot_ecdf(data, reverse=False):
-    """Plot ECDF for a one-dimensional array of measurements.
-
-    Parameters
-    ----------
-    data : np.ndarray
-        one-dimensional array of measurements
-
-    reverse : bool, default=False
-        If True, reverse the sorted data so that ecdf runs from top-left
-        to bottom-right.
-    """
-    cdf = ecdf(data, reverse=reverse)
-
-    # Generate plot
-    plt.plot(cdf.x, cdf.y, marker=".", linestyle="none")
-
-    # Make the margins nice
-    plt.margins(0.02)
-
-    # Label the axes
-    plt.xlabel("data")
-    plt.ylabel("ECDF")
-
-    # Display the plot
-    plt.show()
+    return x, y

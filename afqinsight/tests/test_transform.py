@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import afqinsight as afqi
 import numpy as np
 import os.path as op
@@ -13,7 +11,7 @@ def test_AFQFeatureTransformer():
     nodes_path = op.join(test_data_path, "nodes.csv")
     nodes = pd.read_csv(nodes_path)
     transformer = afqi.AFQFeatureTransformer()
-    x, groups, cols, bias_idx = transformer.transform(nodes)
+    x, groups, cols = transformer.transform(nodes)
 
     x_ref = np.load(op.join(test_data_path, "test_transform_x.npy"))
     groups_ref = np.load(op.join(test_data_path, "test_transform_groups.npy"))
@@ -24,7 +22,6 @@ def test_AFQFeatureTransformer():
     assert np.allclose(x, x_ref)
     assert np.allclose(groups, groups_ref)
     assert cols.equals(cols_ref)
-    assert bias_idx == 16000
 
 
 def test_isiterable():

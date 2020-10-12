@@ -1,9 +1,8 @@
-from __future__ import absolute_import, division, print_function
-
+"""AFQ-Insight is a Python library for statistical learning of tractometry data."""
 from . import datasets  # noqa
 from . import plot  # noqa
 from . import utils  # noqa
 from .datasets import *  # noqa
 from .insight import *  # noqa
 from .transform import *  # noqa
-from .version import __version__  # noqa
+from ._version import version as __version__  # noqa

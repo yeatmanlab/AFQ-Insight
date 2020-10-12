@@ -1,5 +1,4 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3585942.svg)](https://doi.org/10.5281/zenodo.3585942)
-[![Known Vulnerabilities](https://snyk.io/test/github/richford/AFQ-Insight/badge.svg)](https://snyk.io/test/github/richford/AFQ-Insight)
 [![Build Status](https://travis-ci.org/richford/AFQ-Insight.png?branch=master)](https://travis-ci.org/richford/AFQ-Insight)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/bae74594a6f340be90364835d46908d1)](https://www.codacy.com/app/richford/AFQ-Insight?utm_source=github.com&utm_medium=referral&utm_content=richford/AFQ-Insight&utm_campaign=Badge_Grade)
 [![Codacy Badge](https://api.codacy.com/project/badge/Coverage/bae74594a6f340be90364835d46908d1)](https://www.codacy.com/app/richford/AFQ-Insight?utm_source=github.com&utm_medium=referral&utm_content=richford/AFQ-Insight&utm_campaign=Badge_Coverage)
