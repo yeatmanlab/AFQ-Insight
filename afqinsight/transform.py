@@ -62,19 +62,13 @@ class AFQDataFrameMapper(DataFrameMapper):
         List of feature column names.
     """
 
-    def __init__(
-        self,
-        dataframe_mapper_kwargs={"features": [], "default": None},
-        pd_interpolate_kwargs={
-            "method": "linear",
-            "limit_direction": "both",
-            "limit_area": "inside",
-        },
-    ):
+    def __init__(self, pd_interpolate_kwargs=None, **dataframe_mapper_kwargs):
         self.subjects_ = []
         self.groups_ = []
         self.pd_interpolate_kwargs = pd_interpolate_kwargs
-        super().__init__(**dataframe_mapper_kwargs)
+        kwargs = {"features": [], "default": None}
+        kwargs.update(dataframe_mapper_kwargs)
+        super().__init__(**kwargs)
 
     def _preprocess(self, X, set_attributes=True):
         # We'd like to interpolate the missing values, but first we need to
@@ -90,7 +84,15 @@ class AFQDataFrameMapper(DataFrameMapper):
         )
 
         # Interpolate the missing values, using self.pd_interpolate_kwargs
-        interpolated = by_node_idx.interpolate(**self.pd_interpolate_kwargs)
+        if self.pd_interpolate_kwargs is None:
+            interp_kwargs = {
+                "method": "linear",
+                "limit_direction": "both",
+                "limit_area": "inside",
+            }
+        else:
+            interp_kwargs = self.pd_interpolate_kwargs
+        interpolated = by_node_idx.interpolate(**interp_kwargs)
 
         # Now we have the NaN values filled in, we want to structure the nodes
         # dataframe as a feature matrix with one row per subject and one

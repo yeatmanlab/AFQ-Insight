@@ -30,10 +30,10 @@ def test_AFQFeatureTransformer():
         op.join(test_data_path, "test_transform_cols.h5"), key="cols"
     ).index
 
-    assert np.allclose(X, X_ref, equal_nan=True)
-    assert np.allclose(groups, groups_ref)
-    assert cols == cols_ref.tolist()
-    assert set(subjects) == set(nodes.subjectID.unique())
+    assert np.allclose(X, X_ref, equal_nan=True)  # nosec
+    assert np.allclose(groups, groups_ref)  # nosec
+    assert cols == cols_ref.tolist()  # nosec
+    assert set(subjects) == set(nodes.subjectID.unique())  # nosec
 
 
 def test_AFQFeatureTransformer_fit_transform():
@@ -52,16 +52,16 @@ def test_AFQFeatureTransformer_fit_transform():
     cols_t = transformer.feature_names_
     subjects_t = transformer.subjects_
 
-    assert np.allclose(X_ft, X_t, equal_nan=True)
-    assert np.allclose(groups_ft, groups_t)
-    assert cols_ft == cols_t
-    assert subjects_ft == subjects_t
+    assert np.allclose(X_ft, X_t, equal_nan=True)  # nosec
+    assert np.allclose(groups_ft, groups_t)  # nosec
+    assert cols_ft == cols_t  # nosec
+    assert subjects_ft == subjects_t  # nosec
 
 
 def test_isiterable():
-    assert isiterable(range(10))
-    assert not isiterable(5)
-    assert isiterable(np.arange(10))
+    assert isiterable(range(10))  # nosec
+    assert not isiterable(5)  # nosec
+    assert isiterable(np.arange(10))  # nosec
 
 
 def test_value_errors():
@@ -99,7 +99,7 @@ def test_remove_group(flatten):
 
     X_removed = remove_group(X, ("Callosum Forceps Major",), label_sets_ref)
 
-    assert np.allclose(X_removed, X_ref, equal_nan=True)
+    assert np.allclose(X_removed, X_ref, equal_nan=True)  # nosec
 
 
 @pytest.mark.parametrize("flatten", [True, False])
@@ -118,7 +118,7 @@ def test_remove_groups(flatten):
     X_removed = remove_groups(
         X, [("Callosum Forceps Major",), ("Uncinate",), ("fa",)], label_sets_ref
     )
-    assert np.allclose(X_removed, X_ref, equal_nan=True)
+    assert np.allclose(X_removed, X_ref, equal_nan=True)  # nosec
 
 
 @pytest.mark.parametrize("flatten", [True, False])
@@ -135,7 +135,7 @@ def test_select_group(flatten):
         X_ref = np.squeeze(X_ref[idx, :])
 
     X_select = select_group(X, ("Callosum Forceps Major",), label_sets_ref)
-    assert np.allclose(X_select, X_ref, equal_nan=True)
+    assert np.allclose(X_select, X_ref, equal_nan=True)  # nosec
 
 
 @pytest.mark.parametrize("flatten", [True, False])
@@ -154,7 +154,7 @@ def test_select_groups(flatten):
     X_select = select_groups(
         X, [("Callosum Forceps Major",), ("Uncinate",), ("fa",)], label_sets_ref
     )
-    assert np.allclose(X_select, X_ref, equal_nan=True)
+    assert np.allclose(X_select, X_ref, equal_nan=True)  # nosec
 
 
 def test_shuffle_group():
@@ -165,17 +165,15 @@ def test_shuffle_group():
     X_ref = np.load(op.join(test_data_path, "test_shuffle_group_x.npy"))
 
     X_shuffle = shuffle_group(X, ("Corticospinal",), label_sets_ref, random_seed=42)
-    assert np.allclose(X_shuffle, X_ref, equal_nan=True)
+    assert np.allclose(X_shuffle, X_ref, equal_nan=True)  # nosec
 
 
 def test_multicol2sets():
     cols = pd.read_hdf(
         op.join(test_data_path, "test_transform_cols.h5"), key="cols"
     ).index
-
     label_sets = multicol2sets(cols)
     label_sets_ref = np.load(
         op.join(test_data_path, "test_multicol2sets_label_sets.npy"), allow_pickle=True
     )
-
-    assert np.all(label_sets == label_sets_ref)
+    assert np.all(label_sets == label_sets_ref)  # nosec
