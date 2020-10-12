@@ -1,6 +1,5 @@
 """AFQ-Insight is a Python library for statistical learning of tractometry data."""
 from . import datasets  # noqa
-from . import plot  # noqa
 from . import utils  # noqa
 from .datasets import *  # noqa
 from .insight import *  # noqa
