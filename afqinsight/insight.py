@@ -99,10 +99,10 @@ class _BaseAFQPipeline(Pipeline):
         scaler="standard",
         power_transformer=False,
         estimator=None,
-        imputer_kwargs=dict(),
-        scaler_kwargs=dict(),
-        power_transformer_kwargs=dict(),
-        estimator_kwargs=dict(),
+        imputer_kwargs=None,
+        scaler_kwargs=None,
+        power_transformer_kwargs=None,
+        estimator_kwargs=None,
         memory=None,
         verbose=False,
     ):
@@ -111,18 +111,24 @@ class _BaseAFQPipeline(Pipeline):
             "from sklearn.base.TransformerMixin; got ${input} instead."
         )
 
+        def call_with_kwargs(Transformer, kwargs):
+            if kwargs is None:
+                return Transformer()
+            else:
+                return Transformer(**kwargs)
+
         allowed = ["simple", "knn"]
         err_msg = Template(base_msg.safe_substitute(kw="imputer", allowed=allowed))
         if isinstance(imputer, str):
             if imputer.lower() == "simple":
-                pl_imputer = SimpleImputer(**imputer_kwargs)
+                pl_imputer = call_with_kwargs(SimpleImputer, imputer_kwargs)
             elif imputer.lower() == "knn":
-                pl_imputer = KNNImputer(**imputer_kwargs)
+                pl_imputer = call_with_kwargs(KNNImputer, imputer_kwargs)
             else:
                 raise ValueError(err_msg.substitute(input=imputer))
         elif inspect.isclass(imputer):
             if issubclass(imputer, TransformerMixin):
-                pl_imputer = imputer(**imputer_kwargs)
+                pl_imputer = call_with_kwargs(imputer, imputer_kwargs)
             else:
                 raise ValueError(err_msg.substitute(input=imputer))
         else:
@@ -132,18 +138,18 @@ class _BaseAFQPipeline(Pipeline):
         err_msg = Template(base_msg.safe_substitute(kw="scaler", allowed=allowed))
         if isinstance(scaler, str):
             if scaler.lower() == "standard":
-                pl_scaler = StandardScaler(**scaler_kwargs)
+                pl_scaler = call_with_kwargs(StandardScaler, scaler_kwargs)
             elif scaler.lower() == "minmax":
-                pl_scaler = MinMaxScaler(**scaler_kwargs)
+                pl_scaler = call_with_kwargs(MinMaxScaler, scaler_kwargs)
             elif scaler.lower() == "maxabs":
-                pl_scaler = MaxAbsScaler(**scaler_kwargs)
+                pl_scaler = call_with_kwargs(MaxAbsScaler, scaler_kwargs)
             elif scaler.lower() == "robust":
-                pl_scaler = RobustScaler(**scaler_kwargs)
+                pl_scaler = call_with_kwargs(RobustScaler, scaler_kwargs)
             else:
                 raise ValueError(err_msg.substitute(input=scaler))
         elif inspect.isclass(scaler):
             if issubclass(scaler, TransformerMixin):
-                pl_scaler = scaler(**scaler_kwargs)
+                pl_scaler = call_with_kwargs(scaler, scaler_kwargs)
             else:
                 raise ValueError(err_msg.substitute(input=scaler))
         elif scaler is None:
@@ -157,12 +163,16 @@ class _BaseAFQPipeline(Pipeline):
         )
         if isinstance(power_transformer, bool):
             if power_transformer:
-                pl_power_transformer = PowerTransformer(**power_transformer_kwargs)
+                pl_power_transformer = call_with_kwargs(
+                    PowerTransformer, power_transformer_kwargs
+                )
             else:
                 pl_power_transformer = None
         elif inspect.isclass(power_transformer):
             if issubclass(power_transformer, TransformerMixin):
-                pl_power_transformer = power_transformer(**power_transformer_kwargs)
+                pl_power_transformer = call_with_kwargs(
+                    power_transformer, power_transformer_kwargs
+                )
             else:
                 raise ValueError(err_msg.substitute(input=power_transformer))
         else:
@@ -170,7 +180,7 @@ class _BaseAFQPipeline(Pipeline):
 
         if estimator is not None:
             if issubclass(estimator, BaseEstimator):
-                pl_estimator = estimator(**estimator_kwargs)
+                pl_estimator = call_with_kwargs(estimator, estimator_kwargs)
             else:
                 raise ValueError(
                     "If provided, estimator must inherit from sklearn.base.BaseEstimator; "
