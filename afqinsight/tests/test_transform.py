@@ -16,7 +16,7 @@ data_path = op.join(afqi.__path__[0], "data")
 test_data_path = op.join(data_path, "test_data")
 
 
-def test_AFQFeatureTransformer():
+def test_AFQDataFrameMapper():
     nodes_path = op.join(test_data_path, "nodes.csv")
     nodes = pd.read_csv(nodes_path)
     transformer = AFQDataFrameMapper()
@@ -37,16 +37,16 @@ def test_AFQFeatureTransformer():
     assert set(subjects) == set(nodes.subjectID.unique())  # nosec
 
 
-def test_AFQFeatureTransformer_fit_transform():
+def test_AFQDataFrameMapper_fit_transform():
     nodes_path = op.join(test_data_path, "nodes.csv")
     nodes = pd.read_csv(nodes_path)
-    transformer = AFQDataFrameMapper()
+    transformer = AFQDataFrameMapper(pd_interpolate_kwargs={"method": "cubic"})
     X_ft = transformer.fit_transform(nodes)
     groups_ft = transformer.groups_
     cols_ft = transformer.feature_names_
     subjects_ft = transformer.subjects_
 
-    transformer = AFQDataFrameMapper()
+    transformer = AFQDataFrameMapper(pd_interpolate_kwargs={"method": "cubic"})
     transformer.fit(nodes)
     X_t = transformer.transform(nodes)
     groups_t = transformer.groups_

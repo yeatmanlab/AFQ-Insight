@@ -84,14 +84,13 @@ class AFQDataFrameMapper(DataFrameMapper):
         )
 
         # Interpolate the missing values, using self.pd_interpolate_kwargs
-        if self.pd_interpolate_kwargs is None:
-            interp_kwargs = {
-                "method": "linear",
-                "limit_direction": "both",
-                "limit_area": "inside",
-            }
-        else:
-            interp_kwargs = self.pd_interpolate_kwargs
+        interp_kwargs = {
+            "method": "linear",
+            "limit_direction": "both",
+            "limit_area": "inside",
+        }
+        if self.pd_interpolate_kwargs is not None:
+            interp_kwargs.update(self.pd_interpolate_kwargs)
         interpolated = by_node_idx.interpolate(**interp_kwargs)
 
         # Now we have the NaN values filled in, we want to structure the nodes
