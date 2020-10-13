@@ -2,7 +2,9 @@
 import numpy as np
 import pandas as pd
 from collections import OrderedDict
+from groupyr.utils import check_groups
 from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.utils import check_array
 from sklearn_pandas import DataFrameMapper
 
 from .utils import CANONICAL_TRACT_NAMES
@@ -206,13 +208,17 @@ class GroupExtractor(BaseEstimator, TransformerMixin):
 
     groups : numpy.ndarray or int, optional
         all group indices for feature matrix
+
+    copy_X : bool, default=False
+        if ``True``, X will be copied; else, ``transform`` may return a view
     """
 
-    def __init__(self, extract=None, groups=None):
+    def __init__(self, extract=None, groups=None, copy_X=False):
         self.extract = extract
         self.groups = groups
+        self.copy_X = copy_X
 
-    def transform(self, X, *_):
+    def transform(self, X, y=None):
         """Transform the input data.
 
         Parameters
@@ -220,29 +226,40 @@ class GroupExtractor(BaseEstimator, TransformerMixin):
         X : numpy.ndarray
             The feature matrix
         """
-        if self.groups is not None and self.extract is not None:
-            if isiterable(self.extract):
-                extract = np.array(self.extract)
-            else:
-                extract = np.array([self.extract])
-
-            if isiterable(self.groups):
-                groups = np.array(self.groups)
-            else:
-                groups = np.array([self.groups])
-
-            try:
-                mask = np.isin(groups, extract)
-            except AttributeError:
-                mask = np.array([item in extract for item in groups])
-
-            return X[:, mask]
-        else:
+        X = check_array(
+            X,
+            copy=self.copy_X,
+            dtype=[np.float32, np.float64, int],
+            force_all_finite=False,
+        )
+        groups = check_groups(groups=self.groups_, X=X, allow_overlap=True)
+        if self.extract is None:
             return X
+        elif isiterable(self.extract) and all(isinstance(e, int) for e in self.extract):
+            extract = np.array(self.extract)
+        elif isinstance(self.extract, int):
+            extract = np.array([self.extract])
+        else:
+            raise ValueError(
+                "extract must be an int; got {0} instead".format(self.extract)
+            )
 
-    def fit(self, *_):
+        idx = np.concatenate([groups[e] for e in extract])
+        return X[:, idx]
+
+    def fit(self, X=None, y=None):
         """Fit a transform from the given data. This is a no-op."""
+        X = check_array(
+            X,
+            copy=self.copy_X,
+            dtype=[np.float32, np.float64, int],
+            force_all_finite=False,
+        )
+        self.groups_ = check_groups(groups=self.groups, X=X, allow_overlap=True)
         return self
+
+    def _more_tags(self):  # pylint: disable=no-self-use
+        return {"allow_nan": True, "multilabel": True, "multioutput": True}
 
 
 def remove_group(X, remove_label, label_sets):
