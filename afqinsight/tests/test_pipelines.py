@@ -64,28 +64,34 @@ def test_classifier_pipeline_steps(
     )
 
     if scaler is not None:
-        assert isinstance(pipeline.named_steps["scale"], ScalerStep)
-        assert pipeline.named_steps["scale"].get_params() == ScalerStep().get_params()
+        assert isinstance(pipeline.named_steps["scale"], ScalerStep)  # nosec
+        assert (  # nosec
+            pipeline.named_steps["scale"].get_params() == ScalerStep().get_params()
+        )
     else:
-        assert pipeline.named_steps["scale"] is None
+        assert pipeline.named_steps["scale"] is None  # nosec
 
     if imputer is not None:
-        assert isinstance(pipeline.named_steps["impute"], ImputerStep)
-        assert pipeline.named_steps["impute"].get_params() == ImputerStep().get_params()
+        assert isinstance(pipeline.named_steps["impute"], ImputerStep)  # nosec
+        assert (  # nosec
+            pipeline.named_steps["impute"].get_params() == ImputerStep().get_params()
+        )
     else:
-        assert pipeline.named_steps["impute"] is None
+        assert pipeline.named_steps["impute"] is None  # nosec
 
     if power_transformer:
-        assert isinstance(pipeline.named_steps["power_transform"], PowerStep)
-        assert (
+        assert isinstance(pipeline.named_steps["power_transform"], PowerStep)  # nosec
+        assert (  # nosec
             pipeline.named_steps["power_transform"].get_params()
             == PowerStep().get_params()
         )
     else:
-        assert pipeline.named_steps["power_transform"] is None
+        assert pipeline.named_steps["power_transform"] is None  # nosec
 
-    assert isinstance(pipeline.named_steps["estimate"].regressor, EstimatorStep)
-    assert (
+    assert isinstance(  # nosec
+        pipeline.named_steps["estimate"].regressor, EstimatorStep
+    )
+    assert (  # nosec
         pipeline.named_steps["estimate"].regressor.get_params()
         == EstimatorStep().get_params()
     )
@@ -125,12 +131,12 @@ def test_pipeline_value_errors():
 
 def test_base_pipeline_with_none_estimator():
     pipeline = make_base_afq_pipeline()
-    assert pipeline.named_steps["estimate"] is None
+    assert pipeline.named_steps["estimate"] is None  # nosec
 
 
 def test_base_pipeline_pass_kwargs():
     pipeline = make_base_afq_pipeline(scaler_kwargs={"with_mean": False})
-    assert (
+    assert (  # nosec
         pipeline.named_steps["scale"].get_params()
         == StandardScaler(with_mean=False).get_params()
     )
