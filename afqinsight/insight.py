@@ -1,6 +1,6 @@
 """sklearn-compatible pipelines for AFQ data."""
 import inspect
-import groupyr as gr
+import groupyr as gpr
 
 from string import Template
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -15,13 +15,28 @@ from sklearn.preprocessing import (
     StandardScaler,
 )
 
-__all__ = ["AFQClassifierPipeline", "AFQRegressorPipeline"]
+__all__ = ["make_afq_classifier_pipeline", "make_afq_regressor_pipeline"]
 
 
-class _BaseAFQPipeline(Pipeline):
-    """The base AFQ-specific modeling pipeline.
+def make_base_afq_pipeline(
+    imputer="simple",
+    scaler="standard",
+    power_transformer=False,
+    estimator=None,
+    imputer_kwargs=None,
+    scaler_kwargs=None,
+    power_transformer_kwargs=None,
+    estimator_kwargs=None,
+    memory=None,
+    verbose=False,
+    target_transformer=None,
+    target_transform_func=None,
+    target_transform_inverse_func=None,
+    target_transform_check_inverse=True,
+):
+    """Return a base AFQ-specific modeling pipeline.
 
-    This class returns a :ref:`Pipeline <sklearn:pipeline>` instance with the
+    This function returns a :ref:`Pipeline <sklearn:pipeline>` instance with the
     following steps::
 
         [imputer, scaler, power_transformer, estimator]
@@ -49,8 +64,8 @@ class _BaseAFQPipeline(Pipeline):
 
         target_transformer.inverse_transform(estimator.predict(X))
 
-    This is a base class on which more specific classifiers and regressors
-    will be built.
+    This is a base function on which more specific classifier and regressor
+    pipelines will be built.
 
     Parameters
     ----------
@@ -135,136 +150,130 @@ class _BaseAFQPipeline(Pipeline):
         Whether to check that ``transform`` followed by ``inverse_transform``
         or ``func`` followed by ``inverse_func`` leads to the original targets.
 
-    Attributes
-    ----------
-    named_steps : `sklearn.utils.Bunch <https://scikit-learn.org/stable/modules/generated/sklearn.utils.Bunch.html#sklearn-utils-bunch>`_
-        Dictionary-like object, with the following attributes.
-        Read-only attribute to access any step parameter by user given name.
-        Keys are step names and values are steps parameters.
+    Returns
+    -------
+    pipeline : :ref:`Pipeline <sklearn:pipeline>` instance
     """
+    base_msg = Template(
+        "${kw} must be one of ${allowed} or a class that inherits "
+        "from sklearn.base.TransformerMixin; got ${input} instead."
+    )
 
-    def __init__(
-        self,
-        imputer="simple",
-        scaler="standard",
-        power_transformer=False,
-        estimator=None,
-        imputer_kwargs=None,
-        scaler_kwargs=None,
-        power_transformer_kwargs=None,
-        estimator_kwargs=None,
-        memory=None,
-        verbose=False,
-        target_transformer=None,
-        target_transform_func=None,
-        target_transform_inverse_func=None,
-        target_transform_check_inverse=True,
-    ):
-        base_msg = Template(
-            "${kw} must be one of ${allowed} or a class that inherits "
-            "from sklearn.base.TransformerMixin; got ${input} instead."
-        )
+    def call_with_kwargs(Transformer, kwargs):
+        if kwargs is None:
+            return Transformer()
+        else:
+            return Transformer(**kwargs)
 
-        def call_with_kwargs(Transformer, kwargs):
-            if kwargs is None:
-                return Transformer()
-            else:
-                return Transformer(**kwargs)
-
-        allowed = ["simple", "knn"]
-        err_msg = Template(base_msg.safe_substitute(kw="imputer", allowed=allowed))
-        if isinstance(imputer, str):
-            if imputer.lower() == "simple":
-                pl_imputer = call_with_kwargs(SimpleImputer, imputer_kwargs)
-            elif imputer.lower() == "knn":
-                pl_imputer = call_with_kwargs(KNNImputer, imputer_kwargs)
-            else:
-                raise ValueError(err_msg.substitute(input=imputer))
-        elif inspect.isclass(imputer):
-            if issubclass(imputer, TransformerMixin):
-                pl_imputer = call_with_kwargs(imputer, imputer_kwargs)
-            else:
-                raise ValueError(err_msg.substitute(input=imputer))
+    allowed = ["simple", "knn"]
+    err_msg = Template(base_msg.safe_substitute(kw="imputer", allowed=allowed))
+    if isinstance(imputer, str):
+        if imputer.lower() == "simple":
+            pl_imputer = call_with_kwargs(SimpleImputer, imputer_kwargs)
+        elif imputer.lower() == "knn":
+            pl_imputer = call_with_kwargs(KNNImputer, imputer_kwargs)
         else:
             raise ValueError(err_msg.substitute(input=imputer))
+    elif inspect.isclass(imputer):
+        if issubclass(imputer, TransformerMixin):
+            pl_imputer = call_with_kwargs(imputer, imputer_kwargs)
+        else:
+            raise ValueError(err_msg.substitute(input=imputer))
+    else:
+        raise ValueError(err_msg.substitute(input=imputer))
 
-        allowed = ["standard", "minmax", "maxabs", "robust"]
-        err_msg = Template(base_msg.safe_substitute(kw="scaler", allowed=allowed))
-        if isinstance(scaler, str):
-            if scaler.lower() == "standard":
-                pl_scaler = call_with_kwargs(StandardScaler, scaler_kwargs)
-            elif scaler.lower() == "minmax":
-                pl_scaler = call_with_kwargs(MinMaxScaler, scaler_kwargs)
-            elif scaler.lower() == "maxabs":
-                pl_scaler = call_with_kwargs(MaxAbsScaler, scaler_kwargs)
-            elif scaler.lower() == "robust":
-                pl_scaler = call_with_kwargs(RobustScaler, scaler_kwargs)
-            else:
-                raise ValueError(err_msg.substitute(input=scaler))
-        elif inspect.isclass(scaler):
-            if issubclass(scaler, TransformerMixin):
-                pl_scaler = call_with_kwargs(scaler, scaler_kwargs)
-            else:
-                raise ValueError(err_msg.substitute(input=scaler))
-        elif scaler is None:
-            pl_scaler = None
+    allowed = ["standard", "minmax", "maxabs", "robust"]
+    err_msg = Template(base_msg.safe_substitute(kw="scaler", allowed=allowed))
+    if isinstance(scaler, str):
+        if scaler.lower() == "standard":
+            pl_scaler = call_with_kwargs(StandardScaler, scaler_kwargs)
+        elif scaler.lower() == "minmax":
+            pl_scaler = call_with_kwargs(MinMaxScaler, scaler_kwargs)
+        elif scaler.lower() == "maxabs":
+            pl_scaler = call_with_kwargs(MaxAbsScaler, scaler_kwargs)
+        elif scaler.lower() == "robust":
+            pl_scaler = call_with_kwargs(RobustScaler, scaler_kwargs)
         else:
             raise ValueError(err_msg.substitute(input=scaler))
+    elif inspect.isclass(scaler):
+        if issubclass(scaler, TransformerMixin):
+            pl_scaler = call_with_kwargs(scaler, scaler_kwargs)
+        else:
+            raise ValueError(err_msg.substitute(input=scaler))
+    elif scaler is None:
+        pl_scaler = None
+    else:
+        raise ValueError(err_msg.substitute(input=scaler))
 
-        allowed = [True, False]
-        err_msg = Template(
-            base_msg.safe_substitute(kw="power_transformer", allowed=allowed)
-        )
-        if isinstance(power_transformer, bool):
-            if power_transformer:
-                pl_power_transformer = call_with_kwargs(
-                    PowerTransformer, power_transformer_kwargs
-                )
-            else:
-                pl_power_transformer = None
-        elif inspect.isclass(power_transformer):
-            if issubclass(power_transformer, TransformerMixin):
-                pl_power_transformer = call_with_kwargs(
-                    power_transformer, power_transformer_kwargs
-                )
-            else:
-                raise ValueError(err_msg.substitute(input=power_transformer))
+    allowed = [True, False]
+    err_msg = Template(
+        base_msg.safe_substitute(kw="power_transformer", allowed=allowed)
+    )
+    if isinstance(power_transformer, bool):
+        if power_transformer:
+            pl_power_transformer = call_with_kwargs(
+                PowerTransformer, power_transformer_kwargs
+            )
+        else:
+            pl_power_transformer = None
+    elif inspect.isclass(power_transformer):
+        if issubclass(power_transformer, TransformerMixin):
+            pl_power_transformer = call_with_kwargs(
+                power_transformer, power_transformer_kwargs
+            )
         else:
             raise ValueError(err_msg.substitute(input=power_transformer))
+    else:
+        raise ValueError(err_msg.substitute(input=power_transformer))
 
-        if estimator is not None:
-            if issubclass(estimator, BaseEstimator):
-                pl_estimator = TransformedTargetRegressor(
-                    call_with_kwargs(estimator, estimator_kwargs),
-                    transformer=target_transformer,
-                    func=target_transform_func,
-                    inverse_func=target_transform_inverse_func,
-                    check_inverse=target_transform_check_inverse,
-                )
-            else:
-                raise ValueError(
-                    "If provided, estimator must inherit from sklearn.base.BaseEstimator; "
-                    "got {0} instead.".format(estimator)
-                )
+    if estimator is not None:
+        if inspect.isclass(estimator) and issubclass(estimator, BaseEstimator):
+            pl_estimator = TransformedTargetRegressor(
+                call_with_kwargs(estimator, estimator_kwargs),
+                transformer=target_transformer,
+                func=target_transform_func,
+                inverse_func=target_transform_inverse_func,
+                check_inverse=target_transform_check_inverse,
+            )
         else:
-            pl_estimator = None
+            raise ValueError(
+                "If provided, estimator must inherit from sklearn.base.BaseEstimator; "
+                "got {0} instead.".format(estimator)
+            )
+    else:
+        pl_estimator = None
 
-        # Build the pipeline steps. We will always start with the imputer and end
-        # with the estimator. The scaler and power_transform steps are optional.
-        pl = [
-            ("impute", pl_imputer),
-            ("scale", pl_scaler),
-            ("power_transform", pl_power_transformer),
-            ("estimate", pl_estimator),
-        ]
+    # Build the pipeline steps. We will always start with the imputer and end
+    # with the estimator. The scaler and power_transform steps are optional.
+    pl = [
+        ("impute", pl_imputer),
+        ("scale", pl_scaler),
+        ("power_transform", pl_power_transformer),
+        ("estimate", pl_estimator),
+    ]
 
-        super().__init__(steps=pl, memory=memory, verbose=verbose)
+    return Pipeline(steps=pl, memory=memory, verbose=verbose)
 
 
-class AFQClassifierPipeline(_BaseAFQPipeline):
-    """The recommended AFQ-specific classification pipeline.
+def make_afq_classifier_pipeline(
+    imputer="simple",
+    scaler="standard",
+    power_transformer=False,
+    imputer_kwargs=None,
+    scaler_kwargs=None,
+    power_transformer_kwargs=None,
+    use_cv_estimator=True,
+    memory=None,
+    pipeline_verbosity=False,
+    target_transformer=None,
+    target_transform_func=None,
+    target_transform_inverse_func=None,
+    target_transform_check_inverse=True,
+    **estimator_kwargs,
+):
+    """Return the recommended AFQ-specific classification pipeline.
 
-    This class returns a :ref:`Pipeline <sklearn:pipeline>` instance with the
+    This function returns a :ref:`Pipeline <sklearn:pipeline>` instance with the
     following steps::
 
         [imputer, scaler, power_transformer, estimator]
@@ -274,11 +283,11 @@ class AFQClassifierPipeline(_BaseAFQPipeline):
     features of the feature matrix; ``power_transformer`` is optional and
     applies a power transform featurewise to make data more Gaussian-like;
     and ``estimator`` is an instance of
-    :class:`groupyr:groupyr.LogisticSGLCV`. The parameters below include the
-    keyword arguments passed to :class:`groupyr:groupyr.LogisticSGLCV`. The
+    :class:`groupyr:groupyr.LogisticSGLCV` if ``use_cv_estimator=True`` or
+    :class:`groupyr:groupyr.LogisticSGL` if ``use_cv_estimator=False``. The
     estimator may be optionally wrapped in a
-    :class:`sklearn:sklearn.compose.TransformedTargetRegressor` such that
-    the computation during ``fit`` is::
+    :class:`sklearn:sklearn.compose.TransformedTargetRegressor` such that the
+    computation during ``fit`` is::
 
         estimator.fit(X, target_transform_func(y))
 
@@ -331,6 +340,10 @@ class AFQClassifierPipeline(_BaseAFQPipeline):
     power_transformer_kwargs : dict, default=None,
         Key-word arguments for the power_transformer.
 
+    use_cv_estimator : bool, default=True,
+        If True, use :class:`groupyr:groupyr.LogisticSGLCV` as the final
+        estimator. Otherwise, use :class:`groupyr:groupyr.LogisticSGL`.
+
     memory : str or object with the joblib.Memory interface, default=None
         Used to cache the fitted transformers of the pipeline. By default,
         no caching is performed. If a string is given, it is the path to
@@ -370,145 +383,52 @@ class AFQClassifierPipeline(_BaseAFQPipeline):
         Whether to check that ``transform`` followed by ``inverse_transform``
         or ``func`` followed by ``inverse_func`` leads to the original targets.
 
-    l1_ratio : float or list of float, default=1.0
-        float between 0 and 1 passed to SGL (scaling between group lasso and
-        lasso penalties). For ``l1_ratio = 0`` the penalty is the group lasso
-        penalty. For ``l1_ratio = 1`` it is the lasso penalty. For ``0 <
-        l1_ratio < 1``, the penalty is a combination of group lasso and
-        lasso. This parameter can be a list, in which case the different
-        values are tested by cross-validation and the one giving the best
-        prediction score is used. Note that a good choice of list of values
-        will depend on the problem. For problems where we expect strong
-        overall sparsity and would like to encourage grouping, put more
-        values close to 1 (i.e. Lasso). In contrast, if we expect strong
-        group-wise sparsity, but only mild sparsity within groups, put more
-        values close to 0 (i.e. group lasso).
+    **estimator_kwargs : kwargs
+        Keyword arguments passed to :class:`groupyr:groupyr.LogisticSGLCV` if
+        ``use_cv_estimator=True`` or :class:`groupyr:groupyr.LogisticSGL` if
+        ``use_cv_estimator=False``.
 
-    groups : list of numpy.ndarray
-        list of arrays of non-overlapping indices for each group. For
-        example, if nine features are grouped into equal contiguous groups of
-        three, then groups would be ``[array([0, 1, 2]), array([3, 4, 5]),
-        array([6, 7, 8])]``. If the feature matrix contains a bias or
-        intercept feature, do not include it as a group. If None, all
-        features will belong to one group.
-
-    scale_l2_by : ["group_length", None], default="group_length"
-        Scaling technique for the group-wise L2 penalty.
-        By default, ``scale_l2_by="group_length`` and the L2 penalty is
-        scaled by the square root of the group length so that each variable
-        has the same effect on the penalty. This may not be appropriate for
-        one-hot encoded features and ``scale_l2_by=None`` would be more
-        appropriate for that case. ``scale_l2_by=None`` will also reproduce
-        ElasticNet results when all features belong to one group.
-
-    eps : float, default=1e-3
-        Length of the path. ``eps=1e-3`` means that
-        ``alpha_min / alpha_max = 1e-3``.
-
-    n_alphas : int, default=100
-        Number of alphas along the regularization path, used for each l1_ratio.
-
-    alphas : ndarray, default=None
-        List of alphas where to compute the models.
-        If None alphas are set automatically
-
-    fit_intercept : bool, default=True
-        whether to calculate the intercept for this model. If set
-        to false, no intercept will be used in calculations
-        (i.e. data is expected to be centered).
-
-    normalize : bool, default=False
-        This parameter is ignored when ``fit_intercept`` is set to False.
-        If True, the regressors X will be normalized before regression by
-        subtracting the mean and dividing by the l2-norm.
-        If you wish to standardize, please use
-        :class:`sklearn.preprocessing.StandardScaler` before calling ``fit``
-        on an estimator with ``normalize=False``.
-
-    max_iter : int, default=1000
-        The maximum number of iterations
-
-    tol : float, default=1e-7
-        The tolerance for the SGL solver
-
-    scoring : callable, default=None
-        A string or a scorer callable object / function with signature
-        ``scorer(estimator, X, y)``. For a list of scoring functions that can
-        be used, look at :mod:`sklearn:sklearn.metrics`. The default scoring
-        option used is accuracy_score.
-
-    cv : int, cross-validation generator or iterable, default=None
-        Determines the cross-validation splitting strategy.
-        Possible inputs for cv are:
-
-        - None, to use the default 5-fold cross-validation,
-        - int, to specify the number of folds.
-        - an sklearn `CV splitter <https://scikit-learn.org/stable/glossary.html#term-cv-splitter>`_,
-        - An iterable yielding (train, test) splits as arrays of indices.
-
-        For int/None inputs, :class:`sklearn:sklearn.model_selection.StratifiedKFold` is used.
-
-        Refer to the :ref:`scikit-learn User Guide
-        <sklearn:cross_validation>` for the various cross-validation
-        strategies that can be used here.
-
-    copy_X : bool, default=True
-        If ``True``, X will be copied; else, it may be overwritten.
-
-    verbose : bool or int, default=False
-        Amount of verbosity.
-
-    n_jobs : int, default=None
-        Number of CPUs to use during the cross validation. ``None`` means 1
-        unless in a :obj:`joblib:joblib.parallel_backend` context. ``-1`` means
-        using all processors. See :term:`sklearn:n_jobs` for more details.
-
-    Attributes
-    ----------
-    named_steps : `sklearn.utils.Bunch <https://scikit-learn.org/stable/modules/generated/sklearn.utils.Bunch.html#sklearn-utils-bunch>`_
-        Dictionary-like object, with the following attributes.
-        Read-only attribute to access any step parameter by user given name.
-        Keys are step names and values are steps parameters.
+    Returns
+    -------
+    pipeline : :ref:`Pipeline <sklearn:pipeline>` instance
     """
-
-    def __init__(
-        self,
-        imputer="simple",
-        scaler="standard",
-        power_transformer=False,
-        imputer_kwargs=None,
-        scaler_kwargs=None,
-        power_transformer_kwargs=None,
-        memory=None,
-        pipeline_verbosity=False,
-        target_transformer=None,
-        target_transform_func=None,
-        target_transform_inverse_func=None,
-        target_transform_check_inverse=True,
-        **logistic_sglcv_kwargs,
-    ):
-        super().__init__(
-            imputer=imputer,
-            scaler=scaler,
-            power_transformer=power_transformer,
-            estimator=gr.LogisticSGLCV,
-            imputer_kwargs=imputer_kwargs,
-            scaler_kwargs=scaler_kwargs,
-            power_transformer_kwargs=power_transformer_kwargs,
-            estimator_kwargs=logistic_sglcv_kwargs,
-            memory=memory,
-            verbose=pipeline_verbosity,
-            target_transformer=target_transformer,
-            target_transform_func=target_transform_func,
-            target_transform_inverse_func=target_transform_inverse_func,
-            target_transform_check_inverse=target_transform_check_inverse,
-        )
+    return make_base_afq_pipeline(
+        imputer=imputer,
+        scaler=scaler,
+        power_transformer=power_transformer,
+        estimator=gpr.LogisticSGLCV if use_cv_estimator else gpr.LogisticSGL,
+        imputer_kwargs=imputer_kwargs,
+        scaler_kwargs=scaler_kwargs,
+        power_transformer_kwargs=power_transformer_kwargs,
+        estimator_kwargs=estimator_kwargs,
+        memory=memory,
+        verbose=pipeline_verbosity,
+        target_transformer=target_transformer,
+        target_transform_func=target_transform_func,
+        target_transform_inverse_func=target_transform_inverse_func,
+        target_transform_check_inverse=target_transform_check_inverse,
+    )
 
 
-class AFQRegressorPipeline(_BaseAFQPipeline):
-    """The recommended AFQ-specific regression pipeline.
+def make_afq_regressor_pipeline(
+    imputer="simple",
+    scaler="standard",
+    power_transformer=False,
+    imputer_kwargs=None,
+    scaler_kwargs=None,
+    power_transformer_kwargs=None,
+    use_cv_estimator=True,
+    memory=None,
+    pipeline_verbosity=False,
+    target_transformer=None,
+    target_transform_func=None,
+    target_transform_inverse_func=None,
+    target_transform_check_inverse=True,
+    **estimator_kwargs,
+):
+    """Return the recommended AFQ-specific regression pipeline.
 
-    This class returns a :ref:`Pipeline <sklearn:pipeline>` instance with the
+    This function returns a :ref:`Pipeline <sklearn:pipeline>` instance with the
     following steps::
 
         [imputer, scaler, power_transformer, estimator]
@@ -517,12 +437,11 @@ class AFQRegressorPipeline(_BaseAFQPipeline):
     metrics along an entire bundle; ``scaler`` is optional and scales the
     features of the feature matrix; ``power_transformer`` is optional and
     applies a power transform featurewise to make data more Gaussian-like;
-    and ``estimator`` is an instance of
-    :class:`groupyr:groupyr.SGLCV`. The parameters below include the
-    keyword arguments passed to :class:`groupyr:groupyr.SGLCV`. The
-    estimator may be optionally wrapped in a
-    :class:`sklearn:sklearn.compose.TransformedTargetRegressor` such that
-    the computation during ``fit`` is::
+    and ``estimator`` is an instance of :class:`groupyr:groupyr.SGLCV` if
+    ``use_cv_estimator=True`` or :class:`groupyr:groupyr.SGL` if
+    ``use_cv_estimator=False``. The estimator may be optionally wrapped in a
+    :class:`sklearn:sklearn.compose.TransformedTargetRegressor` such that the
+    computation during ``fit`` is::
 
         estimator.fit(X, target_transform_func(y))
 
@@ -575,6 +494,10 @@ class AFQRegressorPipeline(_BaseAFQPipeline):
     power_transformer_kwargs : dict, default=None,
         Key-word arguments for the power_transformer.
 
+    use_cv_estimator : bool, default=True,
+        If True, use :class:`groupyr:groupyr.SGLCV` as the final
+        estimator. Otherwise, use :class:`groupyr:groupyr.SGL`.
+
     memory : str or object with the joblib.Memory interface, default=None
         Used to cache the fitted transformers of the pipeline. By default,
         no caching is performed. If a string is given, it is the path to
@@ -614,138 +537,31 @@ class AFQRegressorPipeline(_BaseAFQPipeline):
         Whether to check that ``transform`` followed by ``inverse_transform``
         or ``func`` followed by ``inverse_func`` leads to the original targets.
 
-    l1_ratio : float or list of float, default=1.0
-        float between 0 and 1 passed to SGL (scaling between group lasso and
-        lasso penalties). For ``l1_ratio = 0`` the penalty is the group lasso
-        penalty. For ``l1_ratio = 1`` it is the lasso penalty. For ``0 <
-        l1_ratio < 1``, the penalty is a combination of group lasso and
-        lasso. This parameter can be a list, in which case the different
-        values are tested by cross-validation and the one giving the best
-        prediction score is used. Note that a good choice of list of values
-        will depend on the problem. For problems where we expect strong
-        overall sparsity and would like to encourage grouping, put more
-        values close to 1 (i.e. Lasso). In contrast, if we expect strong
-        group-wise sparsity, but only mild sparsity within groups, put more
-        values close to 0 (i.e. group lasso).
+    **estimator_kwargs : kwargs
+        Keyword arguments passed to :class:`groupyr:groupyr.SGLCV` if
+        ``use_cv_estimator=True`` or :class:`groupyr:groupyr.SGL` if
+        ``use_cv_estimator=False``.
 
-    groups : list of numpy.ndarray
-        list of arrays of non-overlapping indices for each group. For
-        example, if nine features are grouped into equal contiguous groups of
-        three, then groups would be ``[array([0, 1, 2]), array([3, 4, 5]),
-        array([6, 7, 8])]``. If the feature matrix contains a bias or
-        intercept feature, do not include it as a group. If None, all
-        features will belong to one group.
-
-    scale_l2_by : ["group_length", None], default="group_length"
-        Scaling technique for the group-wise L2 penalty.
-        By default, ``scale_l2_by="group_length`` and the L2 penalty is
-        scaled by the square root of the group length so that each variable
-        has the same effect on the penalty. This may not be appropriate for
-        one-hot encoded features and ``scale_l2_by=None`` would be more
-        appropriate for that case. ``scale_l2_by=None`` will also reproduce
-        ElasticNet results when all features belong to one group.
-
-    eps : float, default=1e-3
-        Length of the path. ``eps=1e-3`` means that
-        ``alpha_min / alpha_max = 1e-3``.
-
-    n_alphas : int, default=100
-        Number of alphas along the regularization path, used for each l1_ratio.
-
-    alphas : ndarray, default=None
-        List of alphas where to compute the models.
-        If None alphas are set automatically
-
-    fit_intercept : bool, default=True
-        whether to calculate the intercept for this model. If set
-        to false, no intercept will be used in calculations
-        (i.e. data is expected to be centered).
-
-    normalize : bool, default=False
-        This parameter is ignored when ``fit_intercept`` is set to False.
-        If True, the regressors X will be normalized before regression by
-        subtracting the mean and dividing by the l2-norm.
-        If you wish to standardize, please use
-        :class:`sklearn.preprocessing.StandardScaler` before calling ``fit``
-        on an estimator with ``normalize=False``.
-
-    max_iter : int, default=1000
-        The maximum number of iterations
-
-    tol : float, default=1e-7
-        The tolerance for the SGL solver
-
-    cv : int, cross-validation generator or iterable, default=None
-        Determines the cross-validation splitting strategy.
-        Possible inputs for cv are:
-
-        - None, to use the default 5-fold cross-validation,
-        - int, to specify the number of folds.
-        - an sklearn `CV splitter <https://scikit-learn.org/stable/glossary.html#term-cv-splitter>`_,
-        - An iterable yielding (train, test) splits as arrays of indices.
-
-        For int/None inputs, :class:`sklearn:sklearn.model_selection.KFold` is used.
-
-        Refer to the :ref:`scikit-learn User Guide
-        <sklearn:cross_validation>` for the various cross-validation
-        strategies that can be used here.
-
-    copy_X : bool, default=True
-        If ``True``, X will be copied; else, it may be overwritten.
-
-    verbose : bool or int, default=0
-        Amount of verbosity.
-
-    n_jobs : int, default=None
-        Number of CPUs to use during the cross validation. ``None`` means 1
-        unless in a :obj:`joblib:joblib.parallel_backend` context. ``-1`` means
-        using all processors. See :term:`sklearn:n_jobs` for more details.
-
-    random_state : int, RandomState instance, default=None
-        The seed of the pseudo random number generator that selects a random
-        feature to update. Used when ``selection`` == 'random'.
-        Pass an int for reproducible output across multiple function calls.
-
-    Attributes
-    ----------
-    named_steps : `sklearn.utils.Bunch <https://scikit-learn.org/stable/modules/generated/sklearn.utils.Bunch.html#sklearn-utils-bunch>`_
-        Dictionary-like object, with the following attributes.
-        Read-only attribute to access any step parameter by user given name.
-        Keys are step names and values are steps parameters.
+    Returns
+    -------
+    pipeline : :ref:`Pipeline <sklearn:pipeline>` instance
     """
-
-    def __init__(
-        self,
-        imputer="simple",
-        scaler="standard",
-        power_transformer=False,
-        imputer_kwargs=None,
-        scaler_kwargs=None,
-        power_transformer_kwargs=None,
-        memory=None,
-        pipeline_verbosity=False,
-        target_transformer=None,
-        target_transform_func=None,
-        target_transform_inverse_func=None,
-        target_transform_check_inverse=True,
-        **sglcv_kwargs,
-    ):
-        super().__init__(
-            imputer=imputer,
-            scaler=scaler,
-            power_transformer=power_transformer,
-            estimator=gr.SGLCV,
-            imputer_kwargs=imputer_kwargs,
-            scaler_kwargs=scaler_kwargs,
-            power_transformer_kwargs=power_transformer_kwargs,
-            estimator_kwargs=sglcv_kwargs,
-            memory=memory,
-            verbose=pipeline_verbosity,
-            target_transformer=target_transformer,
-            target_transform_func=target_transform_func,
-            target_transform_inverse_func=target_transform_inverse_func,
-            target_transform_check_inverse=target_transform_check_inverse,
-        )
+    return make_base_afq_pipeline(
+        imputer=imputer,
+        scaler=scaler,
+        power_transformer=power_transformer,
+        estimator=gpr.SGLCV if use_cv_estimator else gpr.SGL,
+        imputer_kwargs=imputer_kwargs,
+        scaler_kwargs=scaler_kwargs,
+        power_transformer_kwargs=power_transformer_kwargs,
+        estimator_kwargs=estimator_kwargs,
+        memory=memory,
+        verbose=pipeline_verbosity,
+        target_transformer=target_transformer,
+        target_transform_func=target_transform_func,
+        target_transform_inverse_func=target_transform_inverse_func,
+        target_transform_check_inverse=target_transform_check_inverse,
+    )
 
 
 # TODO: Use these classification scores: accuracy, roc_auc, avg_precision, f1
