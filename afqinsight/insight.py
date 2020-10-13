@@ -59,16 +59,16 @@ class _BaseAFQPipeline(Pipeline):
         The estimator to use as the last step of the pipeline. If provided,
         it must inherit from ``sklearn.base.BaseEstimator``
 
-    imputer_kwargs : dict, default=dict(),
+    imputer_kwargs : dict, default=None,
         Key-word arguments for the imputer.
 
-    scaler_kwargs : dict, default=dict(),
+    scaler_kwargs : dict, default=None,
         Key-word arguments for the scaler.
 
-    power_transformer_kwargs : dict, default=dict(),
+    power_transformer_kwargs : dict, default=None,
         Key-word arguments for the power_transformer.
 
-    estimator_kwargs : dict, default=dict(),
+    estimator_kwargs : dict, default=None,
         Key-word arguments for the estimator.
 
     memory : str or object with the joblib.Memory interface, default=None
@@ -239,13 +239,13 @@ class AFQClassifierPipeline(_BaseAFQPipeline):
         ``RobustScaler``. Custom transformers are allowed as long as they
         inherit from ``sklearn.base.TransformerMixin``.
 
-    imputer_kwargs : dict, default=dict(),
+    imputer_kwargs : dict, default=None,
         Key-word arguments for the imputer.
 
-    scaler_kwargs : dict, default=dict(),
+    scaler_kwargs : dict, default=None,
         Key-word arguments for the scaler.
 
-    power_transformer_kwargs : dict, default=dict(),
+    power_transformer_kwargs : dict, default=None,
         Key-word arguments for the power_transformer.
 
     memory : str or object with the joblib.Memory interface, default=None
@@ -367,9 +367,9 @@ class AFQClassifierPipeline(_BaseAFQPipeline):
         imputer="simple",
         scaler="standard",
         power_transformer=False,
-        imputer_kwargs=dict(),
-        scaler_kwargs=dict(),
-        power_transformer_kwargs=dict(),
+        imputer_kwargs=None,
+        scaler_kwargs=None,
+        power_transformer_kwargs=None,
         memory=None,
         pipeline_verbosity=False,
         **logistic_sglcv_kwargs,
@@ -426,13 +426,13 @@ class AFQRegressorPipeline(_BaseAFQPipeline):
         ``RobustScaler``. Custom transformers are allowed as long as they
         inherit from ``sklearn.base.TransformerMixin``.
 
-    imputer_kwargs : dict, default=dict(),
+    imputer_kwargs : dict, default=None,
         Key-word arguments for the imputer.
 
-    scaler_kwargs : dict, default=dict(),
+    scaler_kwargs : dict, default=None,
         Key-word arguments for the scaler.
 
-    power_transformer_kwargs : dict, default=dict(),
+    power_transformer_kwargs : dict, default=None,
         Key-word arguments for the power_transformer.
 
     memory : str or object with the joblib.Memory interface, default=None
@@ -553,9 +553,9 @@ class AFQRegressorPipeline(_BaseAFQPipeline):
         imputer="simple",
         scaler="standard",
         power_transformer=False,
-        imputer_kwargs=dict(),
-        scaler_kwargs=dict(),
-        power_transformer_kwargs=dict(),
+        imputer_kwargs=None,
+        scaler_kwargs=None,
+        power_transformer_kwargs=None,
         memory=None,
         pipeline_verbosity=False,
         **sglcv_kwargs,
