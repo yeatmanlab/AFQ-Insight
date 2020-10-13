@@ -4,6 +4,7 @@ import groupyr as gr
 
 from string import Template
 from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.compose import TransformedTargetRegressor
 from sklearn.impute import KNNImputer, SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import (
@@ -20,9 +21,9 @@ __all__ = ["AFQClassifierPipeline", "AFQRegressorPipeline"]
 class _BaseAFQPipeline(Pipeline):
     """The base AFQ-specific modeling pipeline.
 
-    This class returns an instance of
-    :ref:`sklearn:sklearn.pipeline.Pipeline` with the following steps::
-        
+    This class returns a :ref:`Pipeline <sklearn:pipeline>` instance with the
+    following steps::
+
         [imputer, scaler, power_transformer, estimator]
 
     where ``imputer`` imputes missing data due to individual subjects missing
@@ -32,17 +33,16 @@ class _BaseAFQPipeline(Pipeline):
     and ``estimator`` is a scikit-learn compatible estimator. The estimator
     may be optionally wrapped in
     ``sklearn:sklearn.compose.TransformedTargetRegressor``, such that
-
-    The computation during ``fit`` is::
+    the computation during ``fit`` is::
 
         estimator.fit(X, target_transform_func(y))
-        
+
     or::
 
         estimator.fit(X, target_transformer.transform(y))
 
     The computation during ``predict`` is::
-    
+
         target_transform_inverse_func(estimator.predict(X))
 
     or::
@@ -56,18 +56,23 @@ class _BaseAFQPipeline(Pipeline):
     ----------
     imputer : "simple", "knn", or sklearn-compatible transformer, default="simple"
         The imputer for missing data. String arguments result in the use of
-        transformers from ``sklearn.impute``. "simple" yields the
-        ``SimpleImputer``. "knn" yields the ``KNNImputer``. Custom
-        transformers are allowed as long as they inherit from
-        ``sklearn.base.TransformerMixin``.
+        specific imputers/transformers:
+        "simple" yields :class:`sklearn:sklearn.impute.SimpleImputer`;
+        "knn" yields :class:`sklearn:sklearn.impute.KNNImputer`.
+        Custom transformers are
+        allowed as long as they inherit from
+        :class:`sklearn:sklearn.base.TransformerMixin`.
 
     scaler : "standard", "minmax", "maxabs", "robust", or sklearn-compatible transformer, default="standard"
         The scaler to use for the feature matrix. String arguments result in
-        the use of transformers from ``sklearn.preprocessing``. "standard"
-        yields the ``StandardScalar``. "minmax" yields the ``MinMaxScaler``.
-        "maxabs" yields the ``MaxAbsScaler``. "robust" yields the
-        ``RobustScaler``. Custom transformers are allowed as long as they
-        inherit from ``sklearn.base.TransformerMixin``.
+        the use of specific transformers: "standard" yields the
+        :class:`sklearn:sklearn.preprocessing.StandardScalar`; "minmax"
+        yields the :class:`sklearn:sklearn.preprocessing.MinMaxScaler`;
+        "maxabs" yields the
+        :class:`sklearn:sklearn.preprocessing.MaxAbsScaler`; "robust" yields
+        the :class:`sklearn:sklearn.preprocessing.RobustScaler`. Custom
+        transformers are allowed as long as they inherit from
+        :class:`sklearn:sklearn.base.TransformerMixin`.
 
     power_transformer : bool or sklearn-compatible transformer, default=False
         An optional power transformer for use on the feature matrix. If True,
@@ -77,7 +82,7 @@ class _BaseAFQPipeline(Pipeline):
 
     estimator : sklearn-compatible estimator or None, default=None
         The estimator to use as the last step of the pipeline. If provided,
-        it must inherit from ``sklearn.base.BaseEstimator``
+        it must inherit from :class:`sklearn:sklearn.base.BaseEstimator`
 
     imputer_kwargs : dict, default=None,
         Key-word arguments for the imputer.
@@ -104,14 +109,15 @@ class _BaseAFQPipeline(Pipeline):
     verbose : bool, default=False
         If True, the time elapsed while fitting each step will be printed as it
         is completed.
-    
-    target_transform_transformer : object, default=None
-        Estimator object such as derived from ``TransformerMixin``. Cannot be
-        set at the same time as ``func`` and ``inverse_func``. If
-        ``transformer`` is ``None`` as well as ``func`` and ``inverse_func``,
-        the transformer will be an identity transformer. Note that the
-        transformer will be cloned during fitting. Also, the transformer is
-        restricting ``y`` to be a numpy array.
+
+    target_transformer : object, default=None
+        Estimator object such as derived from
+        :class:`sklearn.base.TransformerMixin`. Cannot be set at the same
+        time as ``func`` and ``inverse_func``. If ``transformer`` is ``None``
+        as well as ``func`` and ``inverse_func``, the transformer will be an
+        identity transformer. Note that the transformer will be cloned during
+        fitting. Also, the transformer is restricting ``y`` to be a numpy
+        array.
 
     target_transform_func : function, default=None
         Function to apply to ``y`` before passing to ``fit``. Cannot be set at
@@ -228,7 +234,13 @@ class _BaseAFQPipeline(Pipeline):
 
         if estimator is not None:
             if issubclass(estimator, BaseEstimator):
-                pl_estimator = call_with_kwargs(estimator, estimator_kwargs)
+                pl_estimator = TransformedTargetRegressor(
+                    call_with_kwargs(estimator, estimator_kwargs),
+                    transformer=target_transformer,
+                    func=target_transform_func,
+                    inverse_func=target_transform_inverse_func,
+                    check_inverse=target_transform_check_inverse,
+                )
             else:
                 raise ValueError(
                     "If provided, estimator must inherit from sklearn.base.BaseEstimator; "
@@ -254,7 +266,7 @@ class AFQClassifierPipeline(_BaseAFQPipeline):
 
     This class returns a :ref:`Pipeline <sklearn:pipeline>` instance with the
     following steps::
-        
+
         [imputer, scaler, power_transformer, estimator]
 
     where ``imputer`` imputes missing data due to individual subjects missing
@@ -269,13 +281,13 @@ class AFQClassifierPipeline(_BaseAFQPipeline):
     the computation during ``fit`` is::
 
         estimator.fit(X, target_transform_func(y))
-        
+
     or::
 
         estimator.fit(X, target_transformer.transform(y))
 
     The computation during ``predict`` is::
-    
+
         target_transform_inverse_func(estimator.predict(X))
 
     or::
@@ -332,6 +344,31 @@ class AFQClassifierPipeline(_BaseAFQPipeline):
     pipeline_verbosity : bool, default=False
         If True, the time elapsed while fitting each step will be printed as it
         is completed.
+
+    target_transformer : object, default=None
+        Estimator object such as derived from
+        :class:`sklearn.base.TransformerMixin`. Cannot be set at the same
+        time as ``func`` and ``inverse_func``. If ``transformer`` is ``None``
+        as well as ``func`` and ``inverse_func``, the transformer will be an
+        identity transformer. Note that the transformer will be cloned during
+        fitting. Also, the transformer is restricting ``y`` to be a numpy
+        array.
+
+    target_transform_func : function, default=None
+        Function to apply to ``y`` before passing to ``fit``. Cannot be set at
+        the same time as ``transformer``. The function needs to return a
+        2-dimensional array. If ``func`` is ``None``, the function used will be
+        the identity function.
+
+    target_transform_inverse_func : function, default=None
+        Function to apply to the prediction of the regressor. Cannot be set at
+        the same time as ``transformer`` as well. The function needs to return
+        a 2-dimensional array. The inverse function is used to return
+        predictions to the same space of the original training labels.
+
+    target_transform_check_inverse : bool, default=True
+        Whether to check that ``transform`` followed by ``inverse_transform``
+        or ``func`` followed by ``inverse_func`` leads to the original targets.
 
     l1_ratio : float or list of float, default=1.0
         float between 0 and 1 passed to SGL (scaling between group lasso and
@@ -444,6 +481,10 @@ class AFQClassifierPipeline(_BaseAFQPipeline):
         power_transformer_kwargs=None,
         memory=None,
         pipeline_verbosity=False,
+        target_transformer=None,
+        target_transform_func=None,
+        target_transform_inverse_func=None,
+        target_transform_check_inverse=True,
         **logistic_sglcv_kwargs,
     ):
         super().__init__(
@@ -457,6 +498,10 @@ class AFQClassifierPipeline(_BaseAFQPipeline):
             estimator_kwargs=logistic_sglcv_kwargs,
             memory=memory,
             verbose=pipeline_verbosity,
+            target_transformer=target_transformer,
+            target_transform_func=target_transform_func,
+            target_transform_inverse_func=target_transform_inverse_func,
+            target_transform_check_inverse=target_transform_check_inverse,
         )
 
 
@@ -465,7 +510,7 @@ class AFQRegressorPipeline(_BaseAFQPipeline):
 
     This class returns a :ref:`Pipeline <sklearn:pipeline>` instance with the
     following steps::
-        
+
         [imputer, scaler, power_transformer, estimator]
 
     where ``imputer`` imputes missing data due to individual subjects missing
@@ -480,13 +525,13 @@ class AFQRegressorPipeline(_BaseAFQPipeline):
     the computation during ``fit`` is::
 
         estimator.fit(X, target_transform_func(y))
-        
+
     or::
 
         estimator.fit(X, target_transformer.transform(y))
 
     The computation during ``predict`` is::
-    
+
         target_transform_inverse_func(estimator.predict(X))
 
     or::
@@ -543,6 +588,31 @@ class AFQRegressorPipeline(_BaseAFQPipeline):
     pipeline_verbosity : bool, default=False
         If True, the time elapsed while fitting each step will be printed as it
         is completed.
+
+    target_transformer : object, default=None
+        Estimator object such as derived from
+        :class:`sklearn.base.TransformerMixin`. Cannot be set at the same
+        time as ``func`` and ``inverse_func``. If ``transformer`` is ``None``
+        as well as ``func`` and ``inverse_func``, the transformer will be an
+        identity transformer. Note that the transformer will be cloned during
+        fitting. Also, the transformer is restricting ``y`` to be a numpy
+        array.
+
+    target_transform_func : function, default=None
+        Function to apply to ``y`` before passing to ``fit``. Cannot be set at
+        the same time as ``transformer``. The function needs to return a
+        2-dimensional array. If ``func`` is ``None``, the function used will be
+        the identity function.
+
+    target_transform_inverse_func : function, default=None
+        Function to apply to the prediction of the regressor. Cannot be set at
+        the same time as ``transformer`` as well. The function needs to return
+        a 2-dimensional array. The inverse function is used to return
+        predictions to the same space of the original training labels.
+
+    target_transform_check_inverse : bool, default=True
+        Whether to check that ``transform`` followed by ``inverse_transform``
+        or ``func`` followed by ``inverse_func`` leads to the original targets.
 
     l1_ratio : float or list of float, default=1.0
         float between 0 and 1 passed to SGL (scaling between group lasso and
@@ -654,6 +724,10 @@ class AFQRegressorPipeline(_BaseAFQPipeline):
         power_transformer_kwargs=None,
         memory=None,
         pipeline_verbosity=False,
+        target_transformer=None,
+        target_transform_func=None,
+        target_transform_inverse_func=None,
+        target_transform_check_inverse=True,
         **sglcv_kwargs,
     ):
         super().__init__(
@@ -667,6 +741,10 @@ class AFQRegressorPipeline(_BaseAFQPipeline):
             estimator_kwargs=sglcv_kwargs,
             memory=memory,
             verbose=pipeline_verbosity,
+            target_transformer=target_transformer,
+            target_transform_func=target_transform_func,
+            target_transform_inverse_func=target_transform_inverse_func,
+            target_transform_check_inverse=target_transform_check_inverse,
         )
 
 
