@@ -1,3 +1,4 @@
+import json
 import numpy as np
 import os.path as op
 import pandas as pd
@@ -8,7 +9,7 @@ from afqinsight import AFQDataFrameMapper
 from afqinsight import remove_group, remove_groups
 from afqinsight import select_group, select_groups
 from afqinsight import shuffle_group
-from afqinsight import multicol2sets
+from afqinsight import multicol2dicts, multicol2sets
 from afqinsight.transform import isiterable
 
 data_path = op.join(afqi.__path__[0], "data")
@@ -168,7 +169,7 @@ def test_shuffle_group():
     assert np.allclose(X_shuffle, X_ref, equal_nan=True)  # nosec
 
 
-def test_multicol2sets():
+def test_multicol_utils():
     cols = pd.read_hdf(
         op.join(test_data_path, "test_transform_cols.h5"), key="cols"
     ).index
@@ -177,3 +178,11 @@ def test_multicol2sets():
         op.join(test_data_path, "test_multicol2sets_label_sets.npy"), allow_pickle=True
     )
     assert np.all(label_sets == label_sets_ref)  # nosec
+
+    label_dicts = multicol2dicts(cols)
+    with open(
+        op.join(test_data_path, "test_multicol2dicts_label_dicts.json"), "r"
+    ) as fp:
+        label_dicts_ref = json.load(fp)
+
+    assert label_dicts == label_dicts_ref

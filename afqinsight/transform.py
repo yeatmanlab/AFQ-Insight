@@ -486,7 +486,7 @@ def multicol2dicts(columns, tract_symmetry=True):
 
     Returns
     -------
-    col_dicts : numpy.ndarray
+    col_dicts : list
         An array of dicts containing the tuples of the input MultiIndex
     """
     col_vals = columns.to_numpy()
@@ -504,7 +504,7 @@ def multicol2dicts(columns, tract_symmetry=True):
 
         col_names = list(col_names) + ["symmetrized_tractID"]
 
-    col_dicts = np.array([dict(zip(col_names, vals)) for vals in col_vals])
+    col_dicts = [dict(zip(col_names, vals)) for vals in col_vals]
 
     return col_dicts
 
