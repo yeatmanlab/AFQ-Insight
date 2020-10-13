@@ -312,6 +312,9 @@ intersphinx_mapping = {
     "scipy": ("https://docs.scipy.org/doc/scipy/reference", None),
     "matplotlib": ("https://matplotlib.org/", None),
     "sklearn": ("http://scikit-learn.org/stable", None),
+    "groupyr": ("https://richford.github.io/groupyr", None),
+    "pandas": ("https://pandas.pydata.org/pandas-docs/stable/", None),
+    "joblib": ("https://joblib.readthedocs.io/en/latest/", None),
 }
 
 # sphinx-gallery configuration

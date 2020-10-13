@@ -20,15 +20,37 @@ __all__ = ["AFQClassifierPipeline", "AFQRegressorPipeline"]
 class _BaseAFQPipeline(Pipeline):
     """The base AFQ-specific modeling pipeline.
 
-    This class returns an instance of `sklearn.pipeline.Pipeline
-    <https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html#sklearn-pipeline-pipeline>`_
-    with the following steps: [imputer, scaler, power_transformer,
-    estimator], where imputer imputes missing data due to individual subjects
-    missing metrics along an entire bundle; scaler is optional and scales the
-    features of the feature matrix; power_transformer is optional and applies
-    a power transform featurewise to make data more Gaussian-like; and
-    estimator is a scikit-learn compatible estimator. This is a base class on
-    which more specific classifiers and regressors will be built.
+    This class returns an instance of
+    :ref:`sklearn:sklearn.pipeline.Pipeline` with the following steps::
+        
+        [imputer, scaler, power_transformer, estimator]
+
+    where ``imputer`` imputes missing data due to individual subjects missing
+    metrics along an entire bundle; ``scaler`` is optional and scales the
+    features of the feature matrix; ``power_transformer`` is optional and
+    applies a power transform featurewise to make data more Gaussian-like;
+    and ``estimator`` is a scikit-learn compatible estimator. The estimator
+    may be optionally wrapped in
+    ``sklearn:sklearn.compose.TransformedTargetRegressor``, such that
+
+    The computation during ``fit`` is::
+
+        estimator.fit(X, target_transform_func(y))
+        
+    or::
+
+        estimator.fit(X, target_transformer.transform(y))
+
+    The computation during ``predict`` is::
+    
+        target_transform_inverse_func(estimator.predict(X))
+
+    or::
+
+        target_transformer.inverse_transform(estimator.predict(X))
+
+    This is a base class on which more specific classifiers and regressors
+    will be built.
 
     Parameters
     ----------
@@ -48,12 +70,10 @@ class _BaseAFQPipeline(Pipeline):
         inherit from ``sklearn.base.TransformerMixin``.
 
     power_transformer : bool or sklearn-compatible transformer, default=False
-        The scaler to use for the feature matrix. String arguments result in
-        the use of transformers from ``sklearn.preprocessing``. "standard"
-        yields the ``StandardScalar``. "minmax" yields the ``MinMaxScaler``.
-        "maxabs" yields the ``MaxAbsScaler``. "robust" yields the
-        ``RobustScaler``. Custom transformers are allowed as long as they
-        inherit from ``sklearn.base.TransformerMixin``.
+        An optional power transformer for use on the feature matrix. If True,
+        use :class:`sklearn:sklearn.preprocessing.PowerTransformer`. If
+        False, skip this step. Custom transformers are allowed as long as
+        they inherit from :class:`sklearn:sklearn.base.TransformerMixin`.
 
     estimator : sklearn-compatible estimator or None, default=None
         The estimator to use as the last step of the pipeline. If provided,
@@ -84,6 +104,30 @@ class _BaseAFQPipeline(Pipeline):
     verbose : bool, default=False
         If True, the time elapsed while fitting each step will be printed as it
         is completed.
+    
+    target_transform_transformer : object, default=None
+        Estimator object such as derived from ``TransformerMixin``. Cannot be
+        set at the same time as ``func`` and ``inverse_func``. If
+        ``transformer`` is ``None`` as well as ``func`` and ``inverse_func``,
+        the transformer will be an identity transformer. Note that the
+        transformer will be cloned during fitting. Also, the transformer is
+        restricting ``y`` to be a numpy array.
+
+    target_transform_func : function, default=None
+        Function to apply to ``y`` before passing to ``fit``. Cannot be set at
+        the same time as ``transformer``. The function needs to return a
+        2-dimensional array. If ``func`` is ``None``, the function used will be
+        the identity function.
+
+    target_transform_inverse_func : function, default=None
+        Function to apply to the prediction of the regressor. Cannot be set at
+        the same time as ``transformer`` as well. The function needs to return
+        a 2-dimensional array. The inverse function is used to return
+        predictions to the same space of the original training labels.
+
+    target_transform_check_inverse : bool, default=True
+        Whether to check that ``transform`` followed by ``inverse_transform``
+        or ``func`` followed by ``inverse_func`` leads to the original targets.
 
     Attributes
     ----------
@@ -105,6 +149,10 @@ class _BaseAFQPipeline(Pipeline):
         estimator_kwargs=None,
         memory=None,
         verbose=False,
+        target_transformer=None,
+        target_transform_func=None,
+        target_transform_inverse_func=None,
+        target_transform_check_inverse=True,
     ):
         base_msg = Template(
             "${kw} must be one of ${allowed} or a class that inherits "
@@ -204,40 +252,63 @@ class _BaseAFQPipeline(Pipeline):
 class AFQClassifierPipeline(_BaseAFQPipeline):
     """The recommended AFQ-specific classification pipeline.
 
-    This class returns an instance of `sklearn.pipeline.Pipeline
-    <https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html#sklearn-pipeline-pipeline>`_
-    with the following steps: [imputer, scaler, power_transformer,
-    estimator], where imputer imputes missing data due to individual subjects
-    missing metrics along an entire bundle; scaler is optional and scales the
-    features of the feature matrix; power_transformer is optional and applies
-    a power transform featurewise to make data more Gaussian-like; and
-    estimator is an instance of ``groupyr.LogisticSGLCV``. The parameters
-    below include the keyword arguments passed to ``groupyr.LogisticSGLCV``.
+    This class returns a :ref:`Pipeline <sklearn:pipeline>` instance with the
+    following steps::
+        
+        [imputer, scaler, power_transformer, estimator]
+
+    where ``imputer`` imputes missing data due to individual subjects missing
+    metrics along an entire bundle; ``scaler`` is optional and scales the
+    features of the feature matrix; ``power_transformer`` is optional and
+    applies a power transform featurewise to make data more Gaussian-like;
+    and ``estimator`` is an instance of
+    :class:`groupyr:groupyr.LogisticSGLCV`. The parameters below include the
+    keyword arguments passed to :class:`groupyr:groupyr.LogisticSGLCV`. The
+    estimator may be optionally wrapped in a
+    :class:`sklearn:sklearn.compose.TransformedTargetRegressor` such that
+    the computation during ``fit`` is::
+
+        estimator.fit(X, target_transform_func(y))
+        
+    or::
+
+        estimator.fit(X, target_transformer.transform(y))
+
+    The computation during ``predict`` is::
+    
+        target_transform_inverse_func(estimator.predict(X))
+
+    or::
+
+        target_transformer.inverse_transform(estimator.predict(X))
 
     Parameters
     ----------
     imputer : "simple", "knn", or sklearn-compatible transformer, default="simple"
         The imputer for missing data. String arguments result in the use of
-        transformers from ``sklearn.impute``. "simple" yields the
-        ``SimpleImputer``. "knn" yields the ``KNNImputer``. Custom
-        transformers are allowed as long as they inherit from
-        ``sklearn.base.TransformerMixin``.
+        specific imputers/transformers:
+        "simple" yields :class:`sklearn:sklearn.impute.SimpleImputer`;
+        "knn" yields :class:`sklearn:sklearn.impute.KNNImputer`.
+        Custom transformers are
+        allowed as long as they inherit from
+        :class:`sklearn:sklearn.base.TransformerMixin`.
 
     scaler : "standard", "minmax", "maxabs", "robust", or sklearn-compatible transformer, default="standard"
         The scaler to use for the feature matrix. String arguments result in
-        the use of transformers from ``sklearn.preprocessing``. "standard"
-        yields the ``StandardScalar``. "minmax" yields the ``MinMaxScaler``.
-        "maxabs" yields the ``MaxAbsScaler``. "robust" yields the
-        ``RobustScaler``. Custom transformers are allowed as long as they
-        inherit from ``sklearn.base.TransformerMixin``.
+        the use of specific transformers: "standard" yields the
+        :class:`sklearn:sklearn.preprocessing.StandardScalar`; "minmax"
+        yields the :class:`sklearn:sklearn.preprocessing.MinMaxScaler`;
+        "maxabs" yields the
+        :class:`sklearn:sklearn.preprocessing.MaxAbsScaler`; "robust" yields
+        the :class:`sklearn:sklearn.preprocessing.RobustScaler`. Custom
+        transformers are allowed as long as they inherit from
+        :class:`sklearn:sklearn.base.TransformerMixin`.
 
     power_transformer : bool or sklearn-compatible transformer, default=False
-        The scaler to use for the feature matrix. String arguments result in
-        the use of transformers from ``sklearn.preprocessing``. "standard"
-        yields the ``StandardScalar``. "minmax" yields the ``MinMaxScaler``.
-        "maxabs" yields the ``MaxAbsScaler``. "robust" yields the
-        ``RobustScaler``. Custom transformers are allowed as long as they
-        inherit from ``sklearn.base.TransformerMixin``.
+        An optional power transformer for use on the feature matrix. If True,
+        use :class:`sklearn:sklearn.preprocessing.PowerTransformer`. If
+        False, skip this step. Custom transformers are allowed as long as
+        they inherit from :class:`sklearn:sklearn.base.TransformerMixin`.
 
     imputer_kwargs : dict, default=None,
         Key-word arguments for the imputer.
@@ -324,10 +395,10 @@ class AFQClassifierPipeline(_BaseAFQPipeline):
         The tolerance for the SGL solver
 
     scoring : callable, default=None
-        A string (see sklearn model evaluation documentation) or a scorer
-        callable object / function with signature ``scorer(estimator, X, y)``.
-        For a list of scoring functions that can be used, look at
-        `sklearn.metrics`. The default scoring option used is accuracy_score.
+        A string or a scorer callable object / function with signature
+        ``scorer(estimator, X, y)``. For a list of scoring functions that can
+        be used, look at :mod:`sklearn:sklearn.metrics`. The default scoring
+        option used is accuracy_score.
 
     cv : int, cross-validation generator or iterable, default=None
         Determines the cross-validation splitting strategy.
@@ -338,10 +409,11 @@ class AFQClassifierPipeline(_BaseAFQPipeline):
         - an sklearn `CV splitter <https://scikit-learn.org/stable/glossary.html#term-cv-splitter>`_,
         - An iterable yielding (train, test) splits as arrays of indices.
 
-        For int/None inputs, :class:`KFold` is used.
+        For int/None inputs, :class:`sklearn:sklearn.model_selection.StratifiedKFold` is used.
 
-        Refer to the scikit-learn User Guide for the various
-        cross-validation strategies that can be used here.
+        Refer to the :ref:`scikit-learn User Guide
+        <sklearn:cross_validation>` for the various cross-validation
+        strategies that can be used here.
 
     copy_X : bool, default=True
         If ``True``, X will be copied; else, it may be overwritten.
@@ -350,9 +422,9 @@ class AFQClassifierPipeline(_BaseAFQPipeline):
         Amount of verbosity.
 
     n_jobs : int, default=None
-        Number of CPUs to use during the cross validation.
-        ``None`` means 1 unless in a :obj:`joblib.parallel_backend` context.
-        ``-1`` means using all processors.
+        Number of CPUs to use during the cross validation. ``None`` means 1
+        unless in a :obj:`joblib:joblib.parallel_backend` context. ``-1`` means
+        using all processors. See :term:`sklearn:n_jobs` for more details.
 
     Attributes
     ----------
@@ -391,40 +463,63 @@ class AFQClassifierPipeline(_BaseAFQPipeline):
 class AFQRegressorPipeline(_BaseAFQPipeline):
     """The recommended AFQ-specific regression pipeline.
 
-    This class returns an instance of `sklearn.pipeline.Pipeline
-    <https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html#sklearn-pipeline-pipeline>`_
-    with the following steps: [imputer, scaler, power_transformer,
-    estimator], where imputer imputes missing data due to individual subjects
-    missing metrics along an entire bundle; scaler is optional and scales the
-    features of the feature matrix; power_transformer is optional and applies
-    a power transform featurewise to make data more Gaussian-like; and
-    estimator is an instance of ``groupyr.SGLCV``. The parameters below
-    include the keyword arguments passed to ``groupyr.SGLCV``.
+    This class returns a :ref:`Pipeline <sklearn:pipeline>` instance with the
+    following steps::
+        
+        [imputer, scaler, power_transformer, estimator]
+
+    where ``imputer`` imputes missing data due to individual subjects missing
+    metrics along an entire bundle; ``scaler`` is optional and scales the
+    features of the feature matrix; ``power_transformer`` is optional and
+    applies a power transform featurewise to make data more Gaussian-like;
+    and ``estimator`` is an instance of
+    :class:`groupyr:groupyr.SGLCV`. The parameters below include the
+    keyword arguments passed to :class:`groupyr:groupyr.SGLCV`. The
+    estimator may be optionally wrapped in a
+    :class:`sklearn:sklearn.compose.TransformedTargetRegressor` such that
+    the computation during ``fit`` is::
+
+        estimator.fit(X, target_transform_func(y))
+        
+    or::
+
+        estimator.fit(X, target_transformer.transform(y))
+
+    The computation during ``predict`` is::
+    
+        target_transform_inverse_func(estimator.predict(X))
+
+    or::
+
+        target_transformer.inverse_transform(estimator.predict(X))
 
     Parameters
     ----------
     imputer : "simple", "knn", or sklearn-compatible transformer, default="simple"
         The imputer for missing data. String arguments result in the use of
-        transformers from ``sklearn.impute``. "simple" yields the
-        ``SimpleImputer``. "knn" yields the ``KNNImputer``. Custom
-        transformers are allowed as long as they inherit from
-        ``sklearn.base.TransformerMixin``.
+        specific imputers/transformers:
+        "simple" yields :class:`sklearn:sklearn.impute.SimpleImputer`;
+        "knn" yields :class:`sklearn:sklearn.impute.KNNImputer`.
+        Custom transformers are
+        allowed as long as they inherit from
+        :class:`sklearn:sklearn.base.TransformerMixin`.
 
     scaler : "standard", "minmax", "maxabs", "robust", or sklearn-compatible transformer, default="standard"
         The scaler to use for the feature matrix. String arguments result in
-        the use of transformers from ``sklearn.preprocessing``. "standard"
-        yields the ``StandardScalar``. "minmax" yields the ``MinMaxScaler``.
-        "maxabs" yields the ``MaxAbsScaler``. "robust" yields the
-        ``RobustScaler``. Custom transformers are allowed as long as they
-        inherit from ``sklearn.base.TransformerMixin``.
+        the use of specific transformers: "standard" yields the
+        :class:`sklearn:sklearn.preprocessing.StandardScalar`; "minmax"
+        yields the :class:`sklearn:sklearn.preprocessing.MinMaxScaler`;
+        "maxabs" yields the
+        :class:`sklearn:sklearn.preprocessing.MaxAbsScaler`; "robust" yields
+        the :class:`sklearn:sklearn.preprocessing.RobustScaler`. Custom
+        transformers are allowed as long as they inherit from
+        :class:`sklearn:sklearn.base.TransformerMixin`.
 
     power_transformer : bool or sklearn-compatible transformer, default=False
-        The scaler to use for the feature matrix. String arguments result in
-        the use of transformers from ``sklearn.preprocessing``. "standard"
-        yields the ``StandardScalar``. "minmax" yields the ``MinMaxScaler``.
-        "maxabs" yields the ``MaxAbsScaler``. "robust" yields the
-        ``RobustScaler``. Custom transformers are allowed as long as they
-        inherit from ``sklearn.base.TransformerMixin``.
+        An optional power transformer for use on the feature matrix. If True,
+        use :class:`sklearn:sklearn.preprocessing.PowerTransformer`. If
+        False, skip this step. Custom transformers are allowed as long as
+        they inherit from :class:`sklearn:sklearn.base.TransformerMixin`.
 
     imputer_kwargs : dict, default=None,
         Key-word arguments for the imputer.
@@ -519,10 +614,11 @@ class AFQRegressorPipeline(_BaseAFQPipeline):
         - an sklearn `CV splitter <https://scikit-learn.org/stable/glossary.html#term-cv-splitter>`_,
         - An iterable yielding (train, test) splits as arrays of indices.
 
-        For int/None inputs, :class:`KFold` is used.
+        For int/None inputs, :class:`sklearn:sklearn.model_selection.KFold` is used.
 
-        Refer to the scikit-learn User Guide for the various
-        cross-validation strategies that can be used here.
+        Refer to the :ref:`scikit-learn User Guide
+        <sklearn:cross_validation>` for the various cross-validation
+        strategies that can be used here.
 
     copy_X : bool, default=True
         If ``True``, X will be copied; else, it may be overwritten.
@@ -531,9 +627,9 @@ class AFQRegressorPipeline(_BaseAFQPipeline):
         Amount of verbosity.
 
     n_jobs : int, default=None
-        Number of CPUs to use during the cross validation.
-        ``None`` means 1 unless in a :obj:`joblib.parallel_backend` context.
-        ``-1`` means using all processors.
+        Number of CPUs to use during the cross validation. ``None`` means 1
+        unless in a :obj:`joblib:joblib.parallel_backend` context. ``-1`` means
+        using all processors. See :term:`sklearn:n_jobs` for more details.
 
     random_state : int, RandomState instance, default=None
         The seed of the pseudo random number generator that selects a random
