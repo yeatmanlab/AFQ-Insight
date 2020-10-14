@@ -2,8 +2,10 @@
 import numpy as np
 import os.path as op
 import pandas as pd
+
 from collections import namedtuple
 from shutil import copyfile
+from sklearn.preprocessing import LabelEncoder
 
 from .transform import AFQDataFrameMapper
 
@@ -13,7 +15,7 @@ __all__ = ["load_afq_data", "output_beta_to_afq"]
 def load_afq_data(
     workdir,
     target_cols,
-    binary_positives=None,
+    label_encode_cols=None,
     index_col="subjectID",
     fn_nodes="nodes.csv",
     fn_subjects="subjects.csv",
@@ -28,12 +30,9 @@ def load_afq_data(
     target_cols : list of strings
         List of column names in subjects csv file to use as target variables
 
-    binary_positives : list or dict of string values, or None, default=None
-        If supplied, use these values as the positive value in a binary
-        classification problem. If this is a list, it must have the same
-        length as `target cols`. If this is a dict, it must have a key
-        for each item in `target_cols`. If None, do not use a binary mapping
-        (e.g. for a regression problem).
+    label_encode_cols : list of strings, subset of target_cols
+        Must be a subset of target_cols. These columns will be encoded using
+        :doc:`sklearn:sklearn.preprocessing.LabelEncoder`.
 
     index_col : str, default='subjectID'
         The name of column in the subject csv file to use as the index. This
@@ -62,6 +61,9 @@ def load_afq_data(
     subjects : list
         Subject IDs
 
+    classes : dict
+        Class labels for each column specified in ``label_encode_cols``
+
     See Also
     --------
     transform.AFQDataFrameMapper
@@ -75,18 +77,22 @@ def load_afq_data(
         ["Unnamed: 0"], axis="columns"
     )
 
-    y = targets[target_cols]
+    y = targets.loc[:, target_cols]
 
-    if binary_positives is not None:
-        if not isinstance(binary_positives, dict):
-            binary_positives = {
-                key: val for key, val in zip(target_cols, binary_positives)
-            }
+    classes = {}
+    if label_encode_cols is not None:
+        if not set(label_encode_cols) <= set(target_cols):
+            raise ValueError(
+                "label_encode_cols must be a subset of target_cols; "
+                "got {0} instead.".format(label_encode_cols)
+            )
 
-        for col in y.columns:
-            y.loc[:, col] = y[col].map(lambda c: int(c == binary_positives[col])).values
+        le = LabelEncoder()
+        for col in label_encode_cols:
+            y.loc[:, col] = le.fit_transform(y[col])
+            classes[col] = le.classes_
 
-    y = y.values.flatten()
+    y = np.squeeze(y.values)
 
     mapper = AFQDataFrameMapper()
     X = mapper.fit_transform(nodes)
@@ -94,7 +100,7 @@ def load_afq_data(
     feature_names = mapper.feature_names_
     subjects = mapper.subjects_
 
-    return X, y, groups, feature_names, subjects
+    return X, y, groups, feature_names, subjects, classes
 
 
 def output_beta_to_afq(
