@@ -1,0 +1,280 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>API Reference &mdash; AFQ-Insight 0.2.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/afqinsight.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/gallery.css" type="text/css" />
+  <link rel="stylesheet" href="_static/gallery-binder.css" type="text/css" />
+  <link rel="stylesheet" href="_static/gallery-dataframe.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script src="_static/js/copybutton.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Contributing to AFQ-Insight" href="contributing.html" />
+    <link rel="prev" title="Getting help using AFQ-Insight" href="getting_help.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> AFQ-Insight
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.2.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user_guide.html">User guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="auto_examples/index.html">General examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_help.html">Getting help using <em>AFQ-Insight</em></a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#pipelines">Pipelines</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#transformers">Transformers</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing to <em>AFQ-Insight</em></a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/richford/AFQ-Insight">AFQ-Insight on GitHub</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">AFQ-Insight</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>API Reference</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/api.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="api-reference">
+<h1>API Reference<a class="headerlink" href="#api-reference" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="pipelines">
+<h2>Pipelines<a class="headerlink" href="#pipelines" title="Permalink to this headline">¶</a></h2>
+<p>These are AFQ-Insights recommended estimator pipelines.</p>
+</div>
+<div class="section" id="transformers">
+<h2>Transformers<a class="headerlink" href="#transformers" title="Permalink to this headline">¶</a></h2>
+<p>These transformers transform tractometry information from the AFQ standard
+data format to feature matrices that are ready for ingestion into
+sklearn-compatible pipelines.</p>
+<dl class="py class">
+<dt id="afqinsight.AFQDataFrameMapper">
+<em class="property">class </em><code class="sig-prename descclassname">afqinsight.</code><code class="sig-name descname">AFQDataFrameMapper</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">pd_interpolate_kwargs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">dataframe_mapper_kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/afqinsight/transform.html#AFQDataFrameMapper"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#afqinsight.AFQDataFrameMapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Map pandas dataframe to sklearn feature matrix.</p>
+<p>This object first converts an AFQ nodes.csv dataframe into a feature
+matrix with rows corresponding to subjects and columns corresponding to
+tract profile values. It interpolates along tracts to fill missing values
+and then maps the dataframe onto a 2D feature matrix for ingestion into
+sklearn-compatible estimators. It also maintains attributes for the
+subject index, feature names, and groups of features.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>df_mapper_params</strong><span class="classifier">kwargs, default=dict(features=[], default=None)</span></dt><dd><p>Keyword arguments passed to sklearn_pandas.DataFrameMapper. You will
+probably not need to change these defaults.</p>
+</dd>
+<dt><strong>pd_interpolate_params</strong><span class="classifier">kwargs, default=dict(method=”linear”, limit_direction=”both”, limit_area=”inside”)</span></dt><dd><p>Keyword arguments passed to pandas.DataFrame.interpolate. Missing
+values are interpolated within the tract profile so that no data is
+used from other subjects, tracts, or metrics, minimizing the chance
+of train/test leakage. You will probably not need to change these
+defaults.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Attributes</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>subjects_</strong><span class="classifier">list</span></dt><dd><p>List of subject IDs retrieved from pandas dataframe index.</p>
+</dd>
+<dt><strong>groups_</strong><span class="classifier">list of numpy.ndarray</span></dt><dd><p>List of arrays of non-overlapping indices for each group. For
+example, if nine features are grouped into equal contiguous groups of
+three, then groups would be <code class="docutils literal notranslate"><span class="pre">[array([0,</span> <span class="pre">1,</span> <span class="pre">2]),</span> <span class="pre">array([3,</span> <span class="pre">4,</span> <span class="pre">5]),</span>
+<span class="pre">array([6,</span> <span class="pre">7,</span> <span class="pre">8])]</span></code>.</p>
+</dd>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">feature_names_</span></code><span class="classifier">list of tuples</span></dt><dd><p>Return the feature names.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="contributing.html" class="btn btn-neutral float-right" title="Contributing to AFQ-Insight" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="getting_help.html" class="btn btn-neutral float-left" title="Getting help using AFQ-Insight" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Adam Richie-Halford
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
