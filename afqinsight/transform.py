@@ -420,9 +420,16 @@ def shuffle_group(X, label, label_sets, random_seed=None):
     label_sets : ndarray of sets
         Array of sets of labels for each column of `X`
 
-    random_seed : int, optional
-        Random seed for group shuffling
-        Default: None
+    random_seed : {None, int, array_like[ints], SeedSequence, BitGenerator, Generator}, optional
+        A seed to initialize the :doc:`numpy:numpy.random.BitGenerator` for
+        group shuffling. If None, then fresh, unpredictable entropy will be
+        pulled from the OS. If an ``int`` or ``array_like[ints]`` is passed,
+        then it will be passed to :doc:`numpy:numpy.random.SeedSequence` to
+        derive the initial :doc:`numpy:numpy.random.BitGenerator` state. One
+        may also pass in a`SeedSequence` instance Additionally, when passed a
+        :doc:`numpy:numpy.random.BitGenerator`, it will be wrapped by
+        :doc:`numpy:numpy.random.Generator`. If passed a
+        :doc:`numpy:numpy.random.Generator`, it will be returned unaltered.
 
     Returns
     -------
@@ -434,20 +441,8 @@ def shuffle_group(X, label, label_sets, random_seed=None):
     section = out[:, mask]
     section_shape = section.shape
     section = section.flatten()
-
-    random_state = None
-    if random_seed is not None:
-        # Save random state to restore later
-        random_state = np.random.get_state()
-        # Set the random seed
-        np.random.seed(random_seed)
-
-    np.random.shuffle(section)
-
-    if random_seed is not None:
-        # Restore random state after shuffling
-        np.random.set_state(random_state)
-
+    rng = np.random.default_rng(random_seed)
+    rng.shuffle(section)
     out[:, mask] = section.reshape(section_shape)
     return out
 
