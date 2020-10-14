@@ -14,6 +14,7 @@ def load_afq_data(
     workdir,
     target_cols,
     binary_positives=None,
+    index_col="subjectID",
     fn_nodes="nodes.csv",
     fn_subjects="subjects.csv",
 ):
@@ -33,6 +34,10 @@ def load_afq_data(
         length as `target cols`. If this is a dict, it must have a key
         for each item in `target_cols`. If None, do not use a binary mapping
         (e.g. for a regression problem).
+
+    index_col : str, default='subjectID'
+        The name of column in the subject csv file to use as the index. This
+        should contain subject IDs.
 
     fn_nodes : str, default='nodes.csv'
         Filename for the nodes csv file.
@@ -66,8 +71,8 @@ def load_afq_data(
     fn_subjects = op.join(workdir, fn_subjects)
 
     nodes = pd.read_csv(fn_nodes)
-    targets = pd.read_csv(fn_subjects, index_col="subjectID").drop(
-        ["Unnamed: 0"], axis="columns", errors="ignore"
+    targets = pd.read_csv(fn_subjects, index_col=index_col).drop(
+        ["Unnamed: 0"], axis="columns"
     )
 
     y = targets[target_cols]
