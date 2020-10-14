@@ -67,7 +67,7 @@ def load_afq_data(
 
     nodes = pd.read_csv(fn_nodes)
     targets = pd.read_csv(fn_subjects, index_col="subjectID").drop(
-        ["Unnamed: 0"], axis="columns"
+        ["Unnamed: 0"], axis="columns", errors="ignore"
     )
 
     y = targets[target_cols]
