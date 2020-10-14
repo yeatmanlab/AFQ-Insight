@@ -562,11 +562,3 @@ def make_afq_regressor_pipeline(
         target_transform_inverse_func=target_transform_inverse_func,
         target_transform_check_inverse=target_transform_check_inverse,
     )
-
-
-# TODO: Use these classification scores: accuracy, roc_auc, avg_precision, f1
-# TODO: Use these regression scores: rmse - RMSE score, R^2, medae - The median absolute error
-# TODO: Default to cv=3 in the inner CV loop
-# TODO: Default to n_splits=10, n_repeats=3 for outer CV loop
-# TODO: Write outer loop CV using sklearn's cross_validate function
-# TODO: Allow option to use FeatureTransformer to wrap the above pipelines
