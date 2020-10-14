@@ -1,1029 +1,564 @@
-from __future__ import absolute_import, division, print_function
+"""sklearn-compatible pipelines for AFQ data."""
+import inspect
+import groupyr as gpr
 
-import configparser
-import contextlib
-import copt as cp
-import numpy as np
-import os
-import os.path as op
-import pickle
-import warnings
-from functools import partial
-from hyperopt import fmin, tpe, hp, space_eval, STATUS_OK, Trials
-from hyperopt.mongoexp import MongoTrials
-from sklearn.exceptions import UndefinedMetricWarning
-from sklearn.metrics import accuracy_score, average_precision_score, f1_score
-from sklearn.metrics import roc_auc_score, r2_score, mean_squared_error
-from sklearn.metrics import median_absolute_error
-from sklearn.model_selection import RepeatedKFold, RepeatedStratifiedKFold
-from sklearn.preprocessing import StandardScaler
-from sklearn.utils import check_random_state
-from tqdm.auto import tqdm
+from string import Template
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.compose import TransformedTargetRegressor
+from sklearn.impute import KNNImputer, SimpleImputer
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import (
+    MaxAbsScaler,
+    MinMaxScaler,
+    PowerTransformer,
+    RobustScaler,
+    StandardScaler,
+)
 
-from .prox import SparseGroupL1
-
-__all__ = []
+__all__ = ["make_afq_classifier_pipeline", "make_afq_regressor_pipeline"]
 
 
-def registered(fn):
-    __all__.append(fn.__name__)
-    return fn
+def make_base_afq_pipeline(
+    imputer="simple",
+    scaler="standard",
+    power_transformer=False,
+    estimator=None,
+    imputer_kwargs=None,
+    scaler_kwargs=None,
+    power_transformer_kwargs=None,
+    estimator_kwargs=None,
+    memory=None,
+    verbose=False,
+    target_transformer=None,
+    target_transform_func=None,
+    target_transform_inverse_func=None,
+    target_transform_check_inverse=True,
+):
+    """Return a base AFQ-specific modeling pipeline.
 
+    This function returns a :ref:`Pipeline <sklearn:pipeline>` instance with the
+    following steps::
 
-def _sigmoid(z):
-    return 1.0 / (1.0 + np.exp(-z))
+        [imputer, scaler, power_transformer, estimator]
 
+    where ``imputer`` imputes missing data due to individual subjects missing
+    metrics along an entire bundle; ``scaler`` is optional and scales the
+    features of the feature matrix; ``power_transformer`` is optional and
+    applies a power transform featurewise to make data more Gaussian-like;
+    and ``estimator`` is a scikit-learn compatible estimator. The estimator
+    may be optionally wrapped in
+    ``sklearn:sklearn.compose.TransformedTargetRegressor``, such that
+    the computation during ``fit`` is::
 
-@registered
-def target_transformation(y, eta=1.0, transform_type=None, direction="forward"):
-    r"""Tranform target variables according to
-    .. math::
+        estimator.fit(X, target_transform_func(y))
 
-        y_t = \begin{cases}
-            y^\eta & y > 0 and transform_type == "power" \\
-            \eta^y & y > 0 and transform_type == "exponentiation" \\
-            0 & y <= 0 and transform_type != None
-            y & transform_type is None
-        \end{cases}
+    or::
 
-    Parameters
-    ----------
-    y : np.ndarray
-        Target variables
+        estimator.fit(X, target_transformer.transform(y))
 
-    eta : float, default=1.0
-        Transformation parameter
+    The computation during ``predict`` is::
 
-    transform_type : ["power", "exponentiation", None], default=None
-        Type of transformation, see above equation
+        target_transform_inverse_func(estimator.predict(X))
 
-    direction : ["forward", "inverse"], default="forward"
-        If "forward", do the transform listed above. If "inverse", do the
-        inverse transform
+    or::
 
-    Returns
-    -------
-    y_t : mp.ndarray
-        Transformed target variables
-    """
-    if transform_type is None:
-        return y
+        target_transformer.inverse_transform(estimator.predict(X))
 
-    if direction not in ["forward", "inverse"]:
-        raise ValueError("'direction' must be either 'forward' or 'inverse'")
-
-    if transform_type not in ["power", "exponentiation"]:
-        raise ValueError("'transform_type' must be either 'power' or 'exponentiation'")
-
-    y_t = np.zeros_like(y)
-    if direction == "forward":
-        if transform_type == "power":
-            y_t[y > 0] = np.power(y[y > 0], eta)
-        else:
-            y_t[y > 0] = np.power(eta, y[y > 0])
-    else:
-        if transform_type == "power":
-            y_t[y > 0] = np.power(y[y > 0], 1.0 / eta)
-        else:
-            y_t[y > 0] = np.log(y[y > 0]) / np.log(eta)
-
-    return y_t
-
-
-@registered
-def classification_scores(x, y, beta_hat, clf_threshold=0.5):
-    """Return classification accuracy and ROC AUC scores
+    This is a base function on which more specific classifier and regressor
+    pipelines will be built.
 
     Parameters
     ----------
-    x : np.ndarray
-        Feature matrix
+    imputer : "simple", "knn", or sklearn-compatible transformer, default="simple"
+        The imputer for missing data. String arguments result in the use of
+        specific imputers/transformers:
+        "simple" yields :class:`sklearn:sklearn.impute.SimpleImputer`;
+        "knn" yields :class:`sklearn:sklearn.impute.KNNImputer`.
+        Custom transformers are
+        allowed as long as they inherit from
+        :class:`sklearn:sklearn.base.TransformerMixin`.
 
-    y : np.ndarray
-        Target array
+    scaler : "standard", "minmax", "maxabs", "robust", or sklearn-compatible transformer, default="standard"
+        The scaler to use for the feature matrix. String arguments result in
+        the use of specific transformers: "standard" yields the
+        :class:`sklearn:sklearn.preprocessing.StandardScalar`; "minmax"
+        yields the :class:`sklearn:sklearn.preprocessing.MinMaxScaler`;
+        "maxabs" yields the
+        :class:`sklearn:sklearn.preprocessing.MaxAbsScaler`; "robust" yields
+        the :class:`sklearn:sklearn.preprocessing.RobustScaler`. Custom
+        transformers are allowed as long as they inherit from
+        :class:`sklearn:sklearn.base.TransformerMixin`.
 
-    beta_hat : np.ndarray
-        Estimate of coefficient array
+    power_transformer : bool or sklearn-compatible transformer, default=False
+        An optional power transformer for use on the feature matrix. If True,
+        use :class:`sklearn:sklearn.preprocessing.PowerTransformer`. If
+        False, skip this step. Custom transformers are allowed as long as
+        they inherit from :class:`sklearn:sklearn.base.TransformerMixin`.
 
-    clf_threshold : float, default=0.5
-        Decision threshold for binary classification
+    estimator : sklearn-compatible estimator or None, default=None
+        The estimator to use as the last step of the pipeline. If provided,
+        it must inherit from :class:`sklearn:sklearn.base.BaseEstimator`
+
+    imputer_kwargs : dict, default=None,
+        Key-word arguments for the imputer.
+
+    scaler_kwargs : dict, default=None,
+        Key-word arguments for the scaler.
+
+    power_transformer_kwargs : dict, default=None,
+        Key-word arguments for the power_transformer.
+
+    estimator_kwargs : dict, default=None,
+        Key-word arguments for the estimator.
+
+    memory : str or object with the joblib.Memory interface, default=None
+        Used to cache the fitted transformers of the pipeline. By default,
+        no caching is performed. If a string is given, it is the path to
+        the caching directory. Enabling caching triggers a clone of
+        the transformers before fitting. Therefore, the transformer
+        instance given to the pipeline cannot be inspected
+        directly. Use the attribute ``named_steps`` or ``steps`` to
+        inspect estimators within the pipeline. Caching the
+        transformers is advantageous when fitting is time consuming.
+
+    verbose : bool, default=False
+        If True, the time elapsed while fitting each step will be printed as it
+        is completed.
+
+    target_transformer : object, default=None
+        Estimator object such as derived from
+        :class:`sklearn.base.TransformerMixin`. Cannot be set at the same
+        time as ``func`` and ``inverse_func``. If ``transformer`` is ``None``
+        as well as ``func`` and ``inverse_func``, the transformer will be an
+        identity transformer. Note that the transformer will be cloned during
+        fitting. Also, the transformer is restricting ``y`` to be a numpy
+        array.
+
+    target_transform_func : function, default=None
+        Function to apply to ``y`` before passing to ``fit``. Cannot be set at
+        the same time as ``transformer``. The function needs to return a
+        2-dimensional array. If ``func`` is ``None``, the function used will be
+        the identity function.
+
+    target_transform_inverse_func : function, default=None
+        Function to apply to the prediction of the regressor. Cannot be set at
+        the same time as ``transformer`` as well. The function needs to return
+        a 2-dimensional array. The inverse function is used to return
+        predictions to the same space of the original training labels.
+
+    target_transform_check_inverse : bool, default=True
+        Whether to check that ``transform`` followed by ``inverse_transform``
+        or ``func`` followed by ``inverse_func`` leads to the original targets.
 
     Returns
     -------
-    dict
-        dict with keys:
-        accuracy - accuracy score
-        auc - ROC AUC
-        avg_precision - average precision score
-        f1_score - F1 score
+    pipeline : :ref:`Pipeline <sklearn:pipeline>` instance
     """
-    y_pred = x.dot(beta_hat)
-    y_pred = _sigmoid(y_pred)
-
-    acc = accuracy_score(y, y_pred > clf_threshold)
-    auc = roc_auc_score(y, y_pred)
-    aps = average_precision_score(y, y_pred)
-
-    with warnings.catch_warnings():
-        # For some metaparameters, we might not predict all of the true labels
-        # If that's the case, f1_score will raise a warning to tell us that
-        # the F1 score is being set to zero. This is nice to know but it's
-        # exactly what we want so we can suppress the warning here.
-        warnings.filterwarnings("ignore", category=UndefinedMetricWarning)
-        f1 = f1_score(y, y_pred > clf_threshold)
-
-    return dict(x=x, y=y, accuracy=acc, auc=auc, avg_precision=aps, f1=f1)
-
-
-@registered
-def regression_scores(x, y, beta_hat, eta=1.0, transform_type=None):
-    """Return regression scores
-
-    Parameters
-    ----------
-    x : np.ndarray
-        Feature matrix
-
-    y : np.ndarray
-        Target array
-
-    beta_hat : np.ndarray
-        Estimate of coefficient array
-
-    eta : float, default=1.0
-        Target variable transformation parameter
-
-    transform_type : ["power", "exponentiation", None], default=None
-        Type of transformation, see insight.target_transformation
-
-    Returns
-    -------
-    dict
-        dict with keys:
-        rmse - RMSE score
-        r2 - R^2 score, coefficient of determination
-        medae - The median absolute error
-    """
-    y_pred = x.dot(beta_hat)
-    y_pred = target_transformation(
-        y=y_pred, eta=eta, transform_type=transform_type, direction="forward"
+    base_msg = Template(
+        "${kw} must be one of ${allowed} or a class that inherits "
+        "from sklearn.base.TransformerMixin; got ${input} instead."
     )
 
-    rmse = np.sqrt(mean_squared_error(y, y_pred))
-    r2 = r2_score(y, y_pred)
-    medae = median_absolute_error(y, y_pred)
-
-    return dict(x=x, y=y, rmse=rmse, r2=r2, medae=medae)
-
-
-@registered
-def sgl_estimator(
-    x_train,
-    y_train,
-    x_test,
-    y_test,
-    groups,
-    bias_index=None,
-    beta0=None,
-    alpha=0.0,
-    lambda_=0.0,
-    eta=1.0,
-    transform_type=None,
-    max_iter=5000,
-    tol=1e-6,
-    verbose=0,
-    suppress_warnings=True,
-    cb_trace=False,
-    accelerate=False,
-    loss_type="logloss",
-    clf_threshold=0.5,
-    random_state=None,
-):
-    """Find solution to sparse group lasso problem by proximal gradient descent
-
-    Solve sparse group lasso [1]_ problem for feature matrix `x_train` and
-    target vector `y_train` with features partitioned into groups. Solve using
-    the proximal gradient descent (PGD) algorithm. Compute accuracy and ROC AUC
-    using `x_test` and `y_test`.
-
-    Parameters
-    ----------
-    x_train : numpy.ndarray
-        Training feature matrix
-
-    y_train : numpy.ndarray
-        Training target array
-
-    x_test : numpy.ndarray
-        Testing feature matrix
-
-    y_test : numpy.ndarray
-        Testing target array
-
-    groups : numpy.ndarray
-        Array of non-overlapping indices for each group. For example, if nine
-        features are grouped into equal contiguous groups of three, then groups
-        would be an nd.array like [[0, 1, 2], [3, 4, 5], [6, 7, 8]].
-
-    bias_index : int or None, default=None
-        the index of the bias feature in x_train and x_test. If None, assume
-        no bias feature.
-
-    beta0 : numpy.ndarray
-        Initial guess for coefficient array
-
-    alpha : float, default=0.0
-        Combination between group lasso and lasso. alpha = 0 gives the group
-        lasso and alpha = 1 gives the lasso.
-
-    lambda_ : float, default=0.0
-        Regularization parameter, overall strength of regularization.
-
-    eta : float, default=1.0
-        Target variable transformation parameter.
-
-    transform_type : ["power", "exponentiation", None], default=None
-        Type of transformation, see insight.target_transformation
-
-    max_iter : int, default=5000
-        Maximum number of iterations for PGD algorithm.
-
-    tol : float, default=1e-6
-        Convergence tolerance for PGD algorithm.
-
-    verbose : int, default=0
-        Verbosity flag for PGD algorithm.
-
-    suppress_warnings : bool, default=True
-        If True, suppress convergence warnings from PGD algorithm.
-        This is useful for hyperparameter tuning when some combinations
-        of hyperparameters may not converge.
-
-    cb_trace : bool, default=False
-        If True, include copt.utils.Trace() object in return
-
-    accelerate : bool, default=False
-        If True, use accelerated PGD algorithm, otherwise use standard PGD.
-
-    loss_type : {'logloss', 'square', 'huber'}
-        The type of loss function to use. If 'logloss', treat this problem as
-        a binary classification problem using logistic regression. Otherwise,
-        treat this problem as a regression problem using either the mean
-        square error or the Huber loss.
-
-    clf_threshold : float, default=0.5
-        Decision threshold for binary classification
-
-    random_state : int, numpy.RandomState instance or None, optional (default=None)
-        If int, random_state is the seed used by the random number generator;
-        If numpy.RandomState instance, random_state is the random number generator;
-        If None, the random number generator is the RandomState instance used
-        by `np.random`.
-
-    Returns
-    -------
-    dict
-        dict with keys:
-        alpha - the lasso / group lasso combination factor
-        lambda_ - overall regularization parameter,
-        eta - target variable transformation parameter,
-        beta_hat - estimate of the optimal beta,
-        test - scores dict for test set,
-        train - scores dict for train set,
-        trace - copt.utils.Trace object if cv_trace is True, None otherwise
-
-    References
-    ----------
-    .. [1]  Noah Simon, Jerome Friedman, Trevor Hastie & Robert Tibshirani,
-        "A Sparse-Group Lasso," Journal of Computational and Graphical
-        Statistics, vol. 22:2, pp. 231-245, 2012
-        DOI: 10.1080/10618600.2012.681250
-    """
-    if not 0 <= alpha <= 1:
-        raise ValueError("alpha must be between 0 and 1.")
-
-    n_features = x_train.shape[1]
-
-    rng = check_random_state(random_state)
-    np.random.set_state(rng.get_state())
-
-    if beta0 is None:
-        beta0 = np.zeros(n_features)
-
-    sg1 = SparseGroupL1(alpha, lambda_, groups, bias_index=bias_index)
-
-    if loss_type not in ["logloss", "square", "huber"]:
-        raise ValueError("loss_type must be one of " "['logloss', 'square', 'huber'].")
-
-    ind = np.ones(x_train.shape[1], bool)
-    if bias_index is not None:
-        ind[bias_index] = False
-
-    # Inverse transform target variables
-    if loss_type != "logloss":
-        y_train = target_transformation(
-            y=y_train, eta=eta, transform_type=transform_type, direction="inverse"
-        )
-
-    if loss_type == "logloss":
-        f = cp.utils.LogLoss(x_train, y_train)
-    elif loss_type == "huber":
-        f = cp.utils.HuberLoss(x_train, y_train)
-    else:
-        f = cp.utils.SquareLoss(x_train, y_train)
-
-    if cb_trace:
-        cb_tos = cp.utils.Trace(f)
-    else:
-        cb_tos = None
-
-    if suppress_warnings:
-        ctx_mgr = warnings.catch_warnings()
-    else:
-        ctx_mgr = contextlib.suppress()
-
-    with ctx_mgr:
-        # For some metaparameters, minimize_PGD or minimize_APGD might not
-        # reach the desired tolerance level. This might be okay during
-        # hyperparameter optimization. So ignore the warning if the user
-        # specifies suppress_warnings=True
-        if suppress_warnings:
-            warnings.filterwarnings("ignore", category=RuntimeWarning)
-        pgd = cp.minimize_proximal_gradient(
-            f.f_grad,
-            beta0,
-            sg1.prox,
-            jac=True,
-            step="backtracking",
-            max_iter=max_iter,
-            tol=tol,
-            verbose=verbose,
-            callback=cb_tos,
-            accelerated=accelerate,
-        )
-
-    beta_hat = np.copy(pgd.x)
-
-    # Transform the target variables back to original
-    if loss_type != "logloss":
-        y_train = target_transformation(
-            y=y_train, eta=eta, transform_type=transform_type, direction="forward"
-        )
-
-    if loss_type == "logloss":
-        train = classification_scores(
-            x=x_train, y=y_train, beta_hat=beta_hat, clf_threshold=clf_threshold
-        )
-        test = classification_scores(
-            x=x_test, y=y_test, beta_hat=beta_hat, clf_threshold=clf_threshold
-        )
-    else:
-        train = regression_scores(
-            x=x_train,
-            y=y_train,
-            beta_hat=beta_hat,
-            eta=eta,
-            transform_type=transform_type,
-        )
-        test = regression_scores(
-            x=x_test,
-            y=y_test,
-            beta_hat=beta_hat,
-            eta=eta,
-            transform_type=transform_type,
-        )
-
-    return dict(
-        alpha=alpha,
-        lambda_=lambda_,
-        eta=eta,
-        transform_type=transform_type,
-        beta_hat=beta_hat,
-        test=test,
-        train=train,
-        trace=cb_tos,
-        init_random_state=random_state,
-    )
-
-
-@registered
-def sgl_estimator_cv(
-    x,
-    y,
-    groups,
-    bias_index=None,
-    beta0=None,
-    alpha=0.0,
-    lambda_=0.0,
-    eta=1.0,
-    transform_type=None,
-    max_iter=5000,
-    tol=1e-6,
-    verbose=0,
-    cb_trace=False,
-    accelerate=False,
-    loss_type="logloss",
-    n_splits=3,
-    n_repeats=1,
-    random_state=None,
-):
-    """Find solution to sparse group lasso problem by proximal gradient descent
-
-    Solve sparse group lasso [1]_ problem for feature matrix `x_train` and
-    target vector `y_train` with features partitioned into groups. Solve using
-    the proximal gradient descent (PGD) algorithm. Compute accuracy, ROC AUC,
-    and average precision using `x_test` and `y_test`.
-
-    Parameters
-    ----------
-    x : numpy.ndarray
-        Feature matrix
-
-    y : numpy.ndarray
-        Target array
-
-    groups : numpy.ndarray
-        Array of non-overlapping indices for each group. For example, if nine
-        features are grouped into equal contiguous groups of three, then groups
-        would be an nd.array like [[0, 1, 2], [3, 4, 5], [6, 7, 8]].
-
-    bias_index : int or None, default=None
-        the index of the bias feature in x_train and x_test. If None, assume
-        no bias feature.
-
-    beta0 : numpy.ndarray
-        Initial guess for coefficient array
-
-    alpha : float, default=0.0
-        Combination between group lasso and lasso. alpha = 0 gives the group
-        lasso and alpha = 1 gives the lasso.
-
-    lambda_ : float, default=0.0
-        Regularization parameter, overall strength of regularization.
-
-    eta : float, default=1.0
-        Target variable transformation parameter.
-
-    transform_type : ["power", "exponentiation", None], default=None
-        Type of transformation, see insight.target_transformation
-
-    max_iter : int, default=5000
-        Maximum number of iterations for PGD algorithm.
-
-    tol : float, default=1e-6
-        Convergence tolerance for PGD algorithm.
-
-    verbose : int, default=0
-        Verbosity flag for PGD algorithm.
-
-    cb_trace : bool, default=False
-        If True, include copt.utils.Trace() object in return.
-
-    accelerate : bool, default=False
-        If True, use accelerated PGD algorithm, otherwise use standard PGD.
-
-    loss_type : {'logloss', 'square', 'huber'}
-        The type of loss function to use. If 'logloss', treat this problem as
-        a binary classification problem using logistic regression. Otherwise,
-        treat this problem as a regression problem using either the mean
-        square error or the Huber loss.
-
-    n_splits : int, default=3
-        Number of folds. Must be at least 2.
-
-    n_repeats : int, default=1
-        Number of times cross-validator needs to be repeated.
-
-    random_state : int, numpy.RandomState instance or None, optional (default=None)
-        If int, random_state is the seed used by the random number generator;
-        If numpy.RandomState instance, random_state is the random number generator;
-        If None, the random number generator is the RandomState instance used
-        by `np.random`.
-
-    Returns
-    -------
-    dict
-        dict with keys:
-        alpha - the lasso / group lasso combination factor
-        lambda_ - overall regularization parameter,
-        eta - target variable transformation parameter,
-        beta_hat - list of estimates of the optimal beta,
-        test - list of scores dicts for test set,
-        train - list of scores dicts for train set,
-        trace - list of copt.utils.Trace objects if cv_trace is True
-
-    See Also
-    --------
-    pgd_classify
-    """
-    if not 0 <= alpha <= 1:
-        raise ValueError("alpha must be between 0 and 1.")
-
-    rng = check_random_state(random_state)
-
-    if loss_type == "logloss":
-        cv = RepeatedStratifiedKFold(
-            n_splits=n_splits, n_repeats=n_repeats, random_state=rng
-        )
-    else:
-        cv = RepeatedKFold(n_splits=n_splits, n_repeats=n_repeats, random_state=rng)
-
-    clf_results = []
-
-    if verbose:
-        verbose -= 1
-        splitter = tqdm(cv.split(x, y), total=cv.get_n_splits())
-    else:
-        splitter = cv.split(x, y)
-
-    scaler = StandardScaler()
-
-    if 0.0 <= eta < 1.0:
-        raise ValueError("eta must not satisfy 0.0 <= eta < 1.0")
-
-    for train_idx, test_idx in splitter:
-        x_train, x_test = x[train_idx], x[test_idx]
-        y_train, y_test = y[train_idx], y[test_idx]
-
-        x_train = scaler.fit_transform(x_train)
-        x_test = scaler.transform(x_test)
-        if bias_index is not None:
-            x_train[:, bias_index] = 1.0
-            x_test[:, bias_index] = 1.0
-
-        res = sgl_estimator(
-            x_train=x_train,
-            y_train=y_train,
-            x_test=x_test,
-            y_test=y_test,
-            groups=groups,
-            bias_index=bias_index,
-            beta0=beta0,
-            alpha=alpha,
-            lambda_=lambda_,
-            eta=eta,
-            transform_type=transform_type,
-            max_iter=max_iter,
-            tol=tol,
-            verbose=verbose,
-            cb_trace=cb_trace,
-            accelerate=accelerate,
-            loss_type=loss_type,
-            random_state=random_state,
-        )
-
-        clf_results.append(res)
-        beta0 = res["beta_hat"]
-
-    return dict(
-        alpha=alpha,
-        lambda_=lambda_,
-        eta=eta,
-        transform_type=transform_type,
-        beta_hat=[res["beta_hat"] for res in clf_results],
-        test=[res["test"] for res in clf_results],
-        train=[res["train"] for res in clf_results],
-        trace=[res["trace"] for res in clf_results],
-    )
-
-
-@registered
-def fit_hyperparams(
-    x,
-    y,
-    groups,
-    bias_index=None,
-    max_evals=100,
-    beta0=None,
-    loss_type="logloss",
-    score="roc_auc",
-    trials=None,
-    mongo_handle=None,
-    mongo_exp_key=None,
-    save_trials_pickle=None,
-    random_state=None,
-    verbose=0,
-):
-    """Find the best hyperparameters for sparse group lasso using hyperopt.fmin
-
-    Parameters
-    ----------
-    x : numpy.ndarray
-        Feature matrix
-
-    y : numpy.ndarray
-        Target array
-
-    groups : numpy.ndarray
-        Array of non-overlapping indices for each group. For example, if nine
-        features are grouped into equal contiguous groups of three, then groups
-        would be an nd.array like [[0, 1, 2], [3, 4, 5], [6, 7, 8]].
-
-    bias_index : int or None, default=None
-        the index of the bias feature in x_train and x_test. If None, assume
-        no bias feature.
-
-    max_evals : int, default=100
-        Maximum allowed function evaluations for fmin
-
-    beta0 : numpy.ndarray
-        Initial guess for coefficient array
-
-    loss_type : {'logloss', 'square', 'huber'}
-        The type of loss function to use. If 'logloss', treat this problem as
-        a binary classification problem using logistic regression. Otherwise,
-        treat this problem as a regression problem using either the mean
-        square error or the Huber loss.
-
-    score : {'roc_auc', 'accuracy', 'avg_precision', 'r2', 'rmse', 'medae'},
-        default='roc_auc'. scoring metric to be optimized
-
-    trials : hyperopt Trials or MongoTrials object or None, default=None
-        Pre-existing Trials or MongoTrials object to continue a previous
-        hyperopt search.
-
-    mongo_handle : str, hyperopt.mongoexp.MongoJobs, or None, default=None
-        If not None, the connection string for the mongodb jobs database or a
-        MongoJobs instance. If None, fmin will not parallelize its search
-        using mongodb.
-
-    mongo_exp_key : str or None, default=None
-        Experiment key for this search if using mongodb to parallelize fmin.
-
-    save_trials_pickle : str or None, default=None
-        If not None, save trials dictionary to pickle file using this filename.
-
-    random_state : int, numpy.RandomState instance or None, optional (default=None)
-        If int, random_state is the seed used by the random number generator;
-        If numpy.RandomState instance, random_state is the random number generator;
-        If None, the random number generator is the RandomState instance used
-        by `np.random`.
-
-    verbose : int, default=0
-        Verbosity flag
-
-    Returns
-    -------
-    dict
-        dict with keys:
-        best_fit - the best fit from hyperopt.fmin
-        trials - trials object from hyperopt.fmin
-        space - hyperopt search space
-    """
-    allowed_clf_scores = ["roc_auc", "accuracy", "avg_precision"]
-    allowed_rgs_scores = ["r2", "rmse", "medae"]
-    if loss_type == "logloss" and score not in allowed_clf_scores:
-        raise ValueError(
-            "For classification problems `score` must be one of "
-            "{scores!s}.".format(scores=allowed_clf_scores)
-        )
-    elif loss_type in ["square", "huber"] and score not in allowed_rgs_scores:
-        raise ValueError(
-            "For regression problems `score` must be one of "
-            "{scores!s}.".format(scores=allowed_rgs_scores)
-        )
-
-    # Define the search space
-    hp_space = {
-        "alpha": hp.uniform("alpha", 0.0, 1.0),
-        "lambda_": hp.loguniform("lambda_", -7, 3),
-        "eta": hp.uniform("eta", 1.0, 3.0),
-        "transform_type": hp.choice(
-            "transform_type", ["power", "exponentiation", None]
-        ),
-    }
-
-    if loss_type == "logloss":
-        hp_space["eta"] = 1.0
-        hp_space["transform_type"] = None
-
-    if trials is None:
-        if mongo_handle is not None:
-            trials = MongoTrials(mongo_handle, exp_key=mongo_exp_key)
+    def call_with_kwargs(Transformer, kwargs):
+        if kwargs is None:
+            return Transformer()
         else:
-            trials = Trials()
+            return Transformer(**kwargs)
 
-    # Define the objective function for hyperopt to minimize
-    def hp_objective(params):
-        hp_cv_partial = partial(
-            sgl_estimator_cv,
-            x=x,
-            y=y,
-            groups=groups,
-            loss_type=loss_type,
-            bias_index=bias_index,
-            beta0=beta0,
-            verbose=verbose - 1 if verbose > 0 else 0,
-            random_state=random_state,
-        )
-
-        cv_results = hp_cv_partial(**params)
-        if loss_type == "logloss":
-            auc = np.array([test["auc"] for test in cv_results["test"]])
-            acc = np.array([test["accuracy"] for test in cv_results["test"]])
-            aps = np.array([test["avg_precision"] for test in cv_results["test"]])
-            if score == "roc_auc":
-                loss = -auc
-            elif score == "accuracy":
-                loss = -acc
-            else:
-                loss = -aps
-
-            result_dict = {
-                "loss": np.mean(loss),
-                "loss_variance": np.var(loss),
-                "status": STATUS_OK,
-                "accuracy_mean": np.mean(acc),
-                "accuracy_variance": np.var(acc),
-                "roc_auc_mean": np.mean(auc),
-                "roc_auc_variance": np.var(auc),
-                "avg_precision_mean": np.mean(aps),
-                "avg_precision_variance": np.var(aps),
-            }
+    allowed = ["simple", "knn"]
+    err_msg = Template(base_msg.safe_substitute(kw="imputer", allowed=allowed))
+    if isinstance(imputer, str):
+        if imputer.lower() == "simple":
+            pl_imputer = call_with_kwargs(SimpleImputer, imputer_kwargs)
+        elif imputer.lower() == "knn":
+            pl_imputer = call_with_kwargs(KNNImputer, imputer_kwargs)
         else:
-            r2 = np.array([test["r2"] for test in cv_results["test"]])
-            rmse = np.array([test["rmse"] for test in cv_results["test"]])
-            medae = np.array([test["medae"] for test in cv_results["test"]])
-            if score == "rmse":
-                loss = rmse
-            elif score == "medae":
-                loss = medae
-            else:
-                loss = -r2
-            result_dict = {
-                "loss": np.mean(loss),
-                "loss_variance": np.var(loss),
-                "status": STATUS_OK,
-                "r2_mean": np.mean(r2),
-                "r2_variance": np.var(r2),
-                "rmse_mean": np.mean(rmse),
-                "rmse_variance": np.var(rmse),
-                "medae_mean": np.mean(medae),
-                "medae_variance": np.var(medae),
-            }
+            raise ValueError(err_msg.substitute(input=imputer))
+    elif inspect.isclass(imputer):
+        if issubclass(imputer, TransformerMixin):
+            pl_imputer = call_with_kwargs(imputer, imputer_kwargs)
+        else:
+            raise ValueError(err_msg.substitute(input=imputer))
+    else:
+        raise ValueError(err_msg.substitute(input=imputer))
 
-        return result_dict
+    allowed = ["standard", "minmax", "maxabs", "robust"]
+    err_msg = Template(base_msg.safe_substitute(kw="scaler", allowed=allowed))
+    if isinstance(scaler, str):
+        if scaler.lower() == "standard":
+            pl_scaler = call_with_kwargs(StandardScaler, scaler_kwargs)
+        elif scaler.lower() == "minmax":
+            pl_scaler = call_with_kwargs(MinMaxScaler, scaler_kwargs)
+        elif scaler.lower() == "maxabs":
+            pl_scaler = call_with_kwargs(MaxAbsScaler, scaler_kwargs)
+        elif scaler.lower() == "robust":
+            pl_scaler = call_with_kwargs(RobustScaler, scaler_kwargs)
+        else:
+            raise ValueError(err_msg.substitute(input=scaler))
+    elif inspect.isclass(scaler):
+        if issubclass(scaler, TransformerMixin):
+            pl_scaler = call_with_kwargs(scaler, scaler_kwargs)
+        else:
+            raise ValueError(err_msg.substitute(input=scaler))
+    elif scaler is None:
+        pl_scaler = None
+    else:
+        raise ValueError(err_msg.substitute(input=scaler))
 
-    rng = check_random_state(random_state)
-
-    best = fmin(
-        hp_objective,
-        hp_space,
-        algo=tpe.suggest,
-        max_evals=max_evals,
-        trials=trials,
-        show_progressbar=verbose > 0,
-        rstate=rng,
+    allowed = [True, False]
+    err_msg = Template(
+        base_msg.safe_substitute(kw="power_transformer", allowed=allowed)
     )
-
-    if mongo_handle is None and save_trials_pickle is not None:
-        with open(save_trials_pickle, "wb") as fp:
-            pickle.dump(trials, fp)
-
-    return dict(best_fit=best, trials=trials, space=hp_space)
-
-
-@registered
-def fit_hyperparams_cv(
-    x,
-    y,
-    groups,
-    bias_index=None,
-    beta0=None,
-    n_splits=10,
-    n_repeats=1,
-    max_evals_per_cv=100,
-    loss_type="logloss",
-    score="roc_auc",
-    trials_pickle_dir=None,
-    mongo_handle=None,
-    random_state=None,
-    verbose=0,
-    clf_threshold=0.5,
-):
-    """Run fit_hyperparams over K-fold cross validation
-
-    Parameters
-    ----------
-    x : numpy.ndarray
-        Feature matrix
-
-    y : numpy.ndarray
-        Target array
-
-    groups : numpy.ndarray
-        Array of non-overlapping indices for each group. For example, if nine
-        features are grouped into equal contiguous groups of three, then groups
-        would be an nd.array like [[0, 1, 2], [3, 4, 5], [6, 7, 8]].
-
-    bias_index : int or None, default=None
-        the index of the bias feature in x_train and x_test. If None, assume
-        no bias feature.
-
-    beta0 : numpy.ndarray
-        Initial guess for coefficient array
-
-    n_splits : int, default=10
-        Number of folds. Must be at least 2.
-
-    n_repeats : int, default=1
-        Number of times cross-validator needs to be repeated.
-
-    max_evals_per_cv : int, default=100
-        Maximum allowed function evaluations for fmin
-
-    loss_type : {'logloss', 'square', 'huber'}
-        The type of loss function to use. If 'logloss', treat this problem as
-        a binary classification problem using logistic regression. Otherwise,
-        treat this problem as a regression problem using either the mean
-        square error or the Huber loss.
-
-    score : {'roc_auc', 'accuracy', 'avg_precision', 'r2', 'rmse', 'medae'},
-        default='roc_auc'. scoring metric to be optimized
-
-    trials_pickle_dir : str or None, default=None
-        Directory to store/retrieve pickled trials
-
-    mongo_handle : str, hyperopt.mongoexp.MongoJobs, or None, default=None
-        If not None, the connection string for the mongodb jobs database or a
-        MongoJobs instance. If None, fmin will not parallelize its search
-        using mongodb.
-
-    random_state : int, numpy.RandomState instance or None, optional (default=None)
-        If int, random_state is the seed used by the random number generator;
-        If numpy.RandomState instance, random_state is the random number generator;
-        If None, the random number generator is the RandomState instance used
-        by `np.random`.
-
-    verbose : int, default=0
-        Verbosity flag for CV loop
-
-    clf_threshold : float, default=0.5
-        Decision threshold for binary classification
-
-    Returns
-    -------
-    """
-    allowed_clf_scores = ["roc_auc", "accuracy", "avg_precision"]
-    allowed_rgs_scores = ["r2", "rmse", "medae"]
-    if loss_type == "logloss" and score not in allowed_clf_scores:
-        raise ValueError(
-            "For classification problems `score` must be one of "
-            "{scores!s}.".format(scores=allowed_clf_scores)
-        )
-    elif loss_type in ["square", "huber"] and score not in allowed_rgs_scores:
-        raise ValueError(
-            "For regression problems `score` must be one of "
-            "{scores!s}.".format(scores=allowed_rgs_scores)
-        )
-
-    if trials_pickle_dir is not None:
-        if not isinstance(random_state, int):
-            raise ValueError(
-                "If `trials_pickle_dir` is provided, `random_state` must be of type int."
+    if isinstance(power_transformer, bool):
+        if power_transformer:
+            pl_power_transformer = call_with_kwargs(
+                PowerTransformer, power_transformer_kwargs
             )
-
-        os.makedirs(op.abspath(trials_pickle_dir), exist_ok=True)
-        configfile = op.join(op.abspath(trials_pickle_dir), "params.ini")
-        config = configparser.ConfigParser()
-        if op.isfile(configfile):
-            # Check that existing params equal input params
-            config.read(configfile)
-            params = config["params"]
-            if not all(
-                [
-                    params.getint("n_splits") == n_splits,
-                    params.getint("n_repeats") == n_repeats,
-                    params.getint("random_state") == random_state,
-                    params["loss_type"] == loss_type,
-                    params["score"] == score,
-                ]
-            ):
-                raise ValueError(
-                    "Stored trial parameters do not match input parameters. "
-                    "This could contaminate the train/test split for previous "
-                    "trials. Either set n_splits={ns:s}, n_repeats={nr:s}, "
-                    "random_state={rs:s}, score={score:s}, "
-                    "loss_type={loss_type:s} or specify a "
-                    "new trials directory".format(
-                        ns=params["n_splits"],
-                        nr=params["n_repeats"],
-                        rs=params["random_state"],
-                        score=params["score"],
-                        loss_type=params["loss_type"],
-                    )
-                )
         else:
-            # Write input params to file
-            config["params"] = {
-                "n_splits": n_splits,
-                "n_repeats": n_repeats,
-                "random_state": random_state,
-                "loss_type": loss_type,
-                "score": score,
-            }
-            with open(configfile, "w") as cfile:
-                config.write(cfile)
-
-    rng = check_random_state(random_state)
-
-    if loss_type == "logloss":
-        cv = RepeatedStratifiedKFold(
-            n_splits=n_splits, n_repeats=n_repeats, random_state=rng
-        )
+            pl_power_transformer = None
+    elif inspect.isclass(power_transformer):
+        if issubclass(power_transformer, TransformerMixin):
+            pl_power_transformer = call_with_kwargs(
+                power_transformer, power_transformer_kwargs
+            )
+        else:
+            raise ValueError(err_msg.substitute(input=power_transformer))
     else:
-        cv = RepeatedKFold(n_splits=n_splits, n_repeats=n_repeats, random_state=rng)
+        raise ValueError(err_msg.substitute(input=power_transformer))
 
-    if verbose:
-        splitter = tqdm(enumerate(cv.split(x, y)), total=cv.get_n_splits())
-        verbose -= 1
+    if estimator is not None:
+        if inspect.isclass(estimator) and issubclass(estimator, BaseEstimator):
+            pl_estimator = TransformedTargetRegressor(
+                call_with_kwargs(estimator, estimator_kwargs),
+                transformer=target_transformer,
+                func=target_transform_func,
+                inverse_func=target_transform_inverse_func,
+                check_inverse=target_transform_check_inverse,
+            )
+        else:
+            raise ValueError(
+                "If provided, estimator must inherit from sklearn.base.BaseEstimator; "
+                "got {0} instead.".format(estimator)
+            )
     else:
-        splitter = enumerate(cv.split(x, y))
+        pl_estimator = None
 
-    cv_results = []
+    # Build the pipeline steps. We will always start with the imputer and end
+    # with the estimator. The scaler and power_transform steps are optional.
+    pl = [
+        ("impute", pl_imputer),
+        ("scale", pl_scaler),
+        ("power_transform", pl_power_transformer),
+        ("estimate", pl_estimator),
+    ]
 
-    scaler = StandardScaler()
+    return Pipeline(steps=pl, memory=memory, verbose=verbose)
 
-    for cv_idx, (train_idx, test_idx) in splitter:
-        x_train, x_test = x[train_idx], x[test_idx]
-        y_train, y_test = y[train_idx], y[test_idx]
 
-        if mongo_handle is None:
-            mongo_exp_key = None
-            if trials_pickle_dir is not None:
-                pickle_name = op.join(
-                    op.abspath(trials_pickle_dir),
-                    "cv{i:03d}_trials.pkl".format(i=cv_idx),
-                )
+def make_afq_classifier_pipeline(
+    imputer="simple",
+    scaler="standard",
+    power_transformer=False,
+    imputer_kwargs=None,
+    scaler_kwargs=None,
+    power_transformer_kwargs=None,
+    use_cv_estimator=True,
+    memory=None,
+    pipeline_verbosity=False,
+    target_transformer=None,
+    target_transform_func=None,
+    target_transform_inverse_func=None,
+    target_transform_check_inverse=True,
+    **estimator_kwargs,
+):
+    """Return the recommended AFQ-specific classification pipeline.
 
-                try:
-                    with open(pickle_name, "rb") as fp:
-                        trials = pickle.load(fp)
-                except IOError:
-                    trials = None
-            else:
-                pickle_name = None
-                trials = None
-        else:
-            mongo_exp_key = "cv_{i:03d}".format(i=cv_idx)
-            pickle_name = None
-            trials = None
+    This function returns a :ref:`Pipeline <sklearn:pipeline>` instance with the
+    following steps::
 
-        hp_res = fit_hyperparams(
-            x_train,
-            y_train,
-            groups,
-            bias_index=bias_index,
-            beta0=beta0,
-            max_evals=max_evals_per_cv,
-            loss_type=loss_type,
-            score=score,
-            trials=trials,
-            mongo_handle=mongo_handle,
-            mongo_exp_key=mongo_exp_key,
-            save_trials_pickle=pickle_name,
-            random_state=rng,
-            verbose=verbose,
-        )
+        [imputer, scaler, power_transformer, estimator]
 
-        alpha = hp_res["best_fit"]["alpha"]
-        lambda_ = hp_res["best_fit"]["lambda_"]
-        eta = hp_res["best_fit"].get("eta", 1.0)
-        if loss_type != "logloss":
-            transform_type = space_eval(hp_res["space"], hp_res["best_fit"])[
-                "transform_type"
-            ]
-        else:
-            transform_type = None
+    where ``imputer`` imputes missing data due to individual subjects missing
+    metrics along an entire bundle; ``scaler`` is optional and scales the
+    features of the feature matrix; ``power_transformer`` is optional and
+    applies a power transform featurewise to make data more Gaussian-like;
+    and ``estimator`` is an instance of
+    :class:`groupyr:groupyr.LogisticSGLCV` if ``use_cv_estimator=True`` or
+    :class:`groupyr:groupyr.LogisticSGL` if ``use_cv_estimator=False``. The
+    estimator may be optionally wrapped in a
+    :class:`sklearn:sklearn.compose.TransformedTargetRegressor` such that the
+    computation during ``fit`` is::
 
-        x_train = scaler.fit_transform(x_train)
-        x_test = scaler.transform(x_test)
-        if bias_index is not None:
-            x_train[:, bias_index] = 1.0
-            x_test[:, bias_index] = 1.0
+        estimator.fit(X, target_transform_func(y))
 
-        sgl = sgl_estimator(
-            x_train,
-            y_train,
-            x_test,
-            y_test,
-            groups,
-            alpha=alpha,
-            lambda_=lambda_,
-            eta=eta,
-            transform_type=transform_type,
-            loss_type=loss_type,
-            clf_threshold=clf_threshold,
-            random_state=random_state,
-            cb_trace=True,
-        )
+    or::
 
-        beta0 = sgl["beta_hat"]
+        estimator.fit(X, target_transformer.transform(y))
 
-        sgl["hp_trials"] = hp_res["trials"]
-        sgl["hp_space"] = hp_res["space"]
-        sgl["hp_best_fit"] = hp_res["best_fit"]
+    The computation during ``predict`` is::
 
-        cv_results.append(sgl)
+        target_transform_inverse_func(estimator.predict(X))
 
-    return cv_results
+    or::
+
+        target_transformer.inverse_transform(estimator.predict(X))
+
+    Parameters
+    ----------
+    imputer : "simple", "knn", or sklearn-compatible transformer, default="simple"
+        The imputer for missing data. String arguments result in the use of
+        specific imputers/transformers:
+        "simple" yields :class:`sklearn:sklearn.impute.SimpleImputer`;
+        "knn" yields :class:`sklearn:sklearn.impute.KNNImputer`.
+        Custom transformers are
+        allowed as long as they inherit from
+        :class:`sklearn:sklearn.base.TransformerMixin`.
+
+    scaler : "standard", "minmax", "maxabs", "robust", or sklearn-compatible transformer, default="standard"
+        The scaler to use for the feature matrix. String arguments result in
+        the use of specific transformers: "standard" yields the
+        :class:`sklearn:sklearn.preprocessing.StandardScalar`; "minmax"
+        yields the :class:`sklearn:sklearn.preprocessing.MinMaxScaler`;
+        "maxabs" yields the
+        :class:`sklearn:sklearn.preprocessing.MaxAbsScaler`; "robust" yields
+        the :class:`sklearn:sklearn.preprocessing.RobustScaler`. Custom
+        transformers are allowed as long as they inherit from
+        :class:`sklearn:sklearn.base.TransformerMixin`.
+
+    power_transformer : bool or sklearn-compatible transformer, default=False
+        An optional power transformer for use on the feature matrix. If True,
+        use :class:`sklearn:sklearn.preprocessing.PowerTransformer`. If
+        False, skip this step. Custom transformers are allowed as long as
+        they inherit from :class:`sklearn:sklearn.base.TransformerMixin`.
+
+    imputer_kwargs : dict, default=None,
+        Key-word arguments for the imputer.
+
+    scaler_kwargs : dict, default=None,
+        Key-word arguments for the scaler.
+
+    power_transformer_kwargs : dict, default=None,
+        Key-word arguments for the power_transformer.
+
+    use_cv_estimator : bool, default=True,
+        If True, use :class:`groupyr:groupyr.LogisticSGLCV` as the final
+        estimator. Otherwise, use :class:`groupyr:groupyr.LogisticSGL`.
+
+    memory : str or object with the joblib.Memory interface, default=None
+        Used to cache the fitted transformers of the pipeline. By default,
+        no caching is performed. If a string is given, it is the path to
+        the caching directory. Enabling caching triggers a clone of
+        the transformers before fitting. Therefore, the transformer
+        instance given to the pipeline cannot be inspected
+        directly. Use the attribute ``named_steps`` or ``steps`` to
+        inspect estimators within the pipeline. Caching the
+        transformers is advantageous when fitting is time consuming.
+
+    pipeline_verbosity : bool, default=False
+        If True, the time elapsed while fitting each step will be printed as it
+        is completed.
+
+    target_transformer : object, default=None
+        Estimator object such as derived from
+        :class:`sklearn.base.TransformerMixin`. Cannot be set at the same
+        time as ``func`` and ``inverse_func``. If ``transformer`` is ``None``
+        as well as ``func`` and ``inverse_func``, the transformer will be an
+        identity transformer. Note that the transformer will be cloned during
+        fitting. Also, the transformer is restricting ``y`` to be a numpy
+        array.
+
+    target_transform_func : function, default=None
+        Function to apply to ``y`` before passing to ``fit``. Cannot be set at
+        the same time as ``transformer``. The function needs to return a
+        2-dimensional array. If ``func`` is ``None``, the function used will be
+        the identity function.
+
+    target_transform_inverse_func : function, default=None
+        Function to apply to the prediction of the regressor. Cannot be set at
+        the same time as ``transformer`` as well. The function needs to return
+        a 2-dimensional array. The inverse function is used to return
+        predictions to the same space of the original training labels.
+
+    target_transform_check_inverse : bool, default=True
+        Whether to check that ``transform`` followed by ``inverse_transform``
+        or ``func`` followed by ``inverse_func`` leads to the original targets.
+
+    **estimator_kwargs : kwargs
+        Keyword arguments passed to :class:`groupyr:groupyr.LogisticSGLCV` if
+        ``use_cv_estimator=True`` or :class:`groupyr:groupyr.LogisticSGL` if
+        ``use_cv_estimator=False``.
+
+    Returns
+    -------
+    pipeline : :ref:`Pipeline <sklearn:pipeline>` instance
+    """
+    return make_base_afq_pipeline(
+        imputer=imputer,
+        scaler=scaler,
+        power_transformer=power_transformer,
+        estimator=gpr.LogisticSGLCV if use_cv_estimator else gpr.LogisticSGL,
+        imputer_kwargs=imputer_kwargs,
+        scaler_kwargs=scaler_kwargs,
+        power_transformer_kwargs=power_transformer_kwargs,
+        estimator_kwargs=estimator_kwargs,
+        memory=memory,
+        verbose=pipeline_verbosity,
+        target_transformer=target_transformer,
+        target_transform_func=target_transform_func,
+        target_transform_inverse_func=target_transform_inverse_func,
+        target_transform_check_inverse=target_transform_check_inverse,
+    )
+
+
+def make_afq_regressor_pipeline(
+    imputer="simple",
+    scaler="standard",
+    power_transformer=False,
+    imputer_kwargs=None,
+    scaler_kwargs=None,
+    power_transformer_kwargs=None,
+    use_cv_estimator=True,
+    memory=None,
+    pipeline_verbosity=False,
+    target_transformer=None,
+    target_transform_func=None,
+    target_transform_inverse_func=None,
+    target_transform_check_inverse=True,
+    **estimator_kwargs,
+):
+    """Return the recommended AFQ-specific regression pipeline.
+
+    This function returns a :ref:`Pipeline <sklearn:pipeline>` instance with the
+    following steps::
+
+        [imputer, scaler, power_transformer, estimator]
+
+    where ``imputer`` imputes missing data due to individual subjects missing
+    metrics along an entire bundle; ``scaler`` is optional and scales the
+    features of the feature matrix; ``power_transformer`` is optional and
+    applies a power transform featurewise to make data more Gaussian-like;
+    and ``estimator`` is an instance of :class:`groupyr:groupyr.SGLCV` if
+    ``use_cv_estimator=True`` or :class:`groupyr:groupyr.SGL` if
+    ``use_cv_estimator=False``. The estimator may be optionally wrapped in a
+    :class:`sklearn:sklearn.compose.TransformedTargetRegressor` such that the
+    computation during ``fit`` is::
+
+        estimator.fit(X, target_transform_func(y))
+
+    or::
+
+        estimator.fit(X, target_transformer.transform(y))
+
+    The computation during ``predict`` is::
+
+        target_transform_inverse_func(estimator.predict(X))
+
+    or::
+
+        target_transformer.inverse_transform(estimator.predict(X))
+
+    Parameters
+    ----------
+    imputer : "simple", "knn", or sklearn-compatible transformer, default="simple"
+        The imputer for missing data. String arguments result in the use of
+        specific imputers/transformers:
+        "simple" yields :class:`sklearn:sklearn.impute.SimpleImputer`;
+        "knn" yields :class:`sklearn:sklearn.impute.KNNImputer`.
+        Custom transformers are
+        allowed as long as they inherit from
+        :class:`sklearn:sklearn.base.TransformerMixin`.
+
+    scaler : "standard", "minmax", "maxabs", "robust", or sklearn-compatible transformer, default="standard"
+        The scaler to use for the feature matrix. String arguments result in
+        the use of specific transformers: "standard" yields the
+        :class:`sklearn:sklearn.preprocessing.StandardScalar`; "minmax"
+        yields the :class:`sklearn:sklearn.preprocessing.MinMaxScaler`;
+        "maxabs" yields the
+        :class:`sklearn:sklearn.preprocessing.MaxAbsScaler`; "robust" yields
+        the :class:`sklearn:sklearn.preprocessing.RobustScaler`. Custom
+        transformers are allowed as long as they inherit from
+        :class:`sklearn:sklearn.base.TransformerMixin`.
+
+    power_transformer : bool or sklearn-compatible transformer, default=False
+        An optional power transformer for use on the feature matrix. If True,
+        use :class:`sklearn:sklearn.preprocessing.PowerTransformer`. If
+        False, skip this step. Custom transformers are allowed as long as
+        they inherit from :class:`sklearn:sklearn.base.TransformerMixin`.
+
+    imputer_kwargs : dict, default=None,
+        Key-word arguments for the imputer.
+
+    scaler_kwargs : dict, default=None,
+        Key-word arguments for the scaler.
+
+    power_transformer_kwargs : dict, default=None,
+        Key-word arguments for the power_transformer.
+
+    use_cv_estimator : bool, default=True,
+        If True, use :class:`groupyr:groupyr.SGLCV` as the final
+        estimator. Otherwise, use :class:`groupyr:groupyr.SGL`.
+
+    memory : str or object with the joblib.Memory interface, default=None
+        Used to cache the fitted transformers of the pipeline. By default,
+        no caching is performed. If a string is given, it is the path to
+        the caching directory. Enabling caching triggers a clone of
+        the transformers before fitting. Therefore, the transformer
+        instance given to the pipeline cannot be inspected
+        directly. Use the attribute ``named_steps`` or ``steps`` to
+        inspect estimators within the pipeline. Caching the
+        transformers is advantageous when fitting is time consuming.
+
+    pipeline_verbosity : bool, default=False
+        If True, the time elapsed while fitting each step will be printed as it
+        is completed.
+
+    target_transformer : object, default=None
+        Estimator object such as derived from
+        :class:`sklearn.base.TransformerMixin`. Cannot be set at the same
+        time as ``func`` and ``inverse_func``. If ``transformer`` is ``None``
+        as well as ``func`` and ``inverse_func``, the transformer will be an
+        identity transformer. Note that the transformer will be cloned during
+        fitting. Also, the transformer is restricting ``y`` to be a numpy
+        array.
+
+    target_transform_func : function, default=None
+        Function to apply to ``y`` before passing to ``fit``. Cannot be set at
+        the same time as ``transformer``. The function needs to return a
+        2-dimensional array. If ``func`` is ``None``, the function used will be
+        the identity function.
+
+    target_transform_inverse_func : function, default=None
+        Function to apply to the prediction of the regressor. Cannot be set at
+        the same time as ``transformer`` as well. The function needs to return
+        a 2-dimensional array. The inverse function is used to return
+        predictions to the same space of the original training labels.
+
+    target_transform_check_inverse : bool, default=True
+        Whether to check that ``transform`` followed by ``inverse_transform``
+        or ``func`` followed by ``inverse_func`` leads to the original targets.
+
+    **estimator_kwargs : kwargs
+        Keyword arguments passed to :class:`groupyr:groupyr.SGLCV` if
+        ``use_cv_estimator=True`` or :class:`groupyr:groupyr.SGL` if
+        ``use_cv_estimator=False``.
+
+    Returns
+    -------
+    pipeline : :ref:`Pipeline <sklearn:pipeline>` instance
+    """
+    return make_base_afq_pipeline(
+        imputer=imputer,
+        scaler=scaler,
+        power_transformer=power_transformer,
+        estimator=gpr.SGLCV if use_cv_estimator else gpr.SGL,
+        imputer_kwargs=imputer_kwargs,
+        scaler_kwargs=scaler_kwargs,
+        power_transformer_kwargs=power_transformer_kwargs,
+        estimator_kwargs=estimator_kwargs,
+        memory=memory,
+        verbose=pipeline_verbosity,
+        target_transformer=target_transformer,
+        target_transform_func=target_transform_func,
+        target_transform_inverse_func=target_transform_inverse_func,
+        target_transform_check_inverse=target_transform_check_inverse,
+    )
