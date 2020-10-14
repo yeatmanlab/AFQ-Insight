@@ -28,13 +28,14 @@ def test_AFQDataFrameMapper():
 
     X_ref = np.load(op.join(test_data_path, "test_transform_x.npy"))
     groups_ref = np.load(op.join(test_data_path, "test_transform_groups.npy"))
-    cols_ref = pd.read_hdf(
-        op.join(test_data_path, "test_transform_cols.h5"), key="cols"
-    ).index
+    cols_ref = [
+        tuple(item)
+        for item in np.load(op.join(test_data_path, "test_transform_cols.npy"))
+    ]
 
     assert np.allclose(X, X_ref, equal_nan=True)  # nosec
     assert np.allclose(groups, groups_ref)  # nosec
-    assert cols == cols_ref.tolist()  # nosec
+    assert cols == cols_ref  # nosec
     assert set(subjects) == set(nodes.subjectID.unique())  # nosec
 
 
@@ -100,7 +101,6 @@ def test_remove_group(flatten):
         X_ref = np.squeeze(X_ref[idx, :])
 
     X_removed = remove_group(X, ("Callosum Forceps Major",), label_sets_ref)
-
     assert np.allclose(X_removed, X_ref, equal_nan=True)  # nosec
 
 
@@ -171,16 +171,21 @@ def test_shuffle_group():
 
 
 def test_multicol_utils():
-    cols = pd.read_hdf(
-        op.join(test_data_path, "test_transform_cols.h5"), key="cols"
-    ).index
-    label_sets = multicol2sets(cols)
+    cols = [
+        tuple(item)
+        for item in np.load(op.join(test_data_path, "test_transform_cols.npy"))
+    ]
+    label_sets = multicol2sets(
+        pd.MultiIndex.from_tuples(cols, names=["metric", "tractID", "nodeID"])
+    )
     label_sets_ref = np.load(
         op.join(test_data_path, "test_multicol2sets_label_sets.npy"), allow_pickle=True
     )
     assert np.all(label_sets == label_sets_ref)  # nosec
 
-    label_dicts = multicol2dicts(cols)
+    label_dicts = multicol2dicts(
+        pd.MultiIndex.from_tuples(cols, names=["metric", "tractID", "nodeID"])
+    )
     with open(
         op.join(test_data_path, "test_multicol2dicts_label_dicts.json"), "r"
     ) as fp:

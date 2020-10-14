@@ -255,6 +255,8 @@ class GroupExtractor(BaseEstimator, TransformerMixin):
             dtype=[np.float32, np.float64, int],
             force_all_finite=False,
         )
+
+        _, self.n_features_in_ = X.shape
         self.groups_ = check_groups(groups=self.groups, X=X, allow_overlap=True)
         return self
 
