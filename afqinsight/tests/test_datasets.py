@@ -1,6 +1,7 @@
 import numpy as np
 import os.path as op
 import pandas as pd
+import pytest
 
 import afqinsight as afqi
 from afqinsight.datasets import load_afq_data
@@ -10,8 +11,10 @@ test_data_path = op.join(data_path, "test_data")
 
 
 def test_load_afq_data():
-    X, y, groups, feature_names, subjects = load_afq_data(
-        workdir=test_data_path, target_cols=["test_class"], binary_positives=["c1"]
+    X, y, groups, feature_names, subjects, classes = load_afq_data(
+        workdir=test_data_path,
+        target_cols=["test_class"],
+        label_encode_cols=["test_class"],
     )
 
     nodes = pd.read_csv(op.join(test_data_path, "nodes.csv"))
@@ -28,3 +31,11 @@ def test_load_afq_data():
     assert np.allclose(groups, groups_ref)  # nosec
     assert feature_names == cols_ref  # nosec
     assert set(subjects) == set(nodes.subjectID.unique())  # nosec
+    assert all(classes["test_class"] == np.array(["c0", "c1"]))
+
+    with pytest.raises(ValueError):
+        load_afq_data(
+            workdir=test_data_path,
+            target_cols=["test_class"],
+            label_encode_cols=["test_class", "error"],
+        )
