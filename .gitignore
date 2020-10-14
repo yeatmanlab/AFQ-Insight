@@ -1,3 +1,6 @@
+# Temporary version file
+afqinsight/_version.py
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -6,7 +9,14 @@ __pycache__/
 # C extensions
 *.so
 
+# scikit-learn specific
+doc/_build/
+doc/auto_examples/
+doc/modules/generated/
+doc/datasets/generated/
+
 # Distribution / packaging
+
 .Python
 env/
 build/
@@ -20,7 +30,6 @@ lib64/
 parts/
 sdist/
 var/
-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
@@ -52,20 +61,16 @@ coverage.xml
 
 # Django stuff:
 *.log
-local_settings.py
-
-# Flask stuff:
-instance/
-.webassets-cache
-
-# Scrapy stuff:
-.scrapy
 
 # Sphinx documentation
-docs/_build/
+doc/_build/
+doc/generated/
 
 # PyBuilder
 target/
+
+# Mac OS files
+**.DS_Store
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -73,15 +78,6 @@ target/
 
 # pyenv
 .python-version
-
-# celery beat schedule file
-celerybeat-schedule
-
-# SageMath parsed files
-*.sage.py
-
-# dotenv
-.env
 
 # virtualenv
 .venv
@@ -117,3 +113,6 @@ src
 # local data
 data
 data_with_weights
+
+# Line contributors file
+line-contributors.txt
