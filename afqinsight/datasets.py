@@ -60,7 +60,7 @@ def load_afq_data(
 
     subjects : list
         Subject IDs
-    
+
     classes : dict
         Class labels for each column specified in ``label_encode_cols``
 
