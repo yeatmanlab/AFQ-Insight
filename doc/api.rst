@@ -9,9 +9,17 @@ Pipelines
 
 These are AFQ-Insights recommended estimator pipelines. 
 
-.. autoclass:: AFQRegressorPipeline
+.. autofunction:: make_afq_regressor_pipeline
 
-.. autoclass:: AFQClassifierPipeline
+.. autofunction:: make_afq_classifier_pipeline
+
+Dataset Loader
+==============
+
+This function reads data from csv files conforming to the AFQ data standard
+and return feature and target matrices, grouping arrays, and subject IDs.
+
+.. autofunction:: load_afq_data
 
 Transformers
 ============
