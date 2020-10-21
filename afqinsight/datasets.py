@@ -32,7 +32,7 @@ def load_afq_data(
 
     label_encode_cols : list of strings, subset of target_cols
         Must be a subset of target_cols. These columns will be encoded using
-        :doc:`sklearn:sklearn.preprocessing.LabelEncoder`.
+        :class:`sklearn:sklearn.preprocessing.LabelEncoder`.
 
     index_col : str, default='subjectID'
         The name of column in the subject csv file to use as the index. This
