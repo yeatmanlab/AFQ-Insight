@@ -228,13 +228,22 @@ def make_base_afq_pipeline(
 
     if estimator is not None:
         if inspect.isclass(estimator) and issubclass(estimator, BaseEstimator):
-            pl_estimator = TransformedTargetRegressor(
-                call_with_kwargs(estimator, estimator_kwargs),
-                transformer=target_transformer,
-                func=target_transform_func,
-                inverse_func=target_transform_inverse_func,
-                check_inverse=target_transform_check_inverse,
-            )
+            if any(
+                [
+                    target_transformer,
+                    target_transform_func,
+                    target_transform_inverse_func,
+                ]
+            ):
+                pl_estimator = TransformedTargetRegressor(
+                    call_with_kwargs(estimator, estimator_kwargs),
+                    transformer=target_transformer,
+                    func=target_transform_func,
+                    inverse_func=target_transform_inverse_func,
+                    check_inverse=target_transform_check_inverse,
+                )
+            else:
+                pl_estimator = call_with_kwargs(estimator, estimator_kwargs)
         else:
             raise ValueError(
                 "If provided, estimator must inherit from sklearn.base.BaseEstimator; "
