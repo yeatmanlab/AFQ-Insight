@@ -45,6 +45,7 @@ type_args = [
 @pytest.mark.parametrize("imputer, ImputerStep", imputer_args)
 @pytest.mark.parametrize("power_transformer, PowerStep", power_args)
 @pytest.mark.parametrize("make_pipe, use_cv, EstimatorStep", type_args)
+@pytest.mark.parametrize("target_transformer", [None, PowerTransformer])
 def test_classifier_pipeline_steps(
     make_pipe,
     use_cv,
@@ -55,12 +56,14 @@ def test_classifier_pipeline_steps(
     ImputerStep,
     power_transformer,
     PowerStep,
+    target_transformer,
 ):
     pipeline = make_pipe(
         imputer=imputer,
         scaler=scaler,
         use_cv_estimator=use_cv,
         power_transformer=power_transformer,
+        target_transformer=target_transformer,
     )
 
     if scaler is not None:
@@ -88,13 +91,20 @@ def test_classifier_pipeline_steps(
     else:
         assert pipeline.named_steps["power_transform"] is None  # nosec
 
-    assert isinstance(  # nosec
-        pipeline.named_steps["estimate"].regressor, EstimatorStep
-    )
-    assert (  # nosec
-        pipeline.named_steps["estimate"].regressor.get_params()
-        == EstimatorStep().get_params()
-    )
+    if target_transformer is None:
+        assert isinstance(pipeline.named_steps["estimate"], EstimatorStep)  # nosec
+        assert (  # nosec
+            pipeline.named_steps["estimate"].get_params()
+            == EstimatorStep().get_params()
+        )
+    else:
+        assert isinstance(  # nosec
+            pipeline.named_steps["estimate"].regressor, EstimatorStep
+        )
+        assert (  # nosec
+            pipeline.named_steps["estimate"].regressor.get_params()
+            == EstimatorStep().get_params()
+        )
 
 
 def test_pipeline_value_errors():
