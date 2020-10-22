@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>API Reference &mdash; AFQ-Insight 0.2.2 documentation</title>
+  <title>API Reference &mdash; AFQ-Insight 0.2.3 documentation</title>
   
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.2.2
+                0.2.3
               </div>
             
           
@@ -97,6 +97,7 @@
 <li class="toctree-l1"><a class="reference internal" href="getting_help.html">Getting help using <em>AFQ-Insight</em></a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">API Reference</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#pipelines">Pipelines</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dataset-loader">Dataset Loader</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#transformers">Transformers</a></li>
 </ul>
 </li>
@@ -172,6 +173,290 @@
 <div class="section" id="pipelines">
 <h2>Pipelines<a class="headerlink" href="#pipelines" title="Permalink to this headline">¶</a></h2>
 <p>These are AFQ-Insights recommended estimator pipelines.</p>
+<dl class="py function">
+<dt id="afqinsight.make_afq_regressor_pipeline">
+<code class="sig-prename descclassname">afqinsight.</code><code class="sig-name descname">make_afq_regressor_pipeline</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">imputer</span><span class="o">=</span><span class="default_value">'simple'</span></em>, <em class="sig-param"><span class="n">scaler</span><span class="o">=</span><span class="default_value">'standard'</span></em>, <em class="sig-param"><span class="n">power_transformer</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">imputer_kwargs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">scaler_kwargs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">power_transformer_kwargs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">use_cv_estimator</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">memory</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">pipeline_verbosity</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">target_transformer</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">target_transform_func</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">target_transform_inverse_func</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">target_transform_check_inverse</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">estimator_kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/afqinsight/insight.html#make_afq_regressor_pipeline"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#afqinsight.make_afq_regressor_pipeline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the recommended AFQ-specific regression pipeline.</p>
+<p>This function returns a <a class="reference external" href="https://scikit-learn.org/stable/modules/compose.html#pipeline" title="(in scikit-learn v0.23)"><span class="xref std std-ref">Pipeline</span></a> instance with the
+following steps:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">imputer</span><span class="p">,</span> <span class="n">scaler</span><span class="p">,</span> <span class="n">power_transformer</span><span class="p">,</span> <span class="n">estimator</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">imputer</span></code> imputes missing data due to individual subjects missing
+metrics along an entire bundle; <code class="docutils literal notranslate"><span class="pre">scaler</span></code> is optional and scales the
+features of the feature matrix; <code class="docutils literal notranslate"><span class="pre">power_transformer</span></code> is optional and
+applies a power transform featurewise to make data more Gaussian-like;
+and <code class="docutils literal notranslate"><span class="pre">estimator</span></code> is an instance of <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGLCV" title="(in groupyr v0.1.5)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGLCV</span></code></a> if
+<code class="docutils literal notranslate"><span class="pre">use_cv_estimator=True</span></code> or <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGL" title="(in groupyr v0.1.5)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGL</span></code></a> if
+<code class="docutils literal notranslate"><span class="pre">use_cv_estimator=False</span></code>. The estimator may be optionally wrapped in a
+<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.compose.TransformedTargetRegressor.html#sklearn.compose.TransformedTargetRegressor" title="(in scikit-learn v0.23)"><code class="docutils literal notranslate"><span class="pre">sklearn.compose.TransformedTargetRegressor</span></code></a> such that the
+computation during <code class="docutils literal notranslate"><span class="pre">fit</span></code> is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">estimator</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">target_transform_func</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>or:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">estimator</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">target_transformer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>The computation during <code class="docutils literal notranslate"><span class="pre">predict</span></code> is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">target_transform_inverse_func</span><span class="p">(</span><span class="n">estimator</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>or:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">target_transformer</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">estimator</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">))</span>
+</pre></div>
+</div>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>imputer</strong><span class="classifier">“simple”, “knn”, or sklearn-compatible transformer, default=”simple”</span></dt><dd><p>The imputer for missing data. String arguments result in the use of
+specific imputers/transformers:
+“simple” yields <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.impute.SimpleImputer.html#sklearn.impute.SimpleImputer" title="(in scikit-learn v0.23)"><code class="docutils literal notranslate"><span class="pre">sklearn.impute.SimpleImputer</span></code></a>;
+“knn” yields <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.impute.KNNImputer.html#sklearn.impute.KNNImputer" title="(in scikit-learn v0.23)"><code class="docutils literal notranslate"><span class="pre">sklearn.impute.KNNImputer</span></code></a>.
+Custom transformers are
+allowed as long as they inherit from
+<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html#sklearn.base.TransformerMixin" title="(in scikit-learn v0.23)"><code class="docutils literal notranslate"><span class="pre">sklearn.base.TransformerMixin</span></code></a>.</p>
+</dd>
+<dt><strong>scaler</strong><span class="classifier">“standard”, “minmax”, “maxabs”, “robust”, or sklearn-compatible transformer, default=”standard”</span></dt><dd><p>The scaler to use for the feature matrix. String arguments result in
+the use of specific transformers: “standard” yields the
+<code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.preprocessing.StandardScalar</span></code>; “minmax”
+yields the <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.MinMaxScaler.html#sklearn.preprocessing.MinMaxScaler" title="(in scikit-learn v0.23)"><code class="docutils literal notranslate"><span class="pre">sklearn.preprocessing.MinMaxScaler</span></code></a>;
+“maxabs” yields the
+<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.MaxAbsScaler.html#sklearn.preprocessing.MaxAbsScaler" title="(in scikit-learn v0.23)"><code class="docutils literal notranslate"><span class="pre">sklearn.preprocessing.MaxAbsScaler</span></code></a>; “robust” yields
+the <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.RobustScaler.html#sklearn.preprocessing.RobustScaler" title="(in scikit-learn v0.23)"><code class="docutils literal notranslate"><span class="pre">sklearn.preprocessing.RobustScaler</span></code></a>. Custom
+transformers are allowed as long as they inherit from
+<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html#sklearn.base.TransformerMixin" title="(in scikit-learn v0.23)"><code class="docutils literal notranslate"><span class="pre">sklearn.base.TransformerMixin</span></code></a>.</p>
+</dd>
+<dt><strong>power_transformer</strong><span class="classifier">bool or sklearn-compatible transformer, default=False</span></dt><dd><p>An optional power transformer for use on the feature matrix. If True,
+use <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.PowerTransformer.html#sklearn.preprocessing.PowerTransformer" title="(in scikit-learn v0.23)"><code class="docutils literal notranslate"><span class="pre">sklearn.preprocessing.PowerTransformer</span></code></a>. If
+False, skip this step. Custom transformers are allowed as long as
+they inherit from <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html#sklearn.base.TransformerMixin" title="(in scikit-learn v0.23)"><code class="docutils literal notranslate"><span class="pre">sklearn.base.TransformerMixin</span></code></a>.</p>
+</dd>
+<dt><strong>imputer_kwargs</strong><span class="classifier">dict, default=None,</span></dt><dd><p>Key-word arguments for the imputer.</p>
+</dd>
+<dt><strong>scaler_kwargs</strong><span class="classifier">dict, default=None,</span></dt><dd><p>Key-word arguments for the scaler.</p>
+</dd>
+<dt><strong>power_transformer_kwargs</strong><span class="classifier">dict, default=None,</span></dt><dd><p>Key-word arguments for the power_transformer.</p>
+</dd>
+<dt><strong>use_cv_estimator</strong><span class="classifier">bool, default=True,</span></dt><dd><p>If True, use <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGLCV" title="(in groupyr v0.1.5)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGLCV</span></code></a> as the final
+estimator. Otherwise, use <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGL" title="(in groupyr v0.1.5)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGL</span></code></a>.</p>
+</dd>
+<dt><strong>memory</strong><span class="classifier">str or object with the joblib.Memory interface, default=None</span></dt><dd><p>Used to cache the fitted transformers of the pipeline. By default,
+no caching is performed. If a string is given, it is the path to
+the caching directory. Enabling caching triggers a clone of
+the transformers before fitting. Therefore, the transformer
+instance given to the pipeline cannot be inspected
+directly. Use the attribute <code class="docutils literal notranslate"><span class="pre">named_steps</span></code> or <code class="docutils literal notranslate"><span class="pre">steps</span></code> to
+inspect estimators within the pipeline. Caching the
+transformers is advantageous when fitting is time consuming.</p>
+</dd>
+<dt><strong>pipeline_verbosity</strong><span class="classifier">bool, default=False</span></dt><dd><p>If True, the time elapsed while fitting each step will be printed as it
+is completed.</p>
+</dd>
+<dt><strong>target_transformer</strong><span class="classifier">object, default=None</span></dt><dd><p>Estimator object such as derived from
+<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html#sklearn.base.TransformerMixin" title="(in scikit-learn v0.23)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.base.TransformerMixin</span></code></a>. Cannot be set at the same
+time as <code class="docutils literal notranslate"><span class="pre">func</span></code> and <code class="docutils literal notranslate"><span class="pre">inverse_func</span></code>. If <code class="docutils literal notranslate"><span class="pre">transformer</span></code> is <code class="docutils literal notranslate"><span class="pre">None</span></code>
+as well as <code class="docutils literal notranslate"><span class="pre">func</span></code> and <code class="docutils literal notranslate"><span class="pre">inverse_func</span></code>, the transformer will be an
+identity transformer. Note that the transformer will be cloned during
+fitting. Also, the transformer is restricting <code class="docutils literal notranslate"><span class="pre">y</span></code> to be a numpy
+array.</p>
+</dd>
+<dt><strong>target_transform_func</strong><span class="classifier">function, default=None</span></dt><dd><p>Function to apply to <code class="docutils literal notranslate"><span class="pre">y</span></code> before passing to <code class="docutils literal notranslate"><span class="pre">fit</span></code>. Cannot be set at
+the same time as <code class="docutils literal notranslate"><span class="pre">transformer</span></code>. The function needs to return a
+2-dimensional array. If <code class="docutils literal notranslate"><span class="pre">func</span></code> is <code class="docutils literal notranslate"><span class="pre">None</span></code>, the function used will be
+the identity function.</p>
+</dd>
+<dt><strong>target_transform_inverse_func</strong><span class="classifier">function, default=None</span></dt><dd><p>Function to apply to the prediction of the regressor. Cannot be set at
+the same time as <code class="docutils literal notranslate"><span class="pre">transformer</span></code> as well. The function needs to return
+a 2-dimensional array. The inverse function is used to return
+predictions to the same space of the original training labels.</p>
+</dd>
+<dt><strong>target_transform_check_inverse</strong><span class="classifier">bool, default=True</span></dt><dd><p>Whether to check that <code class="docutils literal notranslate"><span class="pre">transform</span></code> followed by <code class="docutils literal notranslate"><span class="pre">inverse_transform</span></code>
+or <code class="docutils literal notranslate"><span class="pre">func</span></code> followed by <code class="docutils literal notranslate"><span class="pre">inverse_func</span></code> leads to the original targets.</p>
+</dd>
+<dt><strong>**estimator_kwargs</strong><span class="classifier">kwargs</span></dt><dd><p>Keyword arguments passed to <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGLCV" title="(in groupyr v0.1.5)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGLCV</span></code></a> if
+<code class="docutils literal notranslate"><span class="pre">use_cv_estimator=True</span></code> or <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGL" title="(in groupyr v0.1.5)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGL</span></code></a> if
+<code class="docutils literal notranslate"><span class="pre">use_cv_estimator=False</span></code>.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl>
+<dt><strong>pipeline</strong><span class="classifier"><a class="reference external" href="https://scikit-learn.org/stable/modules/compose.html#pipeline" title="(in scikit-learn v0.23)"><span class="xref std std-ref">Pipeline</span></a> instance</span></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="afqinsight.make_afq_classifier_pipeline">
+<code class="sig-prename descclassname">afqinsight.</code><code class="sig-name descname">make_afq_classifier_pipeline</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">imputer</span><span class="o">=</span><span class="default_value">'simple'</span></em>, <em class="sig-param"><span class="n">scaler</span><span class="o">=</span><span class="default_value">'standard'</span></em>, <em class="sig-param"><span class="n">power_transformer</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">imputer_kwargs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">scaler_kwargs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">power_transformer_kwargs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">use_cv_estimator</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">memory</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">pipeline_verbosity</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">target_transformer</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">target_transform_func</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">target_transform_inverse_func</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">target_transform_check_inverse</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">estimator_kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/afqinsight/insight.html#make_afq_classifier_pipeline"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#afqinsight.make_afq_classifier_pipeline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the recommended AFQ-specific classification pipeline.</p>
+<p>This function returns a <a class="reference external" href="https://scikit-learn.org/stable/modules/compose.html#pipeline" title="(in scikit-learn v0.23)"><span class="xref std std-ref">Pipeline</span></a> instance with the
+following steps:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">imputer</span><span class="p">,</span> <span class="n">scaler</span><span class="p">,</span> <span class="n">power_transformer</span><span class="p">,</span> <span class="n">estimator</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">imputer</span></code> imputes missing data due to individual subjects missing
+metrics along an entire bundle; <code class="docutils literal notranslate"><span class="pre">scaler</span></code> is optional and scales the
+features of the feature matrix; <code class="docutils literal notranslate"><span class="pre">power_transformer</span></code> is optional and
+applies a power transform featurewise to make data more Gaussian-like;
+and <code class="docutils literal notranslate"><span class="pre">estimator</span></code> is an instance of
+<a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGLCV" title="(in groupyr v0.1.5)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGLCV</span></code></a> if <code class="docutils literal notranslate"><span class="pre">use_cv_estimator=True</span></code> or
+<a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGL" title="(in groupyr v0.1.5)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGL</span></code></a> if <code class="docutils literal notranslate"><span class="pre">use_cv_estimator=False</span></code>. The
+estimator may be optionally wrapped in a
+<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.compose.TransformedTargetRegressor.html#sklearn.compose.TransformedTargetRegressor" title="(in scikit-learn v0.23)"><code class="docutils literal notranslate"><span class="pre">sklearn.compose.TransformedTargetRegressor</span></code></a> such that the
+computation during <code class="docutils literal notranslate"><span class="pre">fit</span></code> is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">estimator</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">target_transform_func</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>or:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">estimator</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">target_transformer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>The computation during <code class="docutils literal notranslate"><span class="pre">predict</span></code> is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">target_transform_inverse_func</span><span class="p">(</span><span class="n">estimator</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>or:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">target_transformer</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">estimator</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">))</span>
+</pre></div>
+</div>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>imputer</strong><span class="classifier">“simple”, “knn”, or sklearn-compatible transformer, default=”simple”</span></dt><dd><p>The imputer for missing data. String arguments result in the use of
+specific imputers/transformers:
+“simple” yields <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.impute.SimpleImputer.html#sklearn.impute.SimpleImputer" title="(in scikit-learn v0.23)"><code class="docutils literal notranslate"><span class="pre">sklearn.impute.SimpleImputer</span></code></a>;
+“knn” yields <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.impute.KNNImputer.html#sklearn.impute.KNNImputer" title="(in scikit-learn v0.23)"><code class="docutils literal notranslate"><span class="pre">sklearn.impute.KNNImputer</span></code></a>.
+Custom transformers are
+allowed as long as they inherit from
+<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html#sklearn.base.TransformerMixin" title="(in scikit-learn v0.23)"><code class="docutils literal notranslate"><span class="pre">sklearn.base.TransformerMixin</span></code></a>.</p>
+</dd>
+<dt><strong>scaler</strong><span class="classifier">“standard”, “minmax”, “maxabs”, “robust”, or sklearn-compatible transformer, default=”standard”</span></dt><dd><p>The scaler to use for the feature matrix. String arguments result in
+the use of specific transformers: “standard” yields the
+<code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.preprocessing.StandardScalar</span></code>; “minmax”
+yields the <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.MinMaxScaler.html#sklearn.preprocessing.MinMaxScaler" title="(in scikit-learn v0.23)"><code class="docutils literal notranslate"><span class="pre">sklearn.preprocessing.MinMaxScaler</span></code></a>;
+“maxabs” yields the
+<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.MaxAbsScaler.html#sklearn.preprocessing.MaxAbsScaler" title="(in scikit-learn v0.23)"><code class="docutils literal notranslate"><span class="pre">sklearn.preprocessing.MaxAbsScaler</span></code></a>; “robust” yields
+the <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.RobustScaler.html#sklearn.preprocessing.RobustScaler" title="(in scikit-learn v0.23)"><code class="docutils literal notranslate"><span class="pre">sklearn.preprocessing.RobustScaler</span></code></a>. Custom
+transformers are allowed as long as they inherit from
+<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html#sklearn.base.TransformerMixin" title="(in scikit-learn v0.23)"><code class="docutils literal notranslate"><span class="pre">sklearn.base.TransformerMixin</span></code></a>.</p>
+</dd>
+<dt><strong>power_transformer</strong><span class="classifier">bool or sklearn-compatible transformer, default=False</span></dt><dd><p>An optional power transformer for use on the feature matrix. If True,
+use <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.PowerTransformer.html#sklearn.preprocessing.PowerTransformer" title="(in scikit-learn v0.23)"><code class="docutils literal notranslate"><span class="pre">sklearn.preprocessing.PowerTransformer</span></code></a>. If
+False, skip this step. Custom transformers are allowed as long as
+they inherit from <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html#sklearn.base.TransformerMixin" title="(in scikit-learn v0.23)"><code class="docutils literal notranslate"><span class="pre">sklearn.base.TransformerMixin</span></code></a>.</p>
+</dd>
+<dt><strong>imputer_kwargs</strong><span class="classifier">dict, default=None,</span></dt><dd><p>Key-word arguments for the imputer.</p>
+</dd>
+<dt><strong>scaler_kwargs</strong><span class="classifier">dict, default=None,</span></dt><dd><p>Key-word arguments for the scaler.</p>
+</dd>
+<dt><strong>power_transformer_kwargs</strong><span class="classifier">dict, default=None,</span></dt><dd><p>Key-word arguments for the power_transformer.</p>
+</dd>
+<dt><strong>use_cv_estimator</strong><span class="classifier">bool, default=True,</span></dt><dd><p>If True, use <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGLCV" title="(in groupyr v0.1.5)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGLCV</span></code></a> as the final
+estimator. Otherwise, use <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGL" title="(in groupyr v0.1.5)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGL</span></code></a>.</p>
+</dd>
+<dt><strong>memory</strong><span class="classifier">str or object with the joblib.Memory interface, default=None</span></dt><dd><p>Used to cache the fitted transformers of the pipeline. By default,
+no caching is performed. If a string is given, it is the path to
+the caching directory. Enabling caching triggers a clone of
+the transformers before fitting. Therefore, the transformer
+instance given to the pipeline cannot be inspected
+directly. Use the attribute <code class="docutils literal notranslate"><span class="pre">named_steps</span></code> or <code class="docutils literal notranslate"><span class="pre">steps</span></code> to
+inspect estimators within the pipeline. Caching the
+transformers is advantageous when fitting is time consuming.</p>
+</dd>
+<dt><strong>pipeline_verbosity</strong><span class="classifier">bool, default=False</span></dt><dd><p>If True, the time elapsed while fitting each step will be printed as it
+is completed.</p>
+</dd>
+<dt><strong>target_transformer</strong><span class="classifier">object, default=None</span></dt><dd><p>Estimator object such as derived from
+<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html#sklearn.base.TransformerMixin" title="(in scikit-learn v0.23)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.base.TransformerMixin</span></code></a>. Cannot be set at the same
+time as <code class="docutils literal notranslate"><span class="pre">func</span></code> and <code class="docutils literal notranslate"><span class="pre">inverse_func</span></code>. If <code class="docutils literal notranslate"><span class="pre">transformer</span></code> is <code class="docutils literal notranslate"><span class="pre">None</span></code>
+as well as <code class="docutils literal notranslate"><span class="pre">func</span></code> and <code class="docutils literal notranslate"><span class="pre">inverse_func</span></code>, the transformer will be an
+identity transformer. Note that the transformer will be cloned during
+fitting. Also, the transformer is restricting <code class="docutils literal notranslate"><span class="pre">y</span></code> to be a numpy
+array.</p>
+</dd>
+<dt><strong>target_transform_func</strong><span class="classifier">function, default=None</span></dt><dd><p>Function to apply to <code class="docutils literal notranslate"><span class="pre">y</span></code> before passing to <code class="docutils literal notranslate"><span class="pre">fit</span></code>. Cannot be set at
+the same time as <code class="docutils literal notranslate"><span class="pre">transformer</span></code>. The function needs to return a
+2-dimensional array. If <code class="docutils literal notranslate"><span class="pre">func</span></code> is <code class="docutils literal notranslate"><span class="pre">None</span></code>, the function used will be
+the identity function.</p>
+</dd>
+<dt><strong>target_transform_inverse_func</strong><span class="classifier">function, default=None</span></dt><dd><p>Function to apply to the prediction of the regressor. Cannot be set at
+the same time as <code class="docutils literal notranslate"><span class="pre">transformer</span></code> as well. The function needs to return
+a 2-dimensional array. The inverse function is used to return
+predictions to the same space of the original training labels.</p>
+</dd>
+<dt><strong>target_transform_check_inverse</strong><span class="classifier">bool, default=True</span></dt><dd><p>Whether to check that <code class="docutils literal notranslate"><span class="pre">transform</span></code> followed by <code class="docutils literal notranslate"><span class="pre">inverse_transform</span></code>
+or <code class="docutils literal notranslate"><span class="pre">func</span></code> followed by <code class="docutils literal notranslate"><span class="pre">inverse_func</span></code> leads to the original targets.</p>
+</dd>
+<dt><strong>**estimator_kwargs</strong><span class="classifier">kwargs</span></dt><dd><p>Keyword arguments passed to <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGLCV" title="(in groupyr v0.1.5)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGLCV</span></code></a> if
+<code class="docutils literal notranslate"><span class="pre">use_cv_estimator=True</span></code> or <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGL" title="(in groupyr v0.1.5)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGL</span></code></a> if
+<code class="docutils literal notranslate"><span class="pre">use_cv_estimator=False</span></code>.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl>
+<dt><strong>pipeline</strong><span class="classifier"><a class="reference external" href="https://scikit-learn.org/stable/modules/compose.html#pipeline" title="(in scikit-learn v0.23)"><span class="xref std std-ref">Pipeline</span></a> instance</span></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="dataset-loader">
+<h2>Dataset Loader<a class="headerlink" href="#dataset-loader" title="Permalink to this headline">¶</a></h2>
+<p>This function reads data from csv files conforming to the AFQ data standard
+and return feature and target matrices, grouping arrays, and subject IDs.</p>
+<dl class="py function">
+<dt id="afqinsight.load_afq_data">
+<code class="sig-prename descclassname">afqinsight.</code><code class="sig-name descname">load_afq_data</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">workdir</span></em>, <em class="sig-param"><span class="n">target_cols</span></em>, <em class="sig-param"><span class="n">label_encode_cols</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">index_col</span><span class="o">=</span><span class="default_value">'subjectID'</span></em>, <em class="sig-param"><span class="n">fn_nodes</span><span class="o">=</span><span class="default_value">'nodes.csv'</span></em>, <em class="sig-param"><span class="n">fn_subjects</span><span class="o">=</span><span class="default_value">'subjects.csv'</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/afqinsight/datasets.html#load_afq_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#afqinsight.load_afq_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load AFQ data from CSV, transform it, return feature matrix and target.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>workdir</strong><span class="classifier">str</span></dt><dd><p>Directory in which to find the AFQ csv files</p>
+</dd>
+<dt><strong>target_cols</strong><span class="classifier">list of strings</span></dt><dd><p>List of column names in subjects csv file to use as target variables</p>
+</dd>
+<dt><strong>label_encode_cols</strong><span class="classifier">list of strings, subset of target_cols</span></dt><dd><p>Must be a subset of target_cols. These columns will be encoded using
+<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.LabelEncoder.html#sklearn.preprocessing.LabelEncoder" title="(in scikit-learn v0.23)"><code class="docutils literal notranslate"><span class="pre">sklearn.preprocessing.LabelEncoder</span></code></a>.</p>
+</dd>
+<dt><strong>index_col</strong><span class="classifier">str, default=’subjectID’</span></dt><dd><p>The name of column in the subject csv file to use as the index. This
+should contain subject IDs.</p>
+</dd>
+<dt><strong>fn_nodes</strong><span class="classifier">str, default=’nodes.csv’</span></dt><dd><p>Filename for the nodes csv file.</p>
+</dd>
+<dt><strong>fn_subjects</strong><span class="classifier">str, default=’subjects.csv’</span></dt><dd><p>Filename for the subjects csv file.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>X</strong><span class="classifier">array-like of shape (n_samples, n_features)</span></dt><dd><p>The feature samples.</p>
+</dd>
+<dt><strong>y</strong><span class="classifier">array-like of shape (n_samples,) or (n_samples, n_targets), optional</span></dt><dd><p>Target values.</p>
+</dd>
+<dt><strong>groups</strong><span class="classifier">list of numpy.ndarray</span></dt><dd><p>feature indices for each feature group</p>
+</dd>
+<dt><strong>feature_names</strong><span class="classifier">list of tuples</span></dt><dd><p>The multi-indexed columns of X</p>
+</dd>
+<dt><strong>subjects</strong><span class="classifier">list</span></dt><dd><p>Subject IDs</p>
+</dd>
+<dt><strong>classes</strong><span class="classifier">dict</span></dt><dd><p>Class labels for each column specified in <code class="docutils literal notranslate"><span class="pre">label_encode_cols</span></code></p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform.AFQDataFrameMapper</span></code></dt><dd></dd>
+</dl>
+</div>
+</dd></dl>
+
 </div>
 <div class="section" id="transformers">
 <h2>Transformers<a class="headerlink" href="#transformers" title="Permalink to this headline">¶</a></h2>

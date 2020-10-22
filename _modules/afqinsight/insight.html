@@ -1,0 +1,784 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>afqinsight.insight &mdash; AFQ-Insight 0.2.3 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/afqinsight.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/gallery.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/gallery-binder.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/gallery-dataframe.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+        <script src="../../_static/js/copybutton.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home" alt="Documentation Home"> AFQ-Insight
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.2.3
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide.html">User guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../auto_examples/index.html">General examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_help.html">Getting help using <em>AFQ-Insight</em></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing to <em>AFQ-Insight</em></a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/richford/AFQ-Insight">AFQ-Insight on GitHub</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">AFQ-Insight</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>afqinsight.insight</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for afqinsight.insight</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;sklearn-compatible pipelines for AFQ data.&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">import</span> <span class="nn">groupyr</span> <span class="k">as</span> <span class="nn">gpr</span>
+
+<span class="kn">from</span> <span class="nn">string</span> <span class="kn">import</span> <span class="n">Template</span>
+<span class="kn">from</span> <span class="nn">sklearn.base</span> <span class="kn">import</span> <span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">TransformerMixin</span>
+<span class="kn">from</span> <span class="nn">sklearn.compose</span> <span class="kn">import</span> <span class="n">TransformedTargetRegressor</span>
+<span class="kn">from</span> <span class="nn">sklearn.impute</span> <span class="kn">import</span> <span class="n">KNNImputer</span><span class="p">,</span> <span class="n">SimpleImputer</span>
+<span class="kn">from</span> <span class="nn">sklearn.pipeline</span> <span class="kn">import</span> <span class="n">Pipeline</span>
+<span class="kn">from</span> <span class="nn">sklearn.preprocessing</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">MaxAbsScaler</span><span class="p">,</span>
+    <span class="n">MinMaxScaler</span><span class="p">,</span>
+    <span class="n">PowerTransformer</span><span class="p">,</span>
+    <span class="n">RobustScaler</span><span class="p">,</span>
+    <span class="n">StandardScaler</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;make_afq_classifier_pipeline&quot;</span><span class="p">,</span> <span class="s2">&quot;make_afq_regressor_pipeline&quot;</span><span class="p">]</span>
+
+
+<span class="k">def</span> <span class="nf">make_base_afq_pipeline</span><span class="p">(</span>
+    <span class="n">imputer</span><span class="o">=</span><span class="s2">&quot;simple&quot;</span><span class="p">,</span>
+    <span class="n">scaler</span><span class="o">=</span><span class="s2">&quot;standard&quot;</span><span class="p">,</span>
+    <span class="n">power_transformer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">estimator</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">imputer_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">scaler_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">power_transformer_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">estimator_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">memory</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">target_transformer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">target_transform_func</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">target_transform_inverse_func</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">target_transform_check_inverse</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return a base AFQ-specific modeling pipeline.</span>
+
+<span class="sd">    This function returns a :ref:`Pipeline &lt;sklearn:pipeline&gt;` instance with the</span>
+<span class="sd">    following steps::</span>
+
+<span class="sd">        [imputer, scaler, power_transformer, estimator]</span>
+
+<span class="sd">    where ``imputer`` imputes missing data due to individual subjects missing</span>
+<span class="sd">    metrics along an entire bundle; ``scaler`` is optional and scales the</span>
+<span class="sd">    features of the feature matrix; ``power_transformer`` is optional and</span>
+<span class="sd">    applies a power transform featurewise to make data more Gaussian-like;</span>
+<span class="sd">    and ``estimator`` is a scikit-learn compatible estimator. The estimator</span>
+<span class="sd">    may be optionally wrapped in</span>
+<span class="sd">    ``sklearn:sklearn.compose.TransformedTargetRegressor``, such that</span>
+<span class="sd">    the computation during ``fit`` is::</span>
+
+<span class="sd">        estimator.fit(X, target_transform_func(y))</span>
+
+<span class="sd">    or::</span>
+
+<span class="sd">        estimator.fit(X, target_transformer.transform(y))</span>
+
+<span class="sd">    The computation during ``predict`` is::</span>
+
+<span class="sd">        target_transform_inverse_func(estimator.predict(X))</span>
+
+<span class="sd">    or::</span>
+
+<span class="sd">        target_transformer.inverse_transform(estimator.predict(X))</span>
+
+<span class="sd">    This is a base function on which more specific classifier and regressor</span>
+<span class="sd">    pipelines will be built.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    imputer : &quot;simple&quot;, &quot;knn&quot;, or sklearn-compatible transformer, default=&quot;simple&quot;</span>
+<span class="sd">        The imputer for missing data. String arguments result in the use of</span>
+<span class="sd">        specific imputers/transformers:</span>
+<span class="sd">        &quot;simple&quot; yields :class:`sklearn:sklearn.impute.SimpleImputer`;</span>
+<span class="sd">        &quot;knn&quot; yields :class:`sklearn:sklearn.impute.KNNImputer`.</span>
+<span class="sd">        Custom transformers are</span>
+<span class="sd">        allowed as long as they inherit from</span>
+<span class="sd">        :class:`sklearn:sklearn.base.TransformerMixin`.</span>
+
+<span class="sd">    scaler : &quot;standard&quot;, &quot;minmax&quot;, &quot;maxabs&quot;, &quot;robust&quot;, or sklearn-compatible transformer, default=&quot;standard&quot;</span>
+<span class="sd">        The scaler to use for the feature matrix. String arguments result in</span>
+<span class="sd">        the use of specific transformers: &quot;standard&quot; yields the</span>
+<span class="sd">        :class:`sklearn:sklearn.preprocessing.StandardScalar`; &quot;minmax&quot;</span>
+<span class="sd">        yields the :class:`sklearn:sklearn.preprocessing.MinMaxScaler`;</span>
+<span class="sd">        &quot;maxabs&quot; yields the</span>
+<span class="sd">        :class:`sklearn:sklearn.preprocessing.MaxAbsScaler`; &quot;robust&quot; yields</span>
+<span class="sd">        the :class:`sklearn:sklearn.preprocessing.RobustScaler`. Custom</span>
+<span class="sd">        transformers are allowed as long as they inherit from</span>
+<span class="sd">        :class:`sklearn:sklearn.base.TransformerMixin`.</span>
+
+<span class="sd">    power_transformer : bool or sklearn-compatible transformer, default=False</span>
+<span class="sd">        An optional power transformer for use on the feature matrix. If True,</span>
+<span class="sd">        use :class:`sklearn:sklearn.preprocessing.PowerTransformer`. If</span>
+<span class="sd">        False, skip this step. Custom transformers are allowed as long as</span>
+<span class="sd">        they inherit from :class:`sklearn:sklearn.base.TransformerMixin`.</span>
+
+<span class="sd">    estimator : sklearn-compatible estimator or None, default=None</span>
+<span class="sd">        The estimator to use as the last step of the pipeline. If provided,</span>
+<span class="sd">        it must inherit from :class:`sklearn:sklearn.base.BaseEstimator`</span>
+
+<span class="sd">    imputer_kwargs : dict, default=None,</span>
+<span class="sd">        Key-word arguments for the imputer.</span>
+
+<span class="sd">    scaler_kwargs : dict, default=None,</span>
+<span class="sd">        Key-word arguments for the scaler.</span>
+
+<span class="sd">    power_transformer_kwargs : dict, default=None,</span>
+<span class="sd">        Key-word arguments for the power_transformer.</span>
+
+<span class="sd">    estimator_kwargs : dict, default=None,</span>
+<span class="sd">        Key-word arguments for the estimator.</span>
+
+<span class="sd">    memory : str or object with the joblib.Memory interface, default=None</span>
+<span class="sd">        Used to cache the fitted transformers of the pipeline. By default,</span>
+<span class="sd">        no caching is performed. If a string is given, it is the path to</span>
+<span class="sd">        the caching directory. Enabling caching triggers a clone of</span>
+<span class="sd">        the transformers before fitting. Therefore, the transformer</span>
+<span class="sd">        instance given to the pipeline cannot be inspected</span>
+<span class="sd">        directly. Use the attribute ``named_steps`` or ``steps`` to</span>
+<span class="sd">        inspect estimators within the pipeline. Caching the</span>
+<span class="sd">        transformers is advantageous when fitting is time consuming.</span>
+
+<span class="sd">    verbose : bool, default=False</span>
+<span class="sd">        If True, the time elapsed while fitting each step will be printed as it</span>
+<span class="sd">        is completed.</span>
+
+<span class="sd">    target_transformer : object, default=None</span>
+<span class="sd">        Estimator object such as derived from</span>
+<span class="sd">        :class:`sklearn.base.TransformerMixin`. Cannot be set at the same</span>
+<span class="sd">        time as ``func`` and ``inverse_func``. If ``transformer`` is ``None``</span>
+<span class="sd">        as well as ``func`` and ``inverse_func``, the transformer will be an</span>
+<span class="sd">        identity transformer. Note that the transformer will be cloned during</span>
+<span class="sd">        fitting. Also, the transformer is restricting ``y`` to be a numpy</span>
+<span class="sd">        array.</span>
+
+<span class="sd">    target_transform_func : function, default=None</span>
+<span class="sd">        Function to apply to ``y`` before passing to ``fit``. Cannot be set at</span>
+<span class="sd">        the same time as ``transformer``. The function needs to return a</span>
+<span class="sd">        2-dimensional array. If ``func`` is ``None``, the function used will be</span>
+<span class="sd">        the identity function.</span>
+
+<span class="sd">    target_transform_inverse_func : function, default=None</span>
+<span class="sd">        Function to apply to the prediction of the regressor. Cannot be set at</span>
+<span class="sd">        the same time as ``transformer`` as well. The function needs to return</span>
+<span class="sd">        a 2-dimensional array. The inverse function is used to return</span>
+<span class="sd">        predictions to the same space of the original training labels.</span>
+
+<span class="sd">    target_transform_check_inverse : bool, default=True</span>
+<span class="sd">        Whether to check that ``transform`` followed by ``inverse_transform``</span>
+<span class="sd">        or ``func`` followed by ``inverse_func`` leads to the original targets.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pipeline : :ref:`Pipeline &lt;sklearn:pipeline&gt;` instance</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">base_msg</span> <span class="o">=</span> <span class="n">Template</span><span class="p">(</span>
+        <span class="s2">&quot;$</span><span class="si">{kw}</span><span class="s2"> must be one of $</span><span class="si">{allowed}</span><span class="s2"> or a class that inherits &quot;</span>
+        <span class="s2">&quot;from sklearn.base.TransformerMixin; got $</span><span class="si">{input}</span><span class="s2"> instead.&quot;</span>
+    <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">call_with_kwargs</span><span class="p">(</span><span class="n">Transformer</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">kwargs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Transformer</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Transformer</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="n">allowed</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;simple&quot;</span><span class="p">,</span> <span class="s2">&quot;knn&quot;</span><span class="p">]</span>
+    <span class="n">err_msg</span> <span class="o">=</span> <span class="n">Template</span><span class="p">(</span><span class="n">base_msg</span><span class="o">.</span><span class="n">safe_substitute</span><span class="p">(</span><span class="n">kw</span><span class="o">=</span><span class="s2">&quot;imputer&quot;</span><span class="p">,</span> <span class="n">allowed</span><span class="o">=</span><span class="n">allowed</span><span class="p">))</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">imputer</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">imputer</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;simple&quot;</span><span class="p">:</span>
+            <span class="n">pl_imputer</span> <span class="o">=</span> <span class="n">call_with_kwargs</span><span class="p">(</span><span class="n">SimpleImputer</span><span class="p">,</span> <span class="n">imputer_kwargs</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">imputer</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;knn&quot;</span><span class="p">:</span>
+            <span class="n">pl_imputer</span> <span class="o">=</span> <span class="n">call_with_kwargs</span><span class="p">(</span><span class="n">KNNImputer</span><span class="p">,</span> <span class="n">imputer_kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">err_msg</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="n">imputer</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="n">inspect</span><span class="o">.</span><span class="n">isclass</span><span class="p">(</span><span class="n">imputer</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">imputer</span><span class="p">,</span> <span class="n">TransformerMixin</span><span class="p">):</span>
+            <span class="n">pl_imputer</span> <span class="o">=</span> <span class="n">call_with_kwargs</span><span class="p">(</span><span class="n">imputer</span><span class="p">,</span> <span class="n">imputer_kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">err_msg</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="n">imputer</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">err_msg</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="n">imputer</span><span class="p">))</span>
+
+    <span class="n">allowed</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;standard&quot;</span><span class="p">,</span> <span class="s2">&quot;minmax&quot;</span><span class="p">,</span> <span class="s2">&quot;maxabs&quot;</span><span class="p">,</span> <span class="s2">&quot;robust&quot;</span><span class="p">]</span>
+    <span class="n">err_msg</span> <span class="o">=</span> <span class="n">Template</span><span class="p">(</span><span class="n">base_msg</span><span class="o">.</span><span class="n">safe_substitute</span><span class="p">(</span><span class="n">kw</span><span class="o">=</span><span class="s2">&quot;scaler&quot;</span><span class="p">,</span> <span class="n">allowed</span><span class="o">=</span><span class="n">allowed</span><span class="p">))</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">scaler</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">scaler</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;standard&quot;</span><span class="p">:</span>
+            <span class="n">pl_scaler</span> <span class="o">=</span> <span class="n">call_with_kwargs</span><span class="p">(</span><span class="n">StandardScaler</span><span class="p">,</span> <span class="n">scaler_kwargs</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">scaler</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;minmax&quot;</span><span class="p">:</span>
+            <span class="n">pl_scaler</span> <span class="o">=</span> <span class="n">call_with_kwargs</span><span class="p">(</span><span class="n">MinMaxScaler</span><span class="p">,</span> <span class="n">scaler_kwargs</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">scaler</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;maxabs&quot;</span><span class="p">:</span>
+            <span class="n">pl_scaler</span> <span class="o">=</span> <span class="n">call_with_kwargs</span><span class="p">(</span><span class="n">MaxAbsScaler</span><span class="p">,</span> <span class="n">scaler_kwargs</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">scaler</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;robust&quot;</span><span class="p">:</span>
+            <span class="n">pl_scaler</span> <span class="o">=</span> <span class="n">call_with_kwargs</span><span class="p">(</span><span class="n">RobustScaler</span><span class="p">,</span> <span class="n">scaler_kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">err_msg</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="n">scaler</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="n">inspect</span><span class="o">.</span><span class="n">isclass</span><span class="p">(</span><span class="n">scaler</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">scaler</span><span class="p">,</span> <span class="n">TransformerMixin</span><span class="p">):</span>
+            <span class="n">pl_scaler</span> <span class="o">=</span> <span class="n">call_with_kwargs</span><span class="p">(</span><span class="n">scaler</span><span class="p">,</span> <span class="n">scaler_kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">err_msg</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="n">scaler</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="n">scaler</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">pl_scaler</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">err_msg</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="n">scaler</span><span class="p">))</span>
+
+    <span class="n">allowed</span> <span class="o">=</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]</span>
+    <span class="n">err_msg</span> <span class="o">=</span> <span class="n">Template</span><span class="p">(</span>
+        <span class="n">base_msg</span><span class="o">.</span><span class="n">safe_substitute</span><span class="p">(</span><span class="n">kw</span><span class="o">=</span><span class="s2">&quot;power_transformer&quot;</span><span class="p">,</span> <span class="n">allowed</span><span class="o">=</span><span class="n">allowed</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">power_transformer</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">power_transformer</span><span class="p">:</span>
+            <span class="n">pl_power_transformer</span> <span class="o">=</span> <span class="n">call_with_kwargs</span><span class="p">(</span>
+                <span class="n">PowerTransformer</span><span class="p">,</span> <span class="n">power_transformer_kwargs</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">pl_power_transformer</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">elif</span> <span class="n">inspect</span><span class="o">.</span><span class="n">isclass</span><span class="p">(</span><span class="n">power_transformer</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">power_transformer</span><span class="p">,</span> <span class="n">TransformerMixin</span><span class="p">):</span>
+            <span class="n">pl_power_transformer</span> <span class="o">=</span> <span class="n">call_with_kwargs</span><span class="p">(</span>
+                <span class="n">power_transformer</span><span class="p">,</span> <span class="n">power_transformer_kwargs</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">err_msg</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="n">power_transformer</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">err_msg</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="n">power_transformer</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">estimator</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">inspect</span><span class="o">.</span><span class="n">isclass</span><span class="p">(</span><span class="n">estimator</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">estimator</span><span class="p">,</span> <span class="n">BaseEstimator</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">any</span><span class="p">(</span>
+                <span class="p">[</span>
+                    <span class="n">target_transformer</span><span class="p">,</span>
+                    <span class="n">target_transform_func</span><span class="p">,</span>
+                    <span class="n">target_transform_inverse_func</span><span class="p">,</span>
+                <span class="p">]</span>
+            <span class="p">):</span>
+                <span class="n">pl_estimator</span> <span class="o">=</span> <span class="n">TransformedTargetRegressor</span><span class="p">(</span>
+                    <span class="n">call_with_kwargs</span><span class="p">(</span><span class="n">estimator</span><span class="p">,</span> <span class="n">estimator_kwargs</span><span class="p">),</span>
+                    <span class="n">transformer</span><span class="o">=</span><span class="n">target_transformer</span><span class="p">,</span>
+                    <span class="n">func</span><span class="o">=</span><span class="n">target_transform_func</span><span class="p">,</span>
+                    <span class="n">inverse_func</span><span class="o">=</span><span class="n">target_transform_inverse_func</span><span class="p">,</span>
+                    <span class="n">check_inverse</span><span class="o">=</span><span class="n">target_transform_check_inverse</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">pl_estimator</span> <span class="o">=</span> <span class="n">call_with_kwargs</span><span class="p">(</span><span class="n">estimator</span><span class="p">,</span> <span class="n">estimator_kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;If provided, estimator must inherit from sklearn.base.BaseEstimator; &quot;</span>
+                <span class="s2">&quot;got </span><span class="si">{0}</span><span class="s2"> instead.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">estimator</span><span class="p">)</span>
+            <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">pl_estimator</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># Build the pipeline steps. We will always start with the imputer and end</span>
+    <span class="c1"># with the estimator. The scaler and power_transform steps are optional.</span>
+    <span class="n">pl</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="s2">&quot;impute&quot;</span><span class="p">,</span> <span class="n">pl_imputer</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;scale&quot;</span><span class="p">,</span> <span class="n">pl_scaler</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;power_transform&quot;</span><span class="p">,</span> <span class="n">pl_power_transformer</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;estimate&quot;</span><span class="p">,</span> <span class="n">pl_estimator</span><span class="p">),</span>
+    <span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">Pipeline</span><span class="p">(</span><span class="n">steps</span><span class="o">=</span><span class="n">pl</span><span class="p">,</span> <span class="n">memory</span><span class="o">=</span><span class="n">memory</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="make_afq_classifier_pipeline"><a class="viewcode-back" href="../../api.html#afqinsight.make_afq_classifier_pipeline">[docs]</a><span class="k">def</span> <span class="nf">make_afq_classifier_pipeline</span><span class="p">(</span>
+    <span class="n">imputer</span><span class="o">=</span><span class="s2">&quot;simple&quot;</span><span class="p">,</span>
+    <span class="n">scaler</span><span class="o">=</span><span class="s2">&quot;standard&quot;</span><span class="p">,</span>
+    <span class="n">power_transformer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">imputer_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">scaler_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">power_transformer_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">use_cv_estimator</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">memory</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">pipeline_verbosity</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">target_transformer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">target_transform_func</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">target_transform_inverse_func</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">target_transform_check_inverse</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">estimator_kwargs</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return the recommended AFQ-specific classification pipeline.</span>
+
+<span class="sd">    This function returns a :ref:`Pipeline &lt;sklearn:pipeline&gt;` instance with the</span>
+<span class="sd">    following steps::</span>
+
+<span class="sd">        [imputer, scaler, power_transformer, estimator]</span>
+
+<span class="sd">    where ``imputer`` imputes missing data due to individual subjects missing</span>
+<span class="sd">    metrics along an entire bundle; ``scaler`` is optional and scales the</span>
+<span class="sd">    features of the feature matrix; ``power_transformer`` is optional and</span>
+<span class="sd">    applies a power transform featurewise to make data more Gaussian-like;</span>
+<span class="sd">    and ``estimator`` is an instance of</span>
+<span class="sd">    :class:`groupyr:groupyr.LogisticSGLCV` if ``use_cv_estimator=True`` or</span>
+<span class="sd">    :class:`groupyr:groupyr.LogisticSGL` if ``use_cv_estimator=False``. The</span>
+<span class="sd">    estimator may be optionally wrapped in a</span>
+<span class="sd">    :class:`sklearn:sklearn.compose.TransformedTargetRegressor` such that the</span>
+<span class="sd">    computation during ``fit`` is::</span>
+
+<span class="sd">        estimator.fit(X, target_transform_func(y))</span>
+
+<span class="sd">    or::</span>
+
+<span class="sd">        estimator.fit(X, target_transformer.transform(y))</span>
+
+<span class="sd">    The computation during ``predict`` is::</span>
+
+<span class="sd">        target_transform_inverse_func(estimator.predict(X))</span>
+
+<span class="sd">    or::</span>
+
+<span class="sd">        target_transformer.inverse_transform(estimator.predict(X))</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    imputer : &quot;simple&quot;, &quot;knn&quot;, or sklearn-compatible transformer, default=&quot;simple&quot;</span>
+<span class="sd">        The imputer for missing data. String arguments result in the use of</span>
+<span class="sd">        specific imputers/transformers:</span>
+<span class="sd">        &quot;simple&quot; yields :class:`sklearn:sklearn.impute.SimpleImputer`;</span>
+<span class="sd">        &quot;knn&quot; yields :class:`sklearn:sklearn.impute.KNNImputer`.</span>
+<span class="sd">        Custom transformers are</span>
+<span class="sd">        allowed as long as they inherit from</span>
+<span class="sd">        :class:`sklearn:sklearn.base.TransformerMixin`.</span>
+
+<span class="sd">    scaler : &quot;standard&quot;, &quot;minmax&quot;, &quot;maxabs&quot;, &quot;robust&quot;, or sklearn-compatible transformer, default=&quot;standard&quot;</span>
+<span class="sd">        The scaler to use for the feature matrix. String arguments result in</span>
+<span class="sd">        the use of specific transformers: &quot;standard&quot; yields the</span>
+<span class="sd">        :class:`sklearn:sklearn.preprocessing.StandardScalar`; &quot;minmax&quot;</span>
+<span class="sd">        yields the :class:`sklearn:sklearn.preprocessing.MinMaxScaler`;</span>
+<span class="sd">        &quot;maxabs&quot; yields the</span>
+<span class="sd">        :class:`sklearn:sklearn.preprocessing.MaxAbsScaler`; &quot;robust&quot; yields</span>
+<span class="sd">        the :class:`sklearn:sklearn.preprocessing.RobustScaler`. Custom</span>
+<span class="sd">        transformers are allowed as long as they inherit from</span>
+<span class="sd">        :class:`sklearn:sklearn.base.TransformerMixin`.</span>
+
+<span class="sd">    power_transformer : bool or sklearn-compatible transformer, default=False</span>
+<span class="sd">        An optional power transformer for use on the feature matrix. If True,</span>
+<span class="sd">        use :class:`sklearn:sklearn.preprocessing.PowerTransformer`. If</span>
+<span class="sd">        False, skip this step. Custom transformers are allowed as long as</span>
+<span class="sd">        they inherit from :class:`sklearn:sklearn.base.TransformerMixin`.</span>
+
+<span class="sd">    imputer_kwargs : dict, default=None,</span>
+<span class="sd">        Key-word arguments for the imputer.</span>
+
+<span class="sd">    scaler_kwargs : dict, default=None,</span>
+<span class="sd">        Key-word arguments for the scaler.</span>
+
+<span class="sd">    power_transformer_kwargs : dict, default=None,</span>
+<span class="sd">        Key-word arguments for the power_transformer.</span>
+
+<span class="sd">    use_cv_estimator : bool, default=True,</span>
+<span class="sd">        If True, use :class:`groupyr:groupyr.LogisticSGLCV` as the final</span>
+<span class="sd">        estimator. Otherwise, use :class:`groupyr:groupyr.LogisticSGL`.</span>
+
+<span class="sd">    memory : str or object with the joblib.Memory interface, default=None</span>
+<span class="sd">        Used to cache the fitted transformers of the pipeline. By default,</span>
+<span class="sd">        no caching is performed. If a string is given, it is the path to</span>
+<span class="sd">        the caching directory. Enabling caching triggers a clone of</span>
+<span class="sd">        the transformers before fitting. Therefore, the transformer</span>
+<span class="sd">        instance given to the pipeline cannot be inspected</span>
+<span class="sd">        directly. Use the attribute ``named_steps`` or ``steps`` to</span>
+<span class="sd">        inspect estimators within the pipeline. Caching the</span>
+<span class="sd">        transformers is advantageous when fitting is time consuming.</span>
+
+<span class="sd">    pipeline_verbosity : bool, default=False</span>
+<span class="sd">        If True, the time elapsed while fitting each step will be printed as it</span>
+<span class="sd">        is completed.</span>
+
+<span class="sd">    target_transformer : object, default=None</span>
+<span class="sd">        Estimator object such as derived from</span>
+<span class="sd">        :class:`sklearn.base.TransformerMixin`. Cannot be set at the same</span>
+<span class="sd">        time as ``func`` and ``inverse_func``. If ``transformer`` is ``None``</span>
+<span class="sd">        as well as ``func`` and ``inverse_func``, the transformer will be an</span>
+<span class="sd">        identity transformer. Note that the transformer will be cloned during</span>
+<span class="sd">        fitting. Also, the transformer is restricting ``y`` to be a numpy</span>
+<span class="sd">        array.</span>
+
+<span class="sd">    target_transform_func : function, default=None</span>
+<span class="sd">        Function to apply to ``y`` before passing to ``fit``. Cannot be set at</span>
+<span class="sd">        the same time as ``transformer``. The function needs to return a</span>
+<span class="sd">        2-dimensional array. If ``func`` is ``None``, the function used will be</span>
+<span class="sd">        the identity function.</span>
+
+<span class="sd">    target_transform_inverse_func : function, default=None</span>
+<span class="sd">        Function to apply to the prediction of the regressor. Cannot be set at</span>
+<span class="sd">        the same time as ``transformer`` as well. The function needs to return</span>
+<span class="sd">        a 2-dimensional array. The inverse function is used to return</span>
+<span class="sd">        predictions to the same space of the original training labels.</span>
+
+<span class="sd">    target_transform_check_inverse : bool, default=True</span>
+<span class="sd">        Whether to check that ``transform`` followed by ``inverse_transform``</span>
+<span class="sd">        or ``func`` followed by ``inverse_func`` leads to the original targets.</span>
+
+<span class="sd">    **estimator_kwargs : kwargs</span>
+<span class="sd">        Keyword arguments passed to :class:`groupyr:groupyr.LogisticSGLCV` if</span>
+<span class="sd">        ``use_cv_estimator=True`` or :class:`groupyr:groupyr.LogisticSGL` if</span>
+<span class="sd">        ``use_cv_estimator=False``.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pipeline : :ref:`Pipeline &lt;sklearn:pipeline&gt;` instance</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">make_base_afq_pipeline</span><span class="p">(</span>
+        <span class="n">imputer</span><span class="o">=</span><span class="n">imputer</span><span class="p">,</span>
+        <span class="n">scaler</span><span class="o">=</span><span class="n">scaler</span><span class="p">,</span>
+        <span class="n">power_transformer</span><span class="o">=</span><span class="n">power_transformer</span><span class="p">,</span>
+        <span class="n">estimator</span><span class="o">=</span><span class="n">gpr</span><span class="o">.</span><span class="n">LogisticSGLCV</span> <span class="k">if</span> <span class="n">use_cv_estimator</span> <span class="k">else</span> <span class="n">gpr</span><span class="o">.</span><span class="n">LogisticSGL</span><span class="p">,</span>
+        <span class="n">imputer_kwargs</span><span class="o">=</span><span class="n">imputer_kwargs</span><span class="p">,</span>
+        <span class="n">scaler_kwargs</span><span class="o">=</span><span class="n">scaler_kwargs</span><span class="p">,</span>
+        <span class="n">power_transformer_kwargs</span><span class="o">=</span><span class="n">power_transformer_kwargs</span><span class="p">,</span>
+        <span class="n">estimator_kwargs</span><span class="o">=</span><span class="n">estimator_kwargs</span><span class="p">,</span>
+        <span class="n">memory</span><span class="o">=</span><span class="n">memory</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="o">=</span><span class="n">pipeline_verbosity</span><span class="p">,</span>
+        <span class="n">target_transformer</span><span class="o">=</span><span class="n">target_transformer</span><span class="p">,</span>
+        <span class="n">target_transform_func</span><span class="o">=</span><span class="n">target_transform_func</span><span class="p">,</span>
+        <span class="n">target_transform_inverse_func</span><span class="o">=</span><span class="n">target_transform_inverse_func</span><span class="p">,</span>
+        <span class="n">target_transform_check_inverse</span><span class="o">=</span><span class="n">target_transform_check_inverse</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="make_afq_regressor_pipeline"><a class="viewcode-back" href="../../api.html#afqinsight.make_afq_regressor_pipeline">[docs]</a><span class="k">def</span> <span class="nf">make_afq_regressor_pipeline</span><span class="p">(</span>
+    <span class="n">imputer</span><span class="o">=</span><span class="s2">&quot;simple&quot;</span><span class="p">,</span>
+    <span class="n">scaler</span><span class="o">=</span><span class="s2">&quot;standard&quot;</span><span class="p">,</span>
+    <span class="n">power_transformer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">imputer_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">scaler_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">power_transformer_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">use_cv_estimator</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">memory</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">pipeline_verbosity</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">target_transformer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">target_transform_func</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">target_transform_inverse_func</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">target_transform_check_inverse</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">estimator_kwargs</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return the recommended AFQ-specific regression pipeline.</span>
+
+<span class="sd">    This function returns a :ref:`Pipeline &lt;sklearn:pipeline&gt;` instance with the</span>
+<span class="sd">    following steps::</span>
+
+<span class="sd">        [imputer, scaler, power_transformer, estimator]</span>
+
+<span class="sd">    where ``imputer`` imputes missing data due to individual subjects missing</span>
+<span class="sd">    metrics along an entire bundle; ``scaler`` is optional and scales the</span>
+<span class="sd">    features of the feature matrix; ``power_transformer`` is optional and</span>
+<span class="sd">    applies a power transform featurewise to make data more Gaussian-like;</span>
+<span class="sd">    and ``estimator`` is an instance of :class:`groupyr:groupyr.SGLCV` if</span>
+<span class="sd">    ``use_cv_estimator=True`` or :class:`groupyr:groupyr.SGL` if</span>
+<span class="sd">    ``use_cv_estimator=False``. The estimator may be optionally wrapped in a</span>
+<span class="sd">    :class:`sklearn:sklearn.compose.TransformedTargetRegressor` such that the</span>
+<span class="sd">    computation during ``fit`` is::</span>
+
+<span class="sd">        estimator.fit(X, target_transform_func(y))</span>
+
+<span class="sd">    or::</span>
+
+<span class="sd">        estimator.fit(X, target_transformer.transform(y))</span>
+
+<span class="sd">    The computation during ``predict`` is::</span>
+
+<span class="sd">        target_transform_inverse_func(estimator.predict(X))</span>
+
+<span class="sd">    or::</span>
+
+<span class="sd">        target_transformer.inverse_transform(estimator.predict(X))</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    imputer : &quot;simple&quot;, &quot;knn&quot;, or sklearn-compatible transformer, default=&quot;simple&quot;</span>
+<span class="sd">        The imputer for missing data. String arguments result in the use of</span>
+<span class="sd">        specific imputers/transformers:</span>
+<span class="sd">        &quot;simple&quot; yields :class:`sklearn:sklearn.impute.SimpleImputer`;</span>
+<span class="sd">        &quot;knn&quot; yields :class:`sklearn:sklearn.impute.KNNImputer`.</span>
+<span class="sd">        Custom transformers are</span>
+<span class="sd">        allowed as long as they inherit from</span>
+<span class="sd">        :class:`sklearn:sklearn.base.TransformerMixin`.</span>
+
+<span class="sd">    scaler : &quot;standard&quot;, &quot;minmax&quot;, &quot;maxabs&quot;, &quot;robust&quot;, or sklearn-compatible transformer, default=&quot;standard&quot;</span>
+<span class="sd">        The scaler to use for the feature matrix. String arguments result in</span>
+<span class="sd">        the use of specific transformers: &quot;standard&quot; yields the</span>
+<span class="sd">        :class:`sklearn:sklearn.preprocessing.StandardScalar`; &quot;minmax&quot;</span>
+<span class="sd">        yields the :class:`sklearn:sklearn.preprocessing.MinMaxScaler`;</span>
+<span class="sd">        &quot;maxabs&quot; yields the</span>
+<span class="sd">        :class:`sklearn:sklearn.preprocessing.MaxAbsScaler`; &quot;robust&quot; yields</span>
+<span class="sd">        the :class:`sklearn:sklearn.preprocessing.RobustScaler`. Custom</span>
+<span class="sd">        transformers are allowed as long as they inherit from</span>
+<span class="sd">        :class:`sklearn:sklearn.base.TransformerMixin`.</span>
+
+<span class="sd">    power_transformer : bool or sklearn-compatible transformer, default=False</span>
+<span class="sd">        An optional power transformer for use on the feature matrix. If True,</span>
+<span class="sd">        use :class:`sklearn:sklearn.preprocessing.PowerTransformer`. If</span>
+<span class="sd">        False, skip this step. Custom transformers are allowed as long as</span>
+<span class="sd">        they inherit from :class:`sklearn:sklearn.base.TransformerMixin`.</span>
+
+<span class="sd">    imputer_kwargs : dict, default=None,</span>
+<span class="sd">        Key-word arguments for the imputer.</span>
+
+<span class="sd">    scaler_kwargs : dict, default=None,</span>
+<span class="sd">        Key-word arguments for the scaler.</span>
+
+<span class="sd">    power_transformer_kwargs : dict, default=None,</span>
+<span class="sd">        Key-word arguments for the power_transformer.</span>
+
+<span class="sd">    use_cv_estimator : bool, default=True,</span>
+<span class="sd">        If True, use :class:`groupyr:groupyr.SGLCV` as the final</span>
+<span class="sd">        estimator. Otherwise, use :class:`groupyr:groupyr.SGL`.</span>
+
+<span class="sd">    memory : str or object with the joblib.Memory interface, default=None</span>
+<span class="sd">        Used to cache the fitted transformers of the pipeline. By default,</span>
+<span class="sd">        no caching is performed. If a string is given, it is the path to</span>
+<span class="sd">        the caching directory. Enabling caching triggers a clone of</span>
+<span class="sd">        the transformers before fitting. Therefore, the transformer</span>
+<span class="sd">        instance given to the pipeline cannot be inspected</span>
+<span class="sd">        directly. Use the attribute ``named_steps`` or ``steps`` to</span>
+<span class="sd">        inspect estimators within the pipeline. Caching the</span>
+<span class="sd">        transformers is advantageous when fitting is time consuming.</span>
+
+<span class="sd">    pipeline_verbosity : bool, default=False</span>
+<span class="sd">        If True, the time elapsed while fitting each step will be printed as it</span>
+<span class="sd">        is completed.</span>
+
+<span class="sd">    target_transformer : object, default=None</span>
+<span class="sd">        Estimator object such as derived from</span>
+<span class="sd">        :class:`sklearn.base.TransformerMixin`. Cannot be set at the same</span>
+<span class="sd">        time as ``func`` and ``inverse_func``. If ``transformer`` is ``None``</span>
+<span class="sd">        as well as ``func`` and ``inverse_func``, the transformer will be an</span>
+<span class="sd">        identity transformer. Note that the transformer will be cloned during</span>
+<span class="sd">        fitting. Also, the transformer is restricting ``y`` to be a numpy</span>
+<span class="sd">        array.</span>
+
+<span class="sd">    target_transform_func : function, default=None</span>
+<span class="sd">        Function to apply to ``y`` before passing to ``fit``. Cannot be set at</span>
+<span class="sd">        the same time as ``transformer``. The function needs to return a</span>
+<span class="sd">        2-dimensional array. If ``func`` is ``None``, the function used will be</span>
+<span class="sd">        the identity function.</span>
+
+<span class="sd">    target_transform_inverse_func : function, default=None</span>
+<span class="sd">        Function to apply to the prediction of the regressor. Cannot be set at</span>
+<span class="sd">        the same time as ``transformer`` as well. The function needs to return</span>
+<span class="sd">        a 2-dimensional array. The inverse function is used to return</span>
+<span class="sd">        predictions to the same space of the original training labels.</span>
+
+<span class="sd">    target_transform_check_inverse : bool, default=True</span>
+<span class="sd">        Whether to check that ``transform`` followed by ``inverse_transform``</span>
+<span class="sd">        or ``func`` followed by ``inverse_func`` leads to the original targets.</span>
+
+<span class="sd">    **estimator_kwargs : kwargs</span>
+<span class="sd">        Keyword arguments passed to :class:`groupyr:groupyr.SGLCV` if</span>
+<span class="sd">        ``use_cv_estimator=True`` or :class:`groupyr:groupyr.SGL` if</span>
+<span class="sd">        ``use_cv_estimator=False``.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pipeline : :ref:`Pipeline &lt;sklearn:pipeline&gt;` instance</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">make_base_afq_pipeline</span><span class="p">(</span>
+        <span class="n">imputer</span><span class="o">=</span><span class="n">imputer</span><span class="p">,</span>
+        <span class="n">scaler</span><span class="o">=</span><span class="n">scaler</span><span class="p">,</span>
+        <span class="n">power_transformer</span><span class="o">=</span><span class="n">power_transformer</span><span class="p">,</span>
+        <span class="n">estimator</span><span class="o">=</span><span class="n">gpr</span><span class="o">.</span><span class="n">SGLCV</span> <span class="k">if</span> <span class="n">use_cv_estimator</span> <span class="k">else</span> <span class="n">gpr</span><span class="o">.</span><span class="n">SGL</span><span class="p">,</span>
+        <span class="n">imputer_kwargs</span><span class="o">=</span><span class="n">imputer_kwargs</span><span class="p">,</span>
+        <span class="n">scaler_kwargs</span><span class="o">=</span><span class="n">scaler_kwargs</span><span class="p">,</span>
+        <span class="n">power_transformer_kwargs</span><span class="o">=</span><span class="n">power_transformer_kwargs</span><span class="p">,</span>
+        <span class="n">estimator_kwargs</span><span class="o">=</span><span class="n">estimator_kwargs</span><span class="p">,</span>
+        <span class="n">memory</span><span class="o">=</span><span class="n">memory</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="o">=</span><span class="n">pipeline_verbosity</span><span class="p">,</span>
+        <span class="n">target_transformer</span><span class="o">=</span><span class="n">target_transformer</span><span class="p">,</span>
+        <span class="n">target_transform_func</span><span class="o">=</span><span class="n">target_transform_func</span><span class="p">,</span>
+        <span class="n">target_transform_inverse_func</span><span class="o">=</span><span class="n">target_transform_inverse_func</span><span class="p">,</span>
+        <span class="n">target_transform_check_inverse</span><span class="o">=</span><span class="n">target_transform_check_inverse</span><span class="p">,</span>
+    <span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Adam Richie-Halford
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
