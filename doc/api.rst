@@ -13,6 +13,14 @@ These are AFQ-Insights recommended estimator pipelines.
 
 .. autofunction:: make_afq_classifier_pipeline
 
+Cross Validation
+================
+
+This function validates model performance using cross-validation, while
+checkpointing the estimators and scores.
+
+.. autofunction:: cross_validate_checkpoint
+
 Dataset Loader
 ==============
 
