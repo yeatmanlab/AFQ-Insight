@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>afqinsight.insight &mdash; AFQ-Insight 0.2.3 documentation</title>
+  <title>afqinsight.pipeline &mdash; AFQ-Insight 0.2.4 documentation</title>
   
 
   
@@ -63,7 +63,7 @@
             
             
               <div class="version">
-                0.2.3
+                0.2.4
               </div>
             
           
@@ -144,7 +144,7 @@
         
           <li><a href="../index.html">Module code</a> &raquo;</li>
         
-      <li>afqinsight.insight</li>
+      <li>afqinsight.pipeline</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -159,12 +159,11 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <h1>Source code for afqinsight.insight</h1><div class="highlight"><pre>
+  <h1>Source code for afqinsight.pipeline</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;sklearn-compatible pipelines for AFQ data.&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">inspect</span>
 <span class="kn">import</span> <span class="nn">groupyr</span> <span class="k">as</span> <span class="nn">gpr</span>
 
-<span class="kn">from</span> <span class="nn">string</span> <span class="kn">import</span> <span class="n">Template</span>
 <span class="kn">from</span> <span class="nn">sklearn.base</span> <span class="kn">import</span> <span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">TransformerMixin</span>
 <span class="kn">from</span> <span class="nn">sklearn.compose</span> <span class="kn">import</span> <span class="n">TransformedTargetRegressor</span>
 <span class="kn">from</span> <span class="nn">sklearn.impute</span> <span class="kn">import</span> <span class="n">KNNImputer</span><span class="p">,</span> <span class="n">SimpleImputer</span>
@@ -176,6 +175,7 @@
     <span class="n">RobustScaler</span><span class="p">,</span>
     <span class="n">StandardScaler</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="kn">from</span> <span class="nn">string</span> <span class="kn">import</span> <span class="n">Template</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;make_afq_classifier_pipeline&quot;</span><span class="p">,</span> <span class="s2">&quot;make_afq_regressor_pipeline&quot;</span><span class="p">]</span>
 
