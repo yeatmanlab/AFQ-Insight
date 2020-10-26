@@ -238,7 +238,7 @@ def cross_validate_checkpoint(
 
         - None, to use the default 5-fold cross validation,
         - int, to specify the number of folds in a `(Stratified)KFold`,
-        - :term:`sklearn:CV splitter`,
+        - an sklearn `CV splitter <https://scikit-learn.org/stable/glossary.html#term-cv-splitter>`_,
         - An iterable yielding (train, test) splits as arrays of indices.
 
         For int/None inputs, if the estimator is a classifier and ``y`` is
@@ -251,7 +251,7 @@ def cross_validate_checkpoint(
     n_jobs : int, default=None
         The number of CPUs to use to do the computation.
         ``None`` means 1 unless in a :obj:`joblib:joblib.parallel_backend` context.
-        ``-1`` means using all processors. See :term:`Glossary <sklearn:n_jobs>`
+        ``-1`` means using all processors. See :term:`sklearn Glossary <sklearn:n_jobs>`
         for more details.
 
     verbose : int, default=0
@@ -366,12 +366,12 @@ def cross_validate_checkpoint(
 
     See Also
     --------
-    :func:`sklearn:sklearn.model_selection.cross_val_score`:
+    sklearn.model_selection.cross_val_score:
         Run cross-validation for single metric evaluation.
-    :func:`sklearn:sklearn.model_selection.cross_val_predict`:
+    sklearn.model_selection.cross_val_predict:
         Get predictions from each split of cross-validation for diagnostic
         purposes.
-    :func:`sklearn:sklearn.metrics.make_scorer`:
+    sklearn.metrics.make_scorer:
         Make a scorer from a performance metric or loss function.
     """
     X, y, groups = indexable(X, y, groups)
