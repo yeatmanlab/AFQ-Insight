@@ -2,7 +2,7 @@ import groupyr as gpr
 import pytest
 
 from afqinsight import make_afq_classifier_pipeline, make_afq_regressor_pipeline
-from afqinsight.insight import make_base_afq_pipeline
+from afqinsight.pipeline import make_base_afq_pipeline
 from sklearn.preprocessing import (
     MaxAbsScaler,
     MinMaxScaler,
