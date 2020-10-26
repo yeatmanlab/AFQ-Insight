@@ -2,7 +2,6 @@
 import inspect
 import groupyr as gpr
 
-from string import Template
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.compose import TransformedTargetRegressor
 from sklearn.impute import KNNImputer, SimpleImputer
@@ -14,6 +13,7 @@ from sklearn.preprocessing import (
     RobustScaler,
     StandardScaler,
 )
+from string import Template
 
 __all__ = ["make_afq_classifier_pipeline", "make_afq_regressor_pipeline"]
 
