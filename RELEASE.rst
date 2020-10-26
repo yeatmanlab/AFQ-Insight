@@ -1,5 +1,5 @@
-v0.2.3 (October 22, 2020)
+v0.2.4 (October 26, 2020)
 =========================
-  * FIX: Use target transformer only if requested by user (#54)
+  * ENH: Add functions and test for outer cross-validation loop (#55)
 
 
