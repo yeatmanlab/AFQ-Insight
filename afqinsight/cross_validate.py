@@ -122,7 +122,7 @@ def _fit_and_score_ckpt(
         scores = ckpt_dict["scores"]
 
         if fit_and_score_kwargs.get("return_estimator", False):
-            with open(pkl_file, "r") as fp:
+            with open(pkl_file, "rb") as fp:
                 estimator = pickle.load(fp)
 
             scores.append(estimator)
@@ -328,30 +328,41 @@ def cross_validate_checkpoint(
 
     Examples
     --------
+    >>> import shutil
+    >>> import tempfile
     >>> from sklearn import datasets, linear_model
-    >>> from sklearn.model_selection import cross_validate
-    >>> from sklearn.metrics import make_scorer
-    >>> from sklearn.metrics import confusion_matrix
-    >>> from sklearn.svm import LinearSVC
+    >>> from afqinsight import cross_validate_checkpoint
+    >>> from sklearn.pipeline import make_pipeline
+    >>> from sklearn.preprocessing import StandardScaler
     >>> diabetes = datasets.load_diabetes()
     >>> X = diabetes.data[:150]
     >>> y = diabetes.target[:150]
     >>> lasso = linear_model.Lasso()
+
     Single metric evaluation using ``cross_validate``
-    >>> cv_results = cross_validate(lasso, X, y, cv=3)
+
+    >>> cv_results = cross_validate_checkpoint(lasso, X, y, cv=3, checkpoint=False)
     >>> sorted(cv_results.keys())
     ['fit_time', 'score_time', 'test_score']
     >>> cv_results['test_score']
     array([0.33150734, 0.08022311, 0.03531764])
-    Multiple metric evaluation using ``cross_validate``
-    (please refer the ``scoring`` parameter doc for more information)
-    >>> scores = cross_validate(lasso, X, y, cv=3,
+
+    Multiple metric evaluation using ``cross_validate``, an estimator
+    pipeline, and checkpointing (please refer the ``scoring`` parameter doc
+    for more information)
+
+    >>> tempdir = tempfile.mkdtemp()
+    >>> scaler = StandardScaler()
+    >>> pipeline = make_pipeline(scaler, lasso)
+    >>> scores = cross_validate_checkpoint(pipeline, X, y, cv=3,
     ...                         scoring=('r2', 'neg_mean_squared_error'),
-    ...                         return_train_score=True)
+    ...                         return_train_score=True, checkpoint=True,
+    ...                         workdir=tempdir, return_estimator=True)
+    >>> shutil.rmtree(tempdir)
     >>> print(scores['test_neg_mean_squared_error'])
-    [-3635.5... -3573.3... -6114.7...]
+    [-2479.2... -3281.2... -3466.7...]
     >>> print(scores['train_r2'])
-    [0.28010158 0.39088426 0.22784852]
+    [0.507... 0.602... 0.478...]
 
     See Also
     --------
