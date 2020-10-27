@@ -1,0 +1,639 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>afqinsight.cross_validate &mdash; AFQ-Insight 0.2.5 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/afqinsight.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/gallery.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/gallery-binder.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/gallery-dataframe.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+        <script src="../../_static/js/copybutton.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home" alt="Documentation Home"> AFQ-Insight
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.2.5
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide.html">User guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../auto_examples/index.html">General examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_help.html">Getting help using <em>AFQ-Insight</em></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing to <em>AFQ-Insight</em></a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/richford/AFQ-Insight">AFQ-Insight on GitHub</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">AFQ-Insight</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>afqinsight.cross_validate</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for afqinsight.cross_validate</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Include functions to validate model performance using cross-validation.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">deepdish.io</span> <span class="k">as</span> <span class="nn">ddio</span>
+<span class="kn">import</span> <span class="nn">hashlib</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+
+<span class="kn">from</span> <span class="nn">joblib</span> <span class="kn">import</span> <span class="n">delayed</span><span class="p">,</span> <span class="n">Parallel</span>
+<span class="kn">from</span> <span class="nn">sklearn.base</span> <span class="kn">import</span> <span class="n">clone</span><span class="p">,</span> <span class="n">is_classifier</span>
+<span class="kn">from</span> <span class="nn">sklearn.metrics._scorer</span> <span class="kn">import</span> <span class="n">_check_multimetric_scoring</span>
+<span class="kn">from</span> <span class="nn">sklearn.model_selection._split</span> <span class="kn">import</span> <span class="n">check_cv</span>
+<span class="kn">from</span> <span class="nn">sklearn.model_selection._validation</span> <span class="kn">import</span> <span class="n">_aggregate_score_dicts</span><span class="p">,</span> <span class="n">_fit_and_score</span>
+<span class="kn">from</span> <span class="nn">sklearn.pipeline</span> <span class="kn">import</span> <span class="n">Pipeline</span>
+<span class="kn">from</span> <span class="nn">sklearn.utils</span> <span class="kn">import</span> <span class="n">indexable</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;cross_validate_checkpoint&quot;</span><span class="p">]</span>
+
+
+<span class="k">def</span> <span class="nf">_serialize_estimator_params</span><span class="p">(</span><span class="n">estimator_params</span><span class="p">):</span>
+    <span class="c1"># The estimator might be a pipeline, in which case, we want to pop the</span>
+    <span class="c1"># objects out and leave only the params</span>
+    <span class="n">params</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">estimator_params</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s2">&quot;steps&quot;</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
+        <span class="n">steps</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;steps&quot;</span><span class="p">)</span>
+        <span class="n">step_names</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">steps</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">step_names</span><span class="p">:</span>
+            <span class="n">params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+
+        <span class="n">params</span><span class="p">[</span><span class="s2">&quot;steps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">step_names</span>
+
+    <span class="k">return</span> <span class="n">params</span>
+
+
+<span class="k">def</span> <span class="nf">_fit_and_score_ckpt</span><span class="p">(</span>
+    <span class="n">workdir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">checkpoint</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">force_refresh</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">fit_and_score_kwargs</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Fit estimator and compute scores for a given dataset split.</span>
+
+<span class="sd">    This function wraps</span>
+<span class="sd">    :func:`sklearn:sklearn.model_selection._validation._fit_and_score`,</span>
+<span class="sd">    while also saving checkpoint files containing the estimator, paramters,</span>
+<span class="sd">    This is useful if fitting and scoring is costly or if it is being</span>
+<span class="sd">    performed within a large cross-validation experiment.</span>
+
+<span class="sd">    In avoid collisions with scores computed for other CV splits, this</span>
+<span class="sd">    function computes a hash from a nested dictionary containing all keyword</span>
+<span class="sd">    arguments as well as estimator parameters. It then saves the scores and</span>
+<span class="sd">    parameters in &lt;hash&gt;_params.h5 and the estimator itself in</span>
+<span class="sd">    &lt;hash&gt;_estimator.pkl</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    workdir : path-like object, default=None</span>
+<span class="sd">        A string or :term:`python:path-like-object` indicating the directory</span>
+<span class="sd">        in which to store checkpoint files</span>
+
+<span class="sd">    checkpoint : bool, default=True</span>
+<span class="sd">        If True, checkpoint the parameters, estimators, and scores.</span>
+
+<span class="sd">    force_refresh : bool, default=False</span>
+<span class="sd">        If True, recompute scores even if the checkpoint file already exists.</span>
+<span class="sd">        Otherwise, load scores from checkpoint files and return.</span>
+
+<span class="sd">    **fit_and_score_kwargs : kwargs</span>
+<span class="sd">        Key-word arguments passed to</span>
+<span class="sd">        :func:`sklearn:sklearn.model_selection._validation._fit_and_score`</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    train_scores : dict of scorer name -&gt; float</span>
+<span class="sd">        Score on training set (for all the scorers),</span>
+<span class="sd">        returned only if `return_train_score` is `True`.</span>
+
+<span class="sd">    test_scores : dict of scorer name -&gt; float</span>
+<span class="sd">        Score on testing set (for all the scorers).</span>
+
+<span class="sd">    n_test_samples : int</span>
+<span class="sd">        Number of test samples.</span>
+
+<span class="sd">    fit_time : float</span>
+<span class="sd">        Time spent for fitting in seconds.</span>
+
+<span class="sd">    score_time : float</span>
+<span class="sd">        Time spent for scoring in seconds.</span>
+
+<span class="sd">    parameters : dict or None</span>
+<span class="sd">        The parameters that have been evaluated.</span>
+
+<span class="sd">    estimator : estimator object</span>
+<span class="sd">        The fitted estimator</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">checkpoint</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_fit_and_score</span><span class="p">(</span><span class="o">**</span><span class="n">fit_and_score_kwargs</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">workdir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;If checkpoint is True, you must supply a working directory &quot;</span>
+            <span class="s2">&quot;through the ``workdir`` argument.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">estimator</span> <span class="o">=</span> <span class="n">fit_and_score_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;estimator&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">estimator_params</span> <span class="o">=</span> <span class="n">_serialize_estimator_params</span><span class="p">(</span><span class="n">estimator</span><span class="o">.</span><span class="n">get_params</span><span class="p">())</span>
+    <span class="n">all_params</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;estimator_params&quot;</span><span class="p">:</span> <span class="n">estimator_params</span><span class="p">,</span>
+        <span class="s2">&quot;fit_and_score_kwargs&quot;</span><span class="p">:</span> <span class="n">fit_and_score_kwargs</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="n">cv_hash</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">md5</span><span class="p">(</span>
+        <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">all_params</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+
+    <span class="n">h5_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">workdir</span><span class="p">,</span> <span class="n">cv_hash</span> <span class="o">+</span> <span class="s2">&quot;_params.h5&quot;</span><span class="p">)</span>
+    <span class="n">pkl_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">workdir</span><span class="p">,</span> <span class="n">cv_hash</span> <span class="o">+</span> <span class="s2">&quot;_estimator.pkl&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">force_refresh</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">h5_file</span><span class="p">):</span>
+        <span class="n">ckpt_dict</span> <span class="o">=</span> <span class="n">ddio</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">h5_file</span><span class="p">)</span>
+
+        <span class="n">scores</span> <span class="o">=</span> <span class="n">ckpt_dict</span><span class="p">[</span><span class="s2">&quot;scores&quot;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">fit_and_score_kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;return_estimator&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">pkl_file</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
+                <span class="n">estimator</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">fp</span><span class="p">)</span>
+
+            <span class="n">scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">estimator</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">scores</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="n">_fit_and_score</span><span class="p">(</span><span class="n">estimator</span><span class="p">,</span> <span class="o">**</span><span class="n">fit_and_score_kwargs</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">workdir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">fit_and_score_kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;return_estimator&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+            <span class="n">estimator</span> <span class="o">=</span> <span class="n">scores</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">pkl_file</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
+                <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">estimator</span><span class="p">,</span> <span class="n">fp</span><span class="p">)</span>
+
+            <span class="n">ckpt_scores</span> <span class="o">=</span> <span class="n">scores</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">estimator</span><span class="p">,</span> <span class="n">Pipeline</span><span class="p">):</span>
+                <span class="n">model</span> <span class="o">=</span> <span class="n">estimator</span><span class="o">.</span><span class="n">steps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">model</span> <span class="o">=</span> <span class="n">estimator</span>
+
+            <span class="n">estimator_params</span> <span class="o">=</span> <span class="n">_serialize_estimator_params</span><span class="p">(</span><span class="n">estimator</span><span class="o">.</span><span class="n">get_params</span><span class="p">())</span>
+            <span class="n">fitted_params</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;alpha_&quot;</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s2">&quot;alpha_&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+                <span class="s2">&quot;alphas_&quot;</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s2">&quot;alphas_&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+                <span class="s2">&quot;l1_ratio_&quot;</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s2">&quot;l1_ratio_&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+                <span class="s2">&quot;mse_path_&quot;</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s2">&quot;mse_path_&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+                <span class="s2">&quot;scoring_path_&quot;</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s2">&quot;scoring_path_&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+                <span class="s2">&quot;intercept_&quot;</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s2">&quot;intercept_&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+                <span class="s2">&quot;coef_&quot;</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s2">&quot;coef_&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+            <span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">estimator_params</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">fitted_params</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">ckpt_scores</span> <span class="o">=</span> <span class="n">scores</span>
+
+        <span class="n">fit_and_score_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;X&quot;</span><span class="p">)</span>
+        <span class="n">fit_and_score_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;y&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">&quot;scorer&quot;</span> <span class="ow">in</span> <span class="n">fit_and_score_kwargs</span><span class="p">:</span>
+            <span class="n">fit_and_score_kwargs</span><span class="p">[</span><span class="s2">&quot;scorer&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">fit_and_score_kwargs</span><span class="p">[</span><span class="s2">&quot;scorer&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+
+        <span class="n">ckpt_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;scores&quot;</span><span class="p">:</span> <span class="n">ckpt_scores</span><span class="p">,</span>
+            <span class="s2">&quot;fit_and_score_kwargs&quot;</span><span class="p">:</span> <span class="n">fit_and_score_kwargs</span><span class="p">,</span>
+            <span class="s2">&quot;estimator_params&quot;</span><span class="p">:</span> <span class="n">estimator_params</span><span class="p">,</span>
+            <span class="s2">&quot;fitted_params&quot;</span><span class="p">:</span> <span class="n">fitted_params</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="n">ddio</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">h5_file</span><span class="p">,</span> <span class="n">ckpt_dict</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">scores</span>
+
+
+<div class="viewcode-block" id="cross_validate_checkpoint"><a class="viewcode-back" href="../../api.html#afqinsight.cross_validate_checkpoint">[docs]</a><span class="k">def</span> <span class="nf">cross_validate_checkpoint</span><span class="p">(</span>
+    <span class="n">estimator</span><span class="p">,</span>
+    <span class="n">X</span><span class="p">,</span>
+    <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">groups</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">scoring</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">cv</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">n_jobs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">fit_params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">pre_dispatch</span><span class="o">=</span><span class="s2">&quot;2*n_jobs&quot;</span><span class="p">,</span>
+    <span class="n">return_train_score</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">return_estimator</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">error_score</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span>
+    <span class="n">workdir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">checkpoint</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">force_refresh</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Evaluate metric(s) by cross-validation and also record fit/score times.</span>
+
+<span class="sd">    This is a copy of :func:`sklearn:sklearn.model_selection.cross_validate`</span>
+<span class="sd">    that uses :func:`_fit_and_score_ckpt` to checkpoint scores and estimators</span>
+<span class="sd">    for each CV split.</span>
+<span class="sd">    Read more in the :ref:`sklearn user guide &lt;sklearn:multimetric_cross_validation&gt;`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    estimator : estimator object implementing &#39;fit&#39;</span>
+<span class="sd">        The object to use to fit the data.</span>
+
+<span class="sd">    X : array-like of shape (n_samples, n_features)</span>
+<span class="sd">        The data to fit. Can be for example a list, or an array.</span>
+
+<span class="sd">    y : array-like of shape (n_samples,) or (n_samples, n_outputs), default=None</span>
+<span class="sd">        The target variable to try to predict in the case of</span>
+<span class="sd">        supervised learning.</span>
+
+<span class="sd">    groups : array-like of shape (n_samples,), default=None</span>
+<span class="sd">        Group labels for the samples used while splitting the dataset into</span>
+<span class="sd">        train/test set. Only used in conjunction with a &quot;Group&quot; :term:`cv`</span>
+<span class="sd">        instance (e.g., :class:`sklearn:GroupKFold`).</span>
+
+<span class="sd">    scoring : str, callable, list/tuple, or dict, default=None</span>
+<span class="sd">        A single str (see :ref:`sklearn:scoring_parameter`) or a callable</span>
+<span class="sd">        (see :ref:`sklearn:scoring`) to evaluate the predictions on the test set.</span>
+
+<span class="sd">        For evaluating multiple metrics, either give a list of (unique) strings</span>
+<span class="sd">        or a dict with names as keys and callables as values.</span>
+
+<span class="sd">        NOTE that when using custom scorers, each scorer should return a single</span>
+<span class="sd">        value. Metric functions returning a list/array of values can be wrapped</span>
+<span class="sd">        into multiple scorers that return one value each.</span>
+
+<span class="sd">        See :ref:`sklearn:multimetric_grid_search` for an example.</span>
+
+<span class="sd">        If None, the estimator&#39;s score method is used.</span>
+
+<span class="sd">    cv : int, cross-validation generator or an iterable, default=None</span>
+<span class="sd">        Determines the cross-validation splitting strategy.</span>
+<span class="sd">        Possible inputs for cv are:</span>
+
+<span class="sd">        - None, to use the default 5-fold cross validation,</span>
+<span class="sd">        - int, to specify the number of folds in a `(Stratified)KFold`,</span>
+<span class="sd">        - an sklearn `CV splitter &lt;https://scikit-learn.org/stable/glossary.html#term-cv-splitter&gt;`_,</span>
+<span class="sd">        - An iterable yielding (train, test) splits as arrays of indices.</span>
+
+<span class="sd">        For int/None inputs, if the estimator is a classifier and ``y`` is</span>
+<span class="sd">        either binary or multiclass,</span>
+<span class="sd">        :class:`sklearn.model_selection.StratifiedKFold` is used. In all</span>
+<span class="sd">        other cases, :class:`sklearn.model_selection.KFold` is used.</span>
+<span class="sd">        Refer :ref:`sklearn user guide &lt;sklearn:cross_validation&gt;` for the</span>
+<span class="sd">        various cross-validation strategies that can be used here.</span>
+
+<span class="sd">    n_jobs : int, default=None</span>
+<span class="sd">        The number of CPUs to use to do the computation.</span>
+<span class="sd">        ``None`` means 1 unless in a :obj:`joblib:joblib.parallel_backend` context.</span>
+<span class="sd">        ``-1`` means using all processors. See :term:`sklearn Glossary &lt;sklearn:n_jobs&gt;`</span>
+<span class="sd">        for more details.</span>
+
+<span class="sd">    verbose : int, default=0</span>
+<span class="sd">        The verbosity level.</span>
+
+<span class="sd">    fit_params : dict, default=None</span>
+<span class="sd">        Parameters to pass to the fit method of the estimator.</span>
+
+<span class="sd">    pre_dispatch : int or str, default=&#39;2*n_jobs&#39;</span>
+<span class="sd">        Controls the number of jobs that get dispatched during parallel</span>
+<span class="sd">        execution. Reducing this number can be useful to avoid an</span>
+<span class="sd">        explosion of memory consumption when more jobs get dispatched</span>
+<span class="sd">        than CPUs can process. This parameter can be:</span>
+
+<span class="sd">            - None, in which case all the jobs are immediately</span>
+<span class="sd">              created and spawned. Use this for lightweight and</span>
+<span class="sd">              fast-running jobs, to avoid delays due to on-demand</span>
+<span class="sd">              spawning of the jobs</span>
+
+<span class="sd">            - An int, giving the exact number of total jobs that are</span>
+<span class="sd">              spawned</span>
+
+<span class="sd">            - A str, giving an expression as a function of n_jobs,</span>
+<span class="sd">              as in &#39;2*n_jobs&#39;</span>
+
+<span class="sd">    return_train_score : bool, default=False</span>
+<span class="sd">        Whether to include train scores.</span>
+<span class="sd">        Computing training scores is used to get insights on how different</span>
+<span class="sd">        parameter settings impact the overfitting/underfitting trade-off.</span>
+<span class="sd">        However computing the scores on the training set can be computationally</span>
+<span class="sd">        expensive and is not strictly required to select the parameters that</span>
+<span class="sd">        yield the best generalization performance.</span>
+
+<span class="sd">    return_estimator : bool, default=False</span>
+<span class="sd">        Whether to return the estimators fitted on each split.</span>
+
+<span class="sd">    error_score : &#39;raise&#39; or numeric</span>
+<span class="sd">        Value to assign to the score if an error occurs in estimator fitting.</span>
+<span class="sd">        If set to &#39;raise&#39;, the error is raised.</span>
+<span class="sd">        If a numeric value is given, FitFailedWarning is raised. This parameter</span>
+<span class="sd">        does not affect the refit step, which will always raise the error.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    scores : dict of float arrays of shape (n_splits,)</span>
+<span class="sd">        Array of scores of the estimator for each run of the cross validation.</span>
+
+<span class="sd">        A dict of arrays containing the score/time arrays for each scorer is</span>
+<span class="sd">        returned. The possible keys for this ``dict`` are:</span>
+
+<span class="sd">            ``test_score``</span>
+<span class="sd">                The score array for test scores on each cv split.</span>
+<span class="sd">                Suffix ``_score`` in ``test_score`` changes to a specific</span>
+<span class="sd">                metric like ``test_r2`` or ``test_auc`` if there are</span>
+<span class="sd">                multiple scoring metrics in the scoring parameter.</span>
+<span class="sd">            ``train_score``</span>
+<span class="sd">                The score array for train scores on each cv split.</span>
+<span class="sd">                Suffix ``_score`` in ``train_score`` changes to a specific</span>
+<span class="sd">                metric like ``train_r2`` or ``train_auc`` if there are</span>
+<span class="sd">                multiple scoring metrics in the scoring parameter.</span>
+<span class="sd">                This is available only if ``return_train_score`` parameter</span>
+<span class="sd">                is ``True``.</span>
+<span class="sd">            ``fit_time``</span>
+<span class="sd">                The time for fitting the estimator on the train</span>
+<span class="sd">                set for each cv split.</span>
+<span class="sd">            ``score_time``</span>
+<span class="sd">                The time for scoring the estimator on the test set for each</span>
+<span class="sd">                cv split. (Note time for scoring on the train set is not</span>
+<span class="sd">                included even if ``return_train_score`` is set to ``True``</span>
+<span class="sd">            ``estimator``</span>
+<span class="sd">                The estimator objects for each cv split.</span>
+<span class="sd">                This is available only if ``return_estimator`` parameter</span>
+<span class="sd">                is set to ``True``.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; import shutil</span>
+<span class="sd">    &gt;&gt;&gt; import tempfile</span>
+<span class="sd">    &gt;&gt;&gt; from sklearn import datasets, linear_model</span>
+<span class="sd">    &gt;&gt;&gt; from afqinsight import cross_validate_checkpoint</span>
+<span class="sd">    &gt;&gt;&gt; from sklearn.pipeline import make_pipeline</span>
+<span class="sd">    &gt;&gt;&gt; from sklearn.preprocessing import StandardScaler</span>
+<span class="sd">    &gt;&gt;&gt; diabetes = datasets.load_diabetes()</span>
+<span class="sd">    &gt;&gt;&gt; X = diabetes.data[:150]</span>
+<span class="sd">    &gt;&gt;&gt; y = diabetes.target[:150]</span>
+<span class="sd">    &gt;&gt;&gt; lasso = linear_model.Lasso()</span>
+
+<span class="sd">    Single metric evaluation using ``cross_validate``</span>
+
+<span class="sd">    &gt;&gt;&gt; cv_results = cross_validate_checkpoint(lasso, X, y, cv=3, checkpoint=False)</span>
+<span class="sd">    &gt;&gt;&gt; sorted(cv_results.keys())</span>
+<span class="sd">    [&#39;fit_time&#39;, &#39;score_time&#39;, &#39;test_score&#39;]</span>
+<span class="sd">    &gt;&gt;&gt; cv_results[&#39;test_score&#39;]</span>
+<span class="sd">    array([0.33150734, 0.08022311, 0.03531764])</span>
+
+<span class="sd">    Multiple metric evaluation using ``cross_validate``, an estimator</span>
+<span class="sd">    pipeline, and checkpointing (please refer the ``scoring`` parameter doc</span>
+<span class="sd">    for more information)</span>
+
+<span class="sd">    &gt;&gt;&gt; tempdir = tempfile.mkdtemp()</span>
+<span class="sd">    &gt;&gt;&gt; scaler = StandardScaler()</span>
+<span class="sd">    &gt;&gt;&gt; pipeline = make_pipeline(scaler, lasso)</span>
+<span class="sd">    &gt;&gt;&gt; scores = cross_validate_checkpoint(pipeline, X, y, cv=3,</span>
+<span class="sd">    ...                         scoring=(&#39;r2&#39;, &#39;neg_mean_squared_error&#39;),</span>
+<span class="sd">    ...                         return_train_score=True, checkpoint=True,</span>
+<span class="sd">    ...                         workdir=tempdir, return_estimator=True)</span>
+<span class="sd">    &gt;&gt;&gt; shutil.rmtree(tempdir)</span>
+<span class="sd">    &gt;&gt;&gt; print(scores[&#39;test_neg_mean_squared_error&#39;])</span>
+<span class="sd">    [-2479.2... -3281.2... -3466.7...]</span>
+<span class="sd">    &gt;&gt;&gt; print(scores[&#39;train_r2&#39;])</span>
+<span class="sd">    [0.507... 0.602... 0.478...]</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    sklearn.model_selection.cross_val_score:</span>
+<span class="sd">        Run cross-validation for single metric evaluation.</span>
+<span class="sd">    sklearn.model_selection.cross_val_predict:</span>
+<span class="sd">        Get predictions from each split of cross-validation for diagnostic</span>
+<span class="sd">        purposes.</span>
+<span class="sd">    sklearn.metrics.make_scorer:</span>
+<span class="sd">        Make a scorer from a performance metric or loss function.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">groups</span> <span class="o">=</span> <span class="n">indexable</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">groups</span><span class="p">)</span>
+
+    <span class="n">cv</span> <span class="o">=</span> <span class="n">check_cv</span><span class="p">(</span><span class="n">cv</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">classifier</span><span class="o">=</span><span class="n">is_classifier</span><span class="p">(</span><span class="n">estimator</span><span class="p">))</span>
+    <span class="n">scorers</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_check_multimetric_scoring</span><span class="p">(</span><span class="n">estimator</span><span class="p">,</span> <span class="n">scoring</span><span class="o">=</span><span class="n">scoring</span><span class="p">)</span>
+
+    <span class="c1"># We clone the estimator to make sure that all the folds are</span>
+    <span class="c1"># independent, and that it is pickle-able.</span>
+    <span class="n">parallel</span> <span class="o">=</span> <span class="n">Parallel</span><span class="p">(</span><span class="n">n_jobs</span><span class="o">=</span><span class="n">n_jobs</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span> <span class="n">pre_dispatch</span><span class="o">=</span><span class="n">pre_dispatch</span><span class="p">)</span>
+    <span class="n">scores</span> <span class="o">=</span> <span class="n">parallel</span><span class="p">(</span>
+        <span class="n">delayed</span><span class="p">(</span><span class="n">_fit_and_score_ckpt</span><span class="p">)(</span>
+            <span class="n">workdir</span><span class="o">=</span><span class="n">workdir</span><span class="p">,</span>
+            <span class="n">checkpoint</span><span class="o">=</span><span class="n">checkpoint</span><span class="p">,</span>
+            <span class="n">force_refresh</span><span class="o">=</span><span class="n">force_refresh</span><span class="p">,</span>
+            <span class="n">estimator</span><span class="o">=</span><span class="n">clone</span><span class="p">(</span><span class="n">estimator</span><span class="p">),</span>
+            <span class="n">X</span><span class="o">=</span><span class="n">X</span><span class="p">,</span>
+            <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span>
+            <span class="n">scorer</span><span class="o">=</span><span class="n">scorers</span><span class="p">,</span>
+            <span class="n">train</span><span class="o">=</span><span class="n">train</span><span class="p">,</span>
+            <span class="n">test</span><span class="o">=</span><span class="n">test</span><span class="p">,</span>
+            <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
+            <span class="n">parameters</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">fit_params</span><span class="o">=</span><span class="n">fit_params</span><span class="p">,</span>
+            <span class="n">return_train_score</span><span class="o">=</span><span class="n">return_train_score</span><span class="p">,</span>
+            <span class="n">return_times</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">return_estimator</span><span class="o">=</span><span class="n">return_estimator</span><span class="p">,</span>
+            <span class="n">error_score</span><span class="o">=</span><span class="n">error_score</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">train</span><span class="p">,</span> <span class="n">test</span> <span class="ow">in</span> <span class="n">cv</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">groups</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="n">zipped_scores</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">scores</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">return_train_score</span><span class="p">:</span>
+        <span class="n">train_scores</span> <span class="o">=</span> <span class="n">zipped_scores</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">train_scores</span> <span class="o">=</span> <span class="n">_aggregate_score_dicts</span><span class="p">(</span><span class="n">train_scores</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">return_estimator</span><span class="p">:</span>
+        <span class="n">fitted_estimators</span> <span class="o">=</span> <span class="n">zipped_scores</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+    <span class="n">test_scores</span><span class="p">,</span> <span class="n">fit_times</span><span class="p">,</span> <span class="n">score_times</span> <span class="o">=</span> <span class="n">zipped_scores</span>
+    <span class="n">test_scores</span> <span class="o">=</span> <span class="n">_aggregate_score_dicts</span><span class="p">(</span><span class="n">test_scores</span><span class="p">)</span>
+
+    <span class="n">ret</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">ret</span><span class="p">[</span><span class="s2">&quot;fit_time&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">fit_times</span><span class="p">)</span>
+    <span class="n">ret</span><span class="p">[</span><span class="s2">&quot;score_time&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">score_times</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">return_estimator</span><span class="p">:</span>
+        <span class="n">ret</span><span class="p">[</span><span class="s2">&quot;estimator&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fitted_estimators</span>
+
+    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">scorers</span><span class="p">:</span>
+        <span class="n">ret</span><span class="p">[</span><span class="s2">&quot;test_</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">test_scores</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">return_train_score</span><span class="p">:</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="s2">&quot;train_</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">name</span>
+            <span class="n">ret</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">train_scores</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">ret</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Adam Richie-Halford
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

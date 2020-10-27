@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>API Reference &mdash; AFQ-Insight 0.2.4 documentation</title>
+  <title>API Reference &mdash; AFQ-Insight 0.2.5 documentation</title>
   
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.2.4
+                0.2.5
               </div>
             
           
@@ -97,6 +97,7 @@
 <li class="toctree-l1"><a class="reference internal" href="getting_help.html">Getting help using <em>AFQ-Insight</em></a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">API Reference</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#pipelines">Pipelines</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#cross-validation">Cross Validation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#dataset-loader">Dataset Loader</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#transformers">Transformers</a></li>
 </ul>
@@ -186,8 +187,8 @@ following steps:</p>
 metrics along an entire bundle; <code class="docutils literal notranslate"><span class="pre">scaler</span></code> is optional and scales the
 features of the feature matrix; <code class="docutils literal notranslate"><span class="pre">power_transformer</span></code> is optional and
 applies a power transform featurewise to make data more Gaussian-like;
-and <code class="docutils literal notranslate"><span class="pre">estimator</span></code> is an instance of <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGLCV" title="(in groupyr v0.1.6)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGLCV</span></code></a> if
-<code class="docutils literal notranslate"><span class="pre">use_cv_estimator=True</span></code> or <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGL" title="(in groupyr v0.1.6)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGL</span></code></a> if
+and <code class="docutils literal notranslate"><span class="pre">estimator</span></code> is an instance of <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGLCV" title="(in groupyr v0.1.7)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGLCV</span></code></a> if
+<code class="docutils literal notranslate"><span class="pre">use_cv_estimator=True</span></code> or <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGL" title="(in groupyr v0.1.7)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGL</span></code></a> if
 <code class="docutils literal notranslate"><span class="pre">use_cv_estimator=False</span></code>. The estimator may be optionally wrapped in a
 <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.compose.TransformedTargetRegressor.html#sklearn.compose.TransformedTargetRegressor" title="(in scikit-learn v0.23)"><code class="docutils literal notranslate"><span class="pre">sklearn.compose.TransformedTargetRegressor</span></code></a> such that the
 computation during <code class="docutils literal notranslate"><span class="pre">fit</span></code> is:</p>
@@ -238,8 +239,8 @@ they inherit from <a class="reference external" href="https://scikit-learn.org/s
 </dd>
 <dt><strong>power_transformer_kwargs</strong><span class="classifier">dict, default=None,</span></dt><dd><p>Key-word arguments for the power_transformer.</p>
 </dd>
-<dt><strong>use_cv_estimator</strong><span class="classifier">bool, default=True,</span></dt><dd><p>If True, use <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGLCV" title="(in groupyr v0.1.6)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGLCV</span></code></a> as the final
-estimator. Otherwise, use <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGL" title="(in groupyr v0.1.6)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGL</span></code></a>.</p>
+<dt><strong>use_cv_estimator</strong><span class="classifier">bool, default=True,</span></dt><dd><p>If True, use <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGLCV" title="(in groupyr v0.1.7)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGLCV</span></code></a> as the final
+estimator. Otherwise, use <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGL" title="(in groupyr v0.1.7)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGL</span></code></a>.</p>
 </dd>
 <dt><strong>memory</strong><span class="classifier">str or object with the joblib.Memory interface, default=None</span></dt><dd><p>Used to cache the fitted transformers of the pipeline. By default,
 no caching is performed. If a string is given, it is the path to
@@ -274,8 +275,8 @@ predictions to the same space of the original training labels.</p>
 <dt><strong>target_transform_check_inverse</strong><span class="classifier">bool, default=True</span></dt><dd><p>Whether to check that <code class="docutils literal notranslate"><span class="pre">transform</span></code> followed by <code class="docutils literal notranslate"><span class="pre">inverse_transform</span></code>
 or <code class="docutils literal notranslate"><span class="pre">func</span></code> followed by <code class="docutils literal notranslate"><span class="pre">inverse_func</span></code> leads to the original targets.</p>
 </dd>
-<dt><strong>**estimator_kwargs</strong><span class="classifier">kwargs</span></dt><dd><p>Keyword arguments passed to <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGLCV" title="(in groupyr v0.1.6)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGLCV</span></code></a> if
-<code class="docutils literal notranslate"><span class="pre">use_cv_estimator=True</span></code> or <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGL" title="(in groupyr v0.1.6)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGL</span></code></a> if
+<dt><strong>**estimator_kwargs</strong><span class="classifier">kwargs</span></dt><dd><p>Keyword arguments passed to <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGLCV" title="(in groupyr v0.1.7)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGLCV</span></code></a> if
+<code class="docutils literal notranslate"><span class="pre">use_cv_estimator=True</span></code> or <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGL" title="(in groupyr v0.1.7)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGL</span></code></a> if
 <code class="docutils literal notranslate"><span class="pre">use_cv_estimator=False</span></code>.</p>
 </dd>
 </dl>
@@ -302,8 +303,8 @@ metrics along an entire bundle; <code class="docutils literal notranslate"><span
 features of the feature matrix; <code class="docutils literal notranslate"><span class="pre">power_transformer</span></code> is optional and
 applies a power transform featurewise to make data more Gaussian-like;
 and <code class="docutils literal notranslate"><span class="pre">estimator</span></code> is an instance of
-<a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGLCV" title="(in groupyr v0.1.6)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGLCV</span></code></a> if <code class="docutils literal notranslate"><span class="pre">use_cv_estimator=True</span></code> or
-<a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGL" title="(in groupyr v0.1.6)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGL</span></code></a> if <code class="docutils literal notranslate"><span class="pre">use_cv_estimator=False</span></code>. The
+<a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGLCV" title="(in groupyr v0.1.7)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGLCV</span></code></a> if <code class="docutils literal notranslate"><span class="pre">use_cv_estimator=True</span></code> or
+<a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGL" title="(in groupyr v0.1.7)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGL</span></code></a> if <code class="docutils literal notranslate"><span class="pre">use_cv_estimator=False</span></code>. The
 estimator may be optionally wrapped in a
 <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.compose.TransformedTargetRegressor.html#sklearn.compose.TransformedTargetRegressor" title="(in scikit-learn v0.23)"><code class="docutils literal notranslate"><span class="pre">sklearn.compose.TransformedTargetRegressor</span></code></a> such that the
 computation during <code class="docutils literal notranslate"><span class="pre">fit</span></code> is:</p>
@@ -354,8 +355,8 @@ they inherit from <a class="reference external" href="https://scikit-learn.org/s
 </dd>
 <dt><strong>power_transformer_kwargs</strong><span class="classifier">dict, default=None,</span></dt><dd><p>Key-word arguments for the power_transformer.</p>
 </dd>
-<dt><strong>use_cv_estimator</strong><span class="classifier">bool, default=True,</span></dt><dd><p>If True, use <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGLCV" title="(in groupyr v0.1.6)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGLCV</span></code></a> as the final
-estimator. Otherwise, use <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGL" title="(in groupyr v0.1.6)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGL</span></code></a>.</p>
+<dt><strong>use_cv_estimator</strong><span class="classifier">bool, default=True,</span></dt><dd><p>If True, use <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGLCV" title="(in groupyr v0.1.7)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGLCV</span></code></a> as the final
+estimator. Otherwise, use <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGL" title="(in groupyr v0.1.7)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGL</span></code></a>.</p>
 </dd>
 <dt><strong>memory</strong><span class="classifier">str or object with the joblib.Memory interface, default=None</span></dt><dd><p>Used to cache the fitted transformers of the pipeline. By default,
 no caching is performed. If a string is given, it is the path to
@@ -390,8 +391,8 @@ predictions to the same space of the original training labels.</p>
 <dt><strong>target_transform_check_inverse</strong><span class="classifier">bool, default=True</span></dt><dd><p>Whether to check that <code class="docutils literal notranslate"><span class="pre">transform</span></code> followed by <code class="docutils literal notranslate"><span class="pre">inverse_transform</span></code>
 or <code class="docutils literal notranslate"><span class="pre">func</span></code> followed by <code class="docutils literal notranslate"><span class="pre">inverse_func</span></code> leads to the original targets.</p>
 </dd>
-<dt><strong>**estimator_kwargs</strong><span class="classifier">kwargs</span></dt><dd><p>Keyword arguments passed to <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGLCV" title="(in groupyr v0.1.6)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGLCV</span></code></a> if
-<code class="docutils literal notranslate"><span class="pre">use_cv_estimator=True</span></code> or <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGL" title="(in groupyr v0.1.6)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGL</span></code></a> if
+<dt><strong>**estimator_kwargs</strong><span class="classifier">kwargs</span></dt><dd><p>Keyword arguments passed to <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGLCV" title="(in groupyr v0.1.7)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGLCV</span></code></a> if
+<code class="docutils literal notranslate"><span class="pre">use_cv_estimator=True</span></code> or <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGL" title="(in groupyr v0.1.7)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGL</span></code></a> if
 <code class="docutils literal notranslate"><span class="pre">use_cv_estimator=False</span></code>.</p>
 </dd>
 </dl>
@@ -402,6 +403,187 @@ or <code class="docutils literal notranslate"><span class="pre">func</span></cod
 </dl>
 </dd>
 </dl>
+</dd></dl>
+
+</div>
+<div class="section" id="cross-validation">
+<h2>Cross Validation<a class="headerlink" href="#cross-validation" title="Permalink to this headline">¶</a></h2>
+<p>This function validates model performance using cross-validation, while
+checkpointing the estimators and scores.</p>
+<dl class="py function">
+<dt id="afqinsight.cross_validate_checkpoint">
+<code class="sig-prename descclassname">afqinsight.</code><code class="sig-name descname">cross_validate_checkpoint</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">estimator</span></em>, <em class="sig-param"><span class="n">X</span></em>, <em class="sig-param"><span class="n">y</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">groups</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">scoring</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">cv</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">n_jobs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">fit_params</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">pre_dispatch</span><span class="o">=</span><span class="default_value">'2*n_jobs'</span></em>, <em class="sig-param"><span class="n">return_train_score</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">return_estimator</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">error_score</span><span class="o">=</span><span class="default_value">nan</span></em>, <em class="sig-param"><span class="n">workdir</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">checkpoint</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">force_refresh</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/afqinsight/cross_validate.html#cross_validate_checkpoint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#afqinsight.cross_validate_checkpoint" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluate metric(s) by cross-validation and also record fit/score times.</p>
+<p>This is a copy of <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v0.23)"><code class="docutils literal notranslate"><span class="pre">sklearn.model_selection.cross_validate()</span></code></a>
+that uses <code class="xref py py-func docutils literal notranslate"><span class="pre">_fit_and_score_ckpt()</span></code> to checkpoint scores and estimators
+for each CV split.
+Read more in the <a class="reference external" href="https://scikit-learn.org/stable/modules/cross_validation.html#multimetric-cross-validation" title="(in scikit-learn v0.23)"><span class="xref std std-ref">sklearn user guide</span></a>.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl>
+<dt><strong>estimator</strong><span class="classifier">estimator object implementing ‘fit’</span></dt><dd><p>The object to use to fit the data.</p>
+</dd>
+<dt><strong>X</strong><span class="classifier">array-like of shape (n_samples, n_features)</span></dt><dd><p>The data to fit. Can be for example a list, or an array.</p>
+</dd>
+<dt><strong>y</strong><span class="classifier">array-like of shape (n_samples,) or (n_samples, n_outputs), default=None</span></dt><dd><p>The target variable to try to predict in the case of
+supervised learning.</p>
+</dd>
+<dt><strong>groups</strong><span class="classifier">array-like of shape (n_samples,), default=None</span></dt><dd><p>Group labels for the samples used while splitting the dataset into
+train/test set. Only used in conjunction with a “Group” <a class="reference external" href="https://scikit-learn.org/stable/glossary.html#term-cv" title="(in scikit-learn v0.23)"><span class="xref std std-term">cv</span></a>
+instance (e.g., <code class="xref py py-class docutils literal notranslate"><span class="pre">GroupKFold</span></code>).</p>
+</dd>
+<dt><strong>scoring</strong><span class="classifier">str, callable, list/tuple, or dict, default=None</span></dt><dd><p>A single str (see <a class="reference external" href="https://scikit-learn.org/stable/modules/model_evaluation.html#scoring-parameter" title="(in scikit-learn v0.23)"><span>The scoring parameter: defining model evaluation rules</span></a>) or a callable
+(see <a class="reference external" href="https://scikit-learn.org/stable/modules/model_evaluation.html#scoring" title="(in scikit-learn v0.23)"><span>Defining your scoring strategy from metric functions</span></a>) to evaluate the predictions on the test set.</p>
+<p>For evaluating multiple metrics, either give a list of (unique) strings
+or a dict with names as keys and callables as values.</p>
+<p>NOTE that when using custom scorers, each scorer should return a single
+value. Metric functions returning a list/array of values can be wrapped
+into multiple scorers that return one value each.</p>
+<p>See <a class="reference external" href="https://scikit-learn.org/stable/modules/grid_search.html#multimetric-grid-search" title="(in scikit-learn v0.23)"><span>Specifying multiple metrics for evaluation</span></a> for an example.</p>
+<p>If None, the estimator’s score method is used.</p>
+</dd>
+<dt><strong>cv</strong><span class="classifier">int, cross-validation generator or an iterable, default=None</span></dt><dd><p>Determines the cross-validation splitting strategy.
+Possible inputs for cv are:</p>
+<ul class="simple">
+<li><p>None, to use the default 5-fold cross validation,</p></li>
+<li><p>int, to specify the number of folds in a <cite>(Stratified)KFold</cite>,</p></li>
+<li><p>an sklearn <a class="reference external" href="https://scikit-learn.org/stable/glossary.html#term-cv-splitter">CV splitter</a>,</p></li>
+<li><p>An iterable yielding (train, test) splits as arrays of indices.</p></li>
+</ul>
+<p>For int/None inputs, if the estimator is a classifier and <code class="docutils literal notranslate"><span class="pre">y</span></code> is
+either binary or multiclass,
+<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html#sklearn.model_selection.StratifiedKFold" title="(in scikit-learn v0.23)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.model_selection.StratifiedKFold</span></code></a> is used. In all
+other cases, <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.KFold.html#sklearn.model_selection.KFold" title="(in scikit-learn v0.23)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.model_selection.KFold</span></code></a> is used.
+Refer <a class="reference external" href="https://scikit-learn.org/stable/modules/cross_validation.html#cross-validation" title="(in scikit-learn v0.23)"><span class="xref std std-ref">sklearn user guide</span></a> for the
+various cross-validation strategies that can be used here.</p>
+</dd>
+<dt><strong>n_jobs</strong><span class="classifier">int, default=None</span></dt><dd><p>The number of CPUs to use to do the computation.
+<code class="docutils literal notranslate"><span class="pre">None</span></code> means 1 unless in a <a class="reference external" href="https://joblib.readthedocs.io/en/latest/parallel.html#joblib.parallel_backend" title="(in joblib v0.18.0.dev0)"><code class="docutils literal notranslate"><span class="pre">joblib.parallel_backend</span></code></a> context.
+<code class="docutils literal notranslate"><span class="pre">-1</span></code> means using all processors. See <a class="reference external" href="https://scikit-learn.org/stable/glossary.html#term-n-jobs" title="(in scikit-learn v0.23)"><span class="xref std std-term">sklearn Glossary</span></a>
+for more details.</p>
+</dd>
+<dt><strong>verbose</strong><span class="classifier">int, default=0</span></dt><dd><p>The verbosity level.</p>
+</dd>
+<dt><strong>fit_params</strong><span class="classifier">dict, default=None</span></dt><dd><p>Parameters to pass to the fit method of the estimator.</p>
+</dd>
+<dt><strong>pre_dispatch</strong><span class="classifier">int or str, default=’2*n_jobs’</span></dt><dd><p>Controls the number of jobs that get dispatched during parallel
+execution. Reducing this number can be useful to avoid an
+explosion of memory consumption when more jobs get dispatched
+than CPUs can process. This parameter can be:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>None, in which case all the jobs are immediately
+created and spawned. Use this for lightweight and
+fast-running jobs, to avoid delays due to on-demand
+spawning of the jobs</p></li>
+<li><p>An int, giving the exact number of total jobs that are
+spawned</p></li>
+<li><p>A str, giving an expression as a function of n_jobs,
+as in ‘2*n_jobs’</p></li>
+</ul>
+</div></blockquote>
+</dd>
+<dt><strong>return_train_score</strong><span class="classifier">bool, default=False</span></dt><dd><p>Whether to include train scores.
+Computing training scores is used to get insights on how different
+parameter settings impact the overfitting/underfitting trade-off.
+However computing the scores on the training set can be computationally
+expensive and is not strictly required to select the parameters that
+yield the best generalization performance.</p>
+</dd>
+<dt><strong>return_estimator</strong><span class="classifier">bool, default=False</span></dt><dd><p>Whether to return the estimators fitted on each split.</p>
+</dd>
+<dt><strong>error_score</strong><span class="classifier">‘raise’ or numeric</span></dt><dd><p>Value to assign to the score if an error occurs in estimator fitting.
+If set to ‘raise’, the error is raised.
+If a numeric value is given, FitFailedWarning is raised. This parameter
+does not affect the refit step, which will always raise the error.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl>
+<dt><strong>scores</strong><span class="classifier">dict of float arrays of shape (n_splits,)</span></dt><dd><p>Array of scores of the estimator for each run of the cross validation.</p>
+<p>A dict of arrays containing the score/time arrays for each scorer is
+returned. The possible keys for this <code class="docutils literal notranslate"><span class="pre">dict</span></code> are:</p>
+<blockquote>
+<div><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">test_score</span></code></dt><dd><p>The score array for test scores on each cv split.
+Suffix <code class="docutils literal notranslate"><span class="pre">_score</span></code> in <code class="docutils literal notranslate"><span class="pre">test_score</span></code> changes to a specific
+metric like <code class="docutils literal notranslate"><span class="pre">test_r2</span></code> or <code class="docutils literal notranslate"><span class="pre">test_auc</span></code> if there are
+multiple scoring metrics in the scoring parameter.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">train_score</span></code></dt><dd><p>The score array for train scores on each cv split.
+Suffix <code class="docutils literal notranslate"><span class="pre">_score</span></code> in <code class="docutils literal notranslate"><span class="pre">train_score</span></code> changes to a specific
+metric like <code class="docutils literal notranslate"><span class="pre">train_r2</span></code> or <code class="docutils literal notranslate"><span class="pre">train_auc</span></code> if there are
+multiple scoring metrics in the scoring parameter.
+This is available only if <code class="docutils literal notranslate"><span class="pre">return_train_score</span></code> parameter
+is <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">fit_time</span></code></dt><dd><p>The time for fitting the estimator on the train
+set for each cv split.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">score_time</span></code></dt><dd><p>The time for scoring the estimator on the test set for each
+cv split. (Note time for scoring on the train set is not
+included even if <code class="docutils literal notranslate"><span class="pre">return_train_score</span></code> is set to <code class="docutils literal notranslate"><span class="pre">True</span></code></p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">estimator</span></code></dt><dd><p>The estimator objects for each cv split.
+This is available only if <code class="docutils literal notranslate"><span class="pre">return_estimator</span></code> parameter
+is set to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+</dd>
+</dl>
+</div></blockquote>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_val_score.html#sklearn.model_selection.cross_val_score" title="(in scikit-learn v0.23)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sklearn.model_selection.cross_val_score</span></code></a></dt><dd><p>Run cross-validation for single metric evaluation.</p>
+</dd>
+<dt><a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_val_predict.html#sklearn.model_selection.cross_val_predict" title="(in scikit-learn v0.23)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sklearn.model_selection.cross_val_predict</span></code></a></dt><dd><p>Get predictions from each split of cross-validation for diagnostic purposes.</p>
+</dd>
+<dt><a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.metrics.make_scorer.html#sklearn.metrics.make_scorer" title="(in scikit-learn v0.23)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sklearn.metrics.make_scorer</span></code></a></dt><dd><p>Make a scorer from a performance metric or loss function.</p>
+</dd>
+</dl>
+</div>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">shutil</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">sklearn</span> <span class="kn">import</span> <span class="n">datasets</span><span class="p">,</span> <span class="n">linear_model</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">afqinsight</span> <span class="kn">import</span> <span class="n">cross_validate_checkpoint</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">sklearn.pipeline</span> <span class="kn">import</span> <span class="n">make_pipeline</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">sklearn.preprocessing</span> <span class="kn">import</span> <span class="n">StandardScaler</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">diabetes</span> <span class="o">=</span> <span class="n">datasets</span><span class="o">.</span><span class="n">load_diabetes</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">X</span> <span class="o">=</span> <span class="n">diabetes</span><span class="o">.</span><span class="n">data</span><span class="p">[:</span><span class="mi">150</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">diabetes</span><span class="o">.</span><span class="n">target</span><span class="p">[:</span><span class="mi">150</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">lasso</span> <span class="o">=</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">Lasso</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Single metric evaluation using <code class="docutils literal notranslate"><span class="pre">cross_validate</span></code></p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">cv_results</span> <span class="o">=</span> <span class="n">cross_validate_checkpoint</span><span class="p">(</span><span class="n">lasso</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">checkpoint</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">sorted</span><span class="p">(</span><span class="n">cv_results</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+<span class="go">[&#39;fit_time&#39;, &#39;score_time&#39;, &#39;test_score&#39;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cv_results</span><span class="p">[</span><span class="s1">&#39;test_score&#39;</span><span class="p">]</span>
+<span class="go">array([0.33150734, 0.08022311, 0.03531764])</span>
+</pre></div>
+</div>
+<p>Multiple metric evaluation using <code class="docutils literal notranslate"><span class="pre">cross_validate</span></code>, an estimator
+pipeline, and checkpointing (please refer the <code class="docutils literal notranslate"><span class="pre">scoring</span></code> parameter doc
+for more information)</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">tempdir</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkdtemp</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">scaler</span> <span class="o">=</span> <span class="n">StandardScaler</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pipeline</span> <span class="o">=</span> <span class="n">make_pipeline</span><span class="p">(</span><span class="n">scaler</span><span class="p">,</span> <span class="n">lasso</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">scores</span> <span class="o">=</span> <span class="n">cross_validate_checkpoint</span><span class="p">(</span><span class="n">pipeline</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+<span class="gp">... </span>                        <span class="n">scoring</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;r2&#39;</span><span class="p">,</span> <span class="s1">&#39;neg_mean_squared_error&#39;</span><span class="p">),</span>
+<span class="gp">... </span>                        <span class="n">return_train_score</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">checkpoint</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="gp">... </span>                        <span class="n">workdir</span><span class="o">=</span><span class="n">tempdir</span><span class="p">,</span> <span class="n">return_estimator</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">tempdir</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">scores</span><span class="p">[</span><span class="s1">&#39;test_neg_mean_squared_error&#39;</span><span class="p">])</span>
+<span class="go">[-2479.2... -3281.2... -3466.7...]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">scores</span><span class="p">[</span><span class="s1">&#39;train_r2&#39;</span><span class="p">])</span>
+<span class="go">[0.507... 0.602... 0.478...]</span>
+</pre></div>
+</div>
 </dd></dl>
 
 </div>
