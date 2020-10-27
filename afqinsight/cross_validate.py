@@ -8,8 +8,7 @@ import numpy as np
 import os
 import pickle
 
-from groupyr.utils import _ProgressParallel
-from joblib import delayed
+from joblib import delayed, Parallel
 from sklearn.base import clone, is_classifier
 from sklearn.metrics._scorer import _check_multimetric_scoring
 from sklearn.model_selection._split import check_cv
@@ -381,9 +380,7 @@ def cross_validate_checkpoint(
 
     # We clone the estimator to make sure that all the folds are
     # independent, and that it is pickle-able.
-    parallel = _ProgressParallel(
-        n_jobs=n_jobs, verbose=verbose, pre_dispatch=pre_dispatch
-    )
+    parallel = Parallel(n_jobs=n_jobs, verbose=verbose, pre_dispatch=pre_dispatch)
     scores = parallel(
         delayed(_fit_and_score_ckpt)(
             workdir=workdir,
