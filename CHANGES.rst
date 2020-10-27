@@ -1,3 +1,8 @@
+v0.2.5 (October 26, 2020)
+=========================
+  * ENH: Use joblib.Parallel instead of custom groupyr._ProgressParallel (#56)
+
+
 v0.2.4 (October 26, 2020)
 =========================
   * ENH: Add functions and test for outer cross-validation loop (#55)
