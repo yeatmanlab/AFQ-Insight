@@ -9,7 +9,8 @@ from afqinsight import cross_validate_checkpoint
 
 
 @pytest.mark.parametrize("return_estimator", [True, False])
-def test_cross_validate(return_estimator):
+@pytest.mark.parametrize("serialize_cv", [True, False])
+def test_cross_validate(return_estimator, serialize_cv):
     diabetes = datasets.load_diabetes()
     X = diabetes.data[:150]
     y = diabetes.target[:150]
@@ -30,6 +31,7 @@ def test_cross_validate(return_estimator):
         checkpoint=True,
         workdir=tempdir,
         return_estimator=return_estimator,
+        serialize_cv=serialize_cv,
     )
     cv_files_1 = os.listdir(tempdir)
 
