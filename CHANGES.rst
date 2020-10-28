@@ -1,3 +1,8 @@
+v0.2.6 (October 28, 2020)
+=========================
+  * FIX: Add option to serialize cv execution (#57)
+
+
 v0.2.5 (October 26, 2020)
 =========================
   * ENH: Use joblib.Parallel instead of custom groupyr._ProgressParallel (#56)
