@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>afqinsight.cross_validate &mdash; AFQ-Insight 0.2.5 documentation</title>
+  <title>afqinsight.cross_validate &mdash; AFQ-Insight 0.2.6 documentation</title>
   
 
   
@@ -63,7 +63,7 @@
             
             
               <div class="version">
-                0.2.5
+                0.2.6
               </div>
             
           
@@ -353,6 +353,7 @@
     <span class="n">workdir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">checkpoint</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">force_refresh</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">serialize_cv</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
 <span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Evaluate metric(s) by cross-validation and also record fit/score times.</span>
 
@@ -455,6 +456,20 @@
 <span class="sd">        If a numeric value is given, FitFailedWarning is raised. This parameter</span>
 <span class="sd">        does not affect the refit step, which will always raise the error.</span>
 
+<span class="sd">    workdir : path-like object, default=None</span>
+<span class="sd">        A string or :term:`python:path-like-object` indicating the directory</span>
+<span class="sd">        in which to store checkpoint files</span>
+
+<span class="sd">    checkpoint : bool, default=True</span>
+<span class="sd">        If True, checkpoint the parameters, estimators, and scores.</span>
+
+<span class="sd">    force_refresh : bool, default=False</span>
+<span class="sd">        If True, recompute scores even if the checkpoint file already exists.</span>
+<span class="sd">        Otherwise, load scores from checkpoint files and return.</span>
+
+<span class="sd">    serialize_cv : bool, default=False</span>
+<span class="sd">        If True, do not use joblib.Parallel to evaluate each CV split.</span>
+
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    scores : dict of float arrays of shape (n_splits,)</span>
@@ -542,28 +557,51 @@
 
     <span class="c1"># We clone the estimator to make sure that all the folds are</span>
     <span class="c1"># independent, and that it is pickle-able.</span>
-    <span class="n">parallel</span> <span class="o">=</span> <span class="n">Parallel</span><span class="p">(</span><span class="n">n_jobs</span><span class="o">=</span><span class="n">n_jobs</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span> <span class="n">pre_dispatch</span><span class="o">=</span><span class="n">pre_dispatch</span><span class="p">)</span>
-    <span class="n">scores</span> <span class="o">=</span> <span class="n">parallel</span><span class="p">(</span>
-        <span class="n">delayed</span><span class="p">(</span><span class="n">_fit_and_score_ckpt</span><span class="p">)(</span>
-            <span class="n">workdir</span><span class="o">=</span><span class="n">workdir</span><span class="p">,</span>
-            <span class="n">checkpoint</span><span class="o">=</span><span class="n">checkpoint</span><span class="p">,</span>
-            <span class="n">force_refresh</span><span class="o">=</span><span class="n">force_refresh</span><span class="p">,</span>
-            <span class="n">estimator</span><span class="o">=</span><span class="n">clone</span><span class="p">(</span><span class="n">estimator</span><span class="p">),</span>
-            <span class="n">X</span><span class="o">=</span><span class="n">X</span><span class="p">,</span>
-            <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span>
-            <span class="n">scorer</span><span class="o">=</span><span class="n">scorers</span><span class="p">,</span>
-            <span class="n">train</span><span class="o">=</span><span class="n">train</span><span class="p">,</span>
-            <span class="n">test</span><span class="o">=</span><span class="n">test</span><span class="p">,</span>
-            <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
-            <span class="n">parameters</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-            <span class="n">fit_params</span><span class="o">=</span><span class="n">fit_params</span><span class="p">,</span>
-            <span class="n">return_train_score</span><span class="o">=</span><span class="n">return_train_score</span><span class="p">,</span>
-            <span class="n">return_times</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-            <span class="n">return_estimator</span><span class="o">=</span><span class="n">return_estimator</span><span class="p">,</span>
-            <span class="n">error_score</span><span class="o">=</span><span class="n">error_score</span><span class="p">,</span>
+    <span class="k">if</span> <span class="n">serialize_cv</span><span class="p">:</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">_fit_and_score_ckpt</span><span class="p">(</span>
+                <span class="n">workdir</span><span class="o">=</span><span class="n">workdir</span><span class="p">,</span>
+                <span class="n">checkpoint</span><span class="o">=</span><span class="n">checkpoint</span><span class="p">,</span>
+                <span class="n">force_refresh</span><span class="o">=</span><span class="n">force_refresh</span><span class="p">,</span>
+                <span class="n">estimator</span><span class="o">=</span><span class="n">clone</span><span class="p">(</span><span class="n">estimator</span><span class="p">),</span>
+                <span class="n">X</span><span class="o">=</span><span class="n">X</span><span class="p">,</span>
+                <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span>
+                <span class="n">scorer</span><span class="o">=</span><span class="n">scorers</span><span class="p">,</span>
+                <span class="n">train</span><span class="o">=</span><span class="n">train</span><span class="p">,</span>
+                <span class="n">test</span><span class="o">=</span><span class="n">test</span><span class="p">,</span>
+                <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
+                <span class="n">parameters</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">fit_params</span><span class="o">=</span><span class="n">fit_params</span><span class="p">,</span>
+                <span class="n">return_train_score</span><span class="o">=</span><span class="n">return_train_score</span><span class="p">,</span>
+                <span class="n">return_times</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">return_estimator</span><span class="o">=</span><span class="n">return_estimator</span><span class="p">,</span>
+                <span class="n">error_score</span><span class="o">=</span><span class="n">error_score</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">train</span><span class="p">,</span> <span class="n">test</span> <span class="ow">in</span> <span class="n">cv</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">groups</span><span class="p">)</span>
+        <span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">parallel</span> <span class="o">=</span> <span class="n">Parallel</span><span class="p">(</span><span class="n">n_jobs</span><span class="o">=</span><span class="n">n_jobs</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span> <span class="n">pre_dispatch</span><span class="o">=</span><span class="n">pre_dispatch</span><span class="p">)</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="n">parallel</span><span class="p">(</span>
+            <span class="n">delayed</span><span class="p">(</span><span class="n">_fit_and_score_ckpt</span><span class="p">)(</span>
+                <span class="n">workdir</span><span class="o">=</span><span class="n">workdir</span><span class="p">,</span>
+                <span class="n">checkpoint</span><span class="o">=</span><span class="n">checkpoint</span><span class="p">,</span>
+                <span class="n">force_refresh</span><span class="o">=</span><span class="n">force_refresh</span><span class="p">,</span>
+                <span class="n">estimator</span><span class="o">=</span><span class="n">clone</span><span class="p">(</span><span class="n">estimator</span><span class="p">),</span>
+                <span class="n">X</span><span class="o">=</span><span class="n">X</span><span class="p">,</span>
+                <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span>
+                <span class="n">scorer</span><span class="o">=</span><span class="n">scorers</span><span class="p">,</span>
+                <span class="n">train</span><span class="o">=</span><span class="n">train</span><span class="p">,</span>
+                <span class="n">test</span><span class="o">=</span><span class="n">test</span><span class="p">,</span>
+                <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
+                <span class="n">parameters</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">fit_params</span><span class="o">=</span><span class="n">fit_params</span><span class="p">,</span>
+                <span class="n">return_train_score</span><span class="o">=</span><span class="n">return_train_score</span><span class="p">,</span>
+                <span class="n">return_times</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">return_estimator</span><span class="o">=</span><span class="n">return_estimator</span><span class="p">,</span>
+                <span class="n">error_score</span><span class="o">=</span><span class="n">error_score</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">train</span><span class="p">,</span> <span class="n">test</span> <span class="ow">in</span> <span class="n">cv</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">groups</span><span class="p">)</span>
         <span class="p">)</span>
-        <span class="k">for</span> <span class="n">train</span><span class="p">,</span> <span class="n">test</span> <span class="ow">in</span> <span class="n">cv</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">groups</span><span class="p">)</span>
-    <span class="p">)</span>
 
     <span class="n">zipped_scores</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">scores</span><span class="p">))</span>
     <span class="k">if</span> <span class="n">return_train_score</span><span class="p">:</span>

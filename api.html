@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>API Reference &mdash; AFQ-Insight 0.2.5 documentation</title>
+  <title>API Reference &mdash; AFQ-Insight 0.2.6 documentation</title>
   
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.2.5
+                0.2.6
               </div>
             
           
@@ -412,7 +412,7 @@ or <code class="docutils literal notranslate"><span class="pre">func</span></cod
 checkpointing the estimators and scores.</p>
 <dl class="py function">
 <dt id="afqinsight.cross_validate_checkpoint">
-<code class="sig-prename descclassname">afqinsight.</code><code class="sig-name descname">cross_validate_checkpoint</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">estimator</span></em>, <em class="sig-param"><span class="n">X</span></em>, <em class="sig-param"><span class="n">y</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">groups</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">scoring</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">cv</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">n_jobs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">fit_params</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">pre_dispatch</span><span class="o">=</span><span class="default_value">'2*n_jobs'</span></em>, <em class="sig-param"><span class="n">return_train_score</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">return_estimator</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">error_score</span><span class="o">=</span><span class="default_value">nan</span></em>, <em class="sig-param"><span class="n">workdir</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">checkpoint</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">force_refresh</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/afqinsight/cross_validate.html#cross_validate_checkpoint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#afqinsight.cross_validate_checkpoint" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">afqinsight.</code><code class="sig-name descname">cross_validate_checkpoint</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">estimator</span></em>, <em class="sig-param"><span class="n">X</span></em>, <em class="sig-param"><span class="n">y</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">groups</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">scoring</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">cv</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">n_jobs</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">fit_params</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">pre_dispatch</span><span class="o">=</span><span class="default_value">'2*n_jobs'</span></em>, <em class="sig-param"><span class="n">return_train_score</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">return_estimator</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">error_score</span><span class="o">=</span><span class="default_value">nan</span></em>, <em class="sig-param"><span class="n">workdir</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">checkpoint</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">force_refresh</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">serialize_cv</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/afqinsight/cross_validate.html#cross_validate_checkpoint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#afqinsight.cross_validate_checkpoint" title="Permalink to this definition">¶</a></dt>
 <dd><p>Evaluate metric(s) by cross-validation and also record fit/score times.</p>
 <p>This is a copy of <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v0.23)"><code class="docutils literal notranslate"><span class="pre">sklearn.model_selection.cross_validate()</span></code></a>
 that uses <code class="xref py py-func docutils literal notranslate"><span class="pre">_fit_and_score_ckpt()</span></code> to checkpoint scores and estimators
@@ -496,6 +496,16 @@ yield the best generalization performance.</p>
 If set to ‘raise’, the error is raised.
 If a numeric value is given, FitFailedWarning is raised. This parameter
 does not affect the refit step, which will always raise the error.</p>
+</dd>
+<dt><strong>workdir</strong><span class="classifier">path-like object, default=None</span></dt><dd><p>A string or <span class="xref std std-term">path-like-object</span> indicating the directory
+in which to store checkpoint files</p>
+</dd>
+<dt><strong>checkpoint</strong><span class="classifier">bool, default=True</span></dt><dd><p>If True, checkpoint the parameters, estimators, and scores.</p>
+</dd>
+<dt><strong>force_refresh</strong><span class="classifier">bool, default=False</span></dt><dd><p>If True, recompute scores even if the checkpoint file already exists.
+Otherwise, load scores from checkpoint files and return.</p>
+</dd>
+<dt><strong>serialize_cv</strong><span class="classifier">bool, default=False</span></dt><dd><p>If True, do not use joblib.Parallel to evaluate each CV split.</p>
 </dd>
 </dl>
 </dd>
