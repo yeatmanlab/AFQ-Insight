@@ -1,3 +1,7 @@
+v0.2.7 (December 09, 2020)
+==========================
+  * ENH: Add ensemble estimators to pipelines (#59)
+
 v0.2.6 (October 28, 2020)
 =========================
   * FIX: Add option to serialize cv execution (#57)
