@@ -2,17 +2,20 @@
 import inspect
 import groupyr as gpr
 
-from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.base import BaseEstimator, MetaEstimatorMixin, TransformerMixin
+from sklearn.base import is_classifier, is_regressor
 from sklearn.compose import TransformedTargetRegressor
+from sklearn.ensemble import BaggingClassifier, BaggingRegressor
+from sklearn.ensemble import AdaBoostClassifier, AdaBoostRegressor
 from sklearn.impute import KNNImputer, SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import (
     MaxAbsScaler,
     MinMaxScaler,
-    PowerTransformer,
     RobustScaler,
     StandardScaler,
 )
+from sklearn.preprocessing import PowerTransformer
 from string import Template
 
 __all__ = ["make_afq_classifier_pipeline", "make_afq_regressor_pipeline"]
@@ -23,10 +26,12 @@ def make_base_afq_pipeline(
     scaler="standard",
     power_transformer=False,
     estimator=None,
+    ensemble_meta_estimator=None,
     imputer_kwargs=None,
     scaler_kwargs=None,
     power_transformer_kwargs=None,
     estimator_kwargs=None,
+    ensemble_meta_estimator_kwargs=None,
     memory=None,
     verbose=False,
     target_transformer=None,
@@ -46,9 +51,12 @@ def make_base_afq_pipeline(
     features of the feature matrix; ``power_transformer`` is optional and
     applies a power transform featurewise to make data more Gaussian-like;
     and ``estimator`` is a scikit-learn compatible estimator. The estimator
-    may be optionally wrapped in
-    ``sklearn:sklearn.compose.TransformedTargetRegressor``, such that
-    the computation during ``fit`` is::
+    may optionally be wrapped in an ensemble meta-estimator specified by
+    ``ensemble_meta_estimator`` and given the keyword arguments in
+    ``ensemble_meta_estimator_kwargs``. Additionally, the estimator may
+    optionally be wrapped in
+    ``sklearn:sklearn.compose.TransformedTargetRegressor``, such that the
+    computation during ``fit`` is::
 
         estimator.fit(X, target_transform_func(y))
 
@@ -99,6 +107,17 @@ def make_base_afq_pipeline(
         The estimator to use as the last step of the pipeline. If provided,
         it must inherit from :class:`sklearn:sklearn.base.BaseEstimator`
 
+    ensemble_meta_estimator : "bagging", "adaboost", or None
+        An optional ensemble meta-estimator to combine the predictions of
+        several base estimators. "Adaboost" will result in the use of
+        :class:`sklearn:sklearn.ensemble.AdaBoostClassifier` for classifier
+        base estimators or
+        :class:`sklearn.sklearn.ensemble.AdaBoostRegressor` for regressor
+        base estimators. "Bagging" will result in the use of
+        :class:`sklearn.sklearn.ensemble.BaggingClassifier` for classifier
+        base estimators or :class:`sklearn.sklearn.ensemble.BaggingRegressor`
+        for regressor base estimators.
+
     imputer_kwargs : dict, default=None,
         Key-word arguments for the imputer.
 
@@ -110,6 +129,9 @@ def make_base_afq_pipeline(
 
     estimator_kwargs : dict, default=None,
         Key-word arguments for the estimator.
+
+    ensemble_meta_estimator_kwargs : dict, default=None,
+        Key-word arguments for the ensemble meta-estimator.
 
     memory : str or object with the joblib.Memory interface, default=None
         Used to cache the fitted transformers of the pipeline. By default,
@@ -156,7 +178,13 @@ def make_base_afq_pipeline(
     """
     base_msg = Template(
         "${kw} must be one of ${allowed} or a class that inherits "
-        "from sklearn.base.TransformerMixin; got ${input} instead."
+        "from {base_class}; got ${input} instead."
+    )
+    transformer_msg = Template(
+        base_msg.safe_substitute(base_class="sklearn.base.TransformerMixin")
+    )
+    ensembler_msg = Template(
+        base_msg.safe_substitute(base_class="sklearn.base.MetaEstimatorMixin")
     )
 
     def call_with_kwargs(Transformer, kwargs):
@@ -166,7 +194,7 @@ def make_base_afq_pipeline(
             return Transformer(**kwargs)
 
     allowed = ["simple", "knn"]
-    err_msg = Template(base_msg.safe_substitute(kw="imputer", allowed=allowed))
+    err_msg = Template(transformer_msg.safe_substitute(kw="imputer", allowed=allowed))
     if isinstance(imputer, str):
         if imputer.lower() == "simple":
             pl_imputer = call_with_kwargs(SimpleImputer, imputer_kwargs)
@@ -183,7 +211,7 @@ def make_base_afq_pipeline(
         raise ValueError(err_msg.substitute(input=imputer))
 
     allowed = ["standard", "minmax", "maxabs", "robust"]
-    err_msg = Template(base_msg.safe_substitute(kw="scaler", allowed=allowed))
+    err_msg = Template(transformer_msg.safe_substitute(kw="scaler", allowed=allowed))
     if isinstance(scaler, str):
         if scaler.lower() == "standard":
             pl_scaler = call_with_kwargs(StandardScaler, scaler_kwargs)
@@ -207,7 +235,7 @@ def make_base_afq_pipeline(
 
     allowed = [True, False]
     err_msg = Template(
-        base_msg.safe_substitute(kw="power_transformer", allowed=allowed)
+        transformer_msg.safe_substitute(kw="power_transformer", allowed=allowed)
     )
     if isinstance(power_transformer, bool):
         if power_transformer:
@@ -228,6 +256,59 @@ def make_base_afq_pipeline(
 
     if estimator is not None:
         if inspect.isclass(estimator) and issubclass(estimator, BaseEstimator):
+            base_estimator = call_with_kwargs(estimator, estimator_kwargs)
+
+            if ensemble_meta_estimator is not None:
+                allowed = ["bagging", "adaboost"]
+                err_msg = Template(
+                    ensembler_msg.safe_substitute(
+                        kw="ensemble_meta_estimator", allowed=allowed
+                    )
+                )
+                if ensemble_meta_estimator_kwargs is not None:
+                    ensembler_kwargs = ensemble_meta_estimator_kwargs.copy()
+                else:
+                    ensembler_kwargs = {}
+
+                ensembler_kwargs["base_estimator"] = base_estimator
+
+                if isinstance(ensemble_meta_estimator, str):
+                    if ensemble_meta_estimator.lower() == "bagging":
+                        if is_classifier(base_estimator):
+                            ensembler = call_with_kwargs(
+                                BaggingClassifier, ensembler_kwargs
+                            )
+                        elif is_regressor(base_estimator):
+                            ensembler = call_with_kwargs(
+                                BaggingRegressor, ensembler_kwargs
+                            )
+                    elif ensemble_meta_estimator.lower() == "adaboost":
+                        if is_classifier(base_estimator):
+                            ensembler = call_with_kwargs(
+                                AdaBoostClassifier, ensembler_kwargs
+                            )
+                        elif is_regressor(base_estimator):
+                            ensembler = call_with_kwargs(
+                                AdaBoostRegressor, ensembler_kwargs
+                            )
+                    else:
+                        raise ValueError(
+                            err_msg.substitute(input=ensemble_meta_estimator)
+                        )
+                elif inspect.isclass(ensemble_meta_estimator):
+                    if issubclass(ensemble_meta_estimator, MetaEstimatorMixin):
+                        ensembler = call_with_kwargs(
+                            ensemble_meta_estimator, ensembler_kwargs
+                        )
+                    else:
+                        raise ValueError(
+                            err_msg.substitute(input=ensemble_meta_estimator)
+                        )
+                else:
+                    raise ValueError(err_msg.substitute(input=ensemble_meta_estimator))
+
+                base_estimator = ensembler
+
             if any(
                 [
                     target_transformer,
@@ -236,14 +317,14 @@ def make_base_afq_pipeline(
                 ]
             ):
                 pl_estimator = TransformedTargetRegressor(
-                    call_with_kwargs(estimator, estimator_kwargs),
+                    base_estimator,
                     transformer=target_transformer,
                     func=target_transform_func,
                     inverse_func=target_transform_inverse_func,
                     check_inverse=target_transform_check_inverse,
                 )
             else:
-                pl_estimator = call_with_kwargs(estimator, estimator_kwargs)
+                pl_estimator = base_estimator
         else:
             raise ValueError(
                 "If provided, estimator must inherit from sklearn.base.BaseEstimator; "
@@ -268,9 +349,11 @@ def make_afq_classifier_pipeline(
     imputer="simple",
     scaler="standard",
     power_transformer=False,
+    ensemble_meta_estimator=None,
     imputer_kwargs=None,
     scaler_kwargs=None,
     power_transformer_kwargs=None,
+    ensemble_meta_estimator_kwargs=None,
     use_cv_estimator=True,
     memory=None,
     pipeline_verbosity=False,
@@ -294,8 +377,11 @@ def make_afq_classifier_pipeline(
     and ``estimator`` is an instance of
     :class:`groupyr:groupyr.LogisticSGLCV` if ``use_cv_estimator=True`` or
     :class:`groupyr:groupyr.LogisticSGL` if ``use_cv_estimator=False``. The
-    estimator may be optionally wrapped in a
-    :class:`sklearn:sklearn.compose.TransformedTargetRegressor` such that the
+    estimator may optionally be wrapped in an ensemble meta-estimator
+    specified by ``ensemble_meta_estimator`` and given the keyword arguments
+    in ``ensemble_meta_estimator_kwargs``. Additionally, the estimator may
+    optionally be wrapped in
+    ``sklearn:sklearn.compose.TransformedTargetRegressor``, such that the
     computation during ``fit`` is::
 
         estimator.fit(X, target_transform_func(y))
@@ -340,6 +426,13 @@ def make_afq_classifier_pipeline(
         False, skip this step. Custom transformers are allowed as long as
         they inherit from :class:`sklearn:sklearn.base.TransformerMixin`.
 
+    ensemble_meta_estimator : "bagging", "adaboost", or None
+        An optional ensemble meta-estimator to combine the predictions of
+        several base estimators. "Adaboost" will result in the use of
+        :class:`sklearn:sklearn.ensemble.AdaBoostClassifier` and "bagging"
+        will result in the use of
+        :class:`sklearn.sklearn.ensemble.BaggingClassifier`.
+
     imputer_kwargs : dict, default=None,
         Key-word arguments for the imputer.
 
@@ -348,6 +441,9 @@ def make_afq_classifier_pipeline(
 
     power_transformer_kwargs : dict, default=None,
         Key-word arguments for the power_transformer.
+
+    ensemble_meta_estimator_kwargs : dict, default=None,
+        Key-word arguments for the ensemble meta-estimator.
 
     use_cv_estimator : bool, default=True,
         If True, use :class:`groupyr:groupyr.LogisticSGLCV` as the final
@@ -406,9 +502,11 @@ def make_afq_classifier_pipeline(
         scaler=scaler,
         power_transformer=power_transformer,
         estimator=gpr.LogisticSGLCV if use_cv_estimator else gpr.LogisticSGL,
+        ensemble_meta_estimator=ensemble_meta_estimator,
         imputer_kwargs=imputer_kwargs,
         scaler_kwargs=scaler_kwargs,
         power_transformer_kwargs=power_transformer_kwargs,
+        ensemble_meta_estimator_kwargs=ensemble_meta_estimator_kwargs,
         estimator_kwargs=estimator_kwargs,
         memory=memory,
         verbose=pipeline_verbosity,
@@ -423,9 +521,11 @@ def make_afq_regressor_pipeline(
     imputer="simple",
     scaler="standard",
     power_transformer=False,
+    ensemble_meta_estimator=None,
     imputer_kwargs=None,
     scaler_kwargs=None,
     power_transformer_kwargs=None,
+    ensemble_meta_estimator_kwargs=None,
     use_cv_estimator=True,
     memory=None,
     pipeline_verbosity=False,
@@ -448,8 +548,11 @@ def make_afq_regressor_pipeline(
     applies a power transform featurewise to make data more Gaussian-like;
     and ``estimator`` is an instance of :class:`groupyr:groupyr.SGLCV` if
     ``use_cv_estimator=True`` or :class:`groupyr:groupyr.SGL` if
-    ``use_cv_estimator=False``. The estimator may be optionally wrapped in a
-    :class:`sklearn:sklearn.compose.TransformedTargetRegressor` such that the
+    ``use_cv_estimator=False``. The estimator may optionally be wrapped in an
+    ensemble meta-estimator specified by ``ensemble_meta_estimator`` and
+    given the keyword arguments in ``ensemble_meta_estimator_kwargs``.
+    Additionally, the estimator may optionally be wrapped in
+    ``sklearn:sklearn.compose.TransformedTargetRegressor``, such that the
     computation during ``fit`` is::
 
         estimator.fit(X, target_transform_func(y))
@@ -493,6 +596,17 @@ def make_afq_regressor_pipeline(
         use :class:`sklearn:sklearn.preprocessing.PowerTransformer`. If
         False, skip this step. Custom transformers are allowed as long as
         they inherit from :class:`sklearn:sklearn.base.TransformerMixin`.
+
+    ensemble_meta_estimator : "bagging", "adaboost", or None
+        An optional ensemble meta-estimator to combine the predictions of
+        several base estimators. "Adaboost" will result in the use of
+        :class:`sklearn:sklearn.ensemble.AdaBoostClassifier` for classifier
+        base estimators or
+        :class:`sklearn.sklearn.ensemble.AdaBoostRegressor` for regressor
+        base estimators. "Bagging" will result in the use of
+        :class:`sklearn.sklearn.ensemble.BaggingClassifier` for classifier
+        base estimators or :class:`sklearn.sklearn.ensemble.BaggingRegressor`
+        for regressor base estimators.
 
     imputer_kwargs : dict, default=None,
         Key-word arguments for the imputer.
@@ -559,10 +673,12 @@ def make_afq_regressor_pipeline(
         imputer=imputer,
         scaler=scaler,
         power_transformer=power_transformer,
+        ensemble_meta_estimator=ensemble_meta_estimator,
         estimator=gpr.SGLCV if use_cv_estimator else gpr.SGL,
         imputer_kwargs=imputer_kwargs,
         scaler_kwargs=scaler_kwargs,
         power_transformer_kwargs=power_transformer_kwargs,
+        ensemble_meta_estimator_kwargs=ensemble_meta_estimator_kwargs,
         estimator_kwargs=estimator_kwargs,
         memory=memory,
         verbose=pipeline_verbosity,
