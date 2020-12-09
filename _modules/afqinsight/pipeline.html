@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>afqinsight.pipeline &mdash; AFQ-Insight 0.2.6 documentation</title>
+  <title>afqinsight.pipeline &mdash; AFQ-Insight 0.2.7 documentation</title>
   
 
   
@@ -63,7 +63,7 @@
             
             
               <div class="version">
-                0.2.6
+                0.2.7
               </div>
             
           
@@ -164,17 +164,20 @@
 <span class="kn">import</span> <span class="nn">inspect</span>
 <span class="kn">import</span> <span class="nn">groupyr</span> <span class="k">as</span> <span class="nn">gpr</span>
 
-<span class="kn">from</span> <span class="nn">sklearn.base</span> <span class="kn">import</span> <span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">TransformerMixin</span>
+<span class="kn">from</span> <span class="nn">sklearn.base</span> <span class="kn">import</span> <span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">MetaEstimatorMixin</span><span class="p">,</span> <span class="n">TransformerMixin</span>
+<span class="kn">from</span> <span class="nn">sklearn.base</span> <span class="kn">import</span> <span class="n">is_classifier</span><span class="p">,</span> <span class="n">is_regressor</span>
 <span class="kn">from</span> <span class="nn">sklearn.compose</span> <span class="kn">import</span> <span class="n">TransformedTargetRegressor</span>
+<span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="kn">import</span> <span class="n">BaggingClassifier</span><span class="p">,</span> <span class="n">BaggingRegressor</span>
+<span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="kn">import</span> <span class="n">AdaBoostClassifier</span><span class="p">,</span> <span class="n">AdaBoostRegressor</span>
 <span class="kn">from</span> <span class="nn">sklearn.impute</span> <span class="kn">import</span> <span class="n">KNNImputer</span><span class="p">,</span> <span class="n">SimpleImputer</span>
 <span class="kn">from</span> <span class="nn">sklearn.pipeline</span> <span class="kn">import</span> <span class="n">Pipeline</span>
 <span class="kn">from</span> <span class="nn">sklearn.preprocessing</span> <span class="kn">import</span> <span class="p">(</span>
     <span class="n">MaxAbsScaler</span><span class="p">,</span>
     <span class="n">MinMaxScaler</span><span class="p">,</span>
-    <span class="n">PowerTransformer</span><span class="p">,</span>
     <span class="n">RobustScaler</span><span class="p">,</span>
     <span class="n">StandardScaler</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="kn">from</span> <span class="nn">sklearn.preprocessing</span> <span class="kn">import</span> <span class="n">PowerTransformer</span>
 <span class="kn">from</span> <span class="nn">string</span> <span class="kn">import</span> <span class="n">Template</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;make_afq_classifier_pipeline&quot;</span><span class="p">,</span> <span class="s2">&quot;make_afq_regressor_pipeline&quot;</span><span class="p">]</span>
@@ -185,10 +188,12 @@
     <span class="n">scaler</span><span class="o">=</span><span class="s2">&quot;standard&quot;</span><span class="p">,</span>
     <span class="n">power_transformer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">estimator</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">ensemble_meta_estimator</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">imputer_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">scaler_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">power_transformer_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">estimator_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">ensemble_meta_estimator_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">memory</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">target_transformer</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -208,9 +213,12 @@
 <span class="sd">    features of the feature matrix; ``power_transformer`` is optional and</span>
 <span class="sd">    applies a power transform featurewise to make data more Gaussian-like;</span>
 <span class="sd">    and ``estimator`` is a scikit-learn compatible estimator. The estimator</span>
-<span class="sd">    may be optionally wrapped in</span>
-<span class="sd">    ``sklearn:sklearn.compose.TransformedTargetRegressor``, such that</span>
-<span class="sd">    the computation during ``fit`` is::</span>
+<span class="sd">    may optionally be wrapped in an ensemble meta-estimator specified by</span>
+<span class="sd">    ``ensemble_meta_estimator`` and given the keyword arguments in</span>
+<span class="sd">    ``ensemble_meta_estimator_kwargs``. Additionally, the estimator may</span>
+<span class="sd">    optionally be wrapped in</span>
+<span class="sd">    ``sklearn:sklearn.compose.TransformedTargetRegressor``, such that the</span>
+<span class="sd">    computation during ``fit`` is::</span>
 
 <span class="sd">        estimator.fit(X, target_transform_func(y))</span>
 
@@ -261,6 +269,17 @@
 <span class="sd">        The estimator to use as the last step of the pipeline. If provided,</span>
 <span class="sd">        it must inherit from :class:`sklearn:sklearn.base.BaseEstimator`</span>
 
+<span class="sd">    ensemble_meta_estimator : &quot;bagging&quot;, &quot;adaboost&quot;, or None</span>
+<span class="sd">        An optional ensemble meta-estimator to combine the predictions of</span>
+<span class="sd">        several base estimators. &quot;Adaboost&quot; will result in the use of</span>
+<span class="sd">        :class:`sklearn:sklearn.ensemble.AdaBoostClassifier` for classifier</span>
+<span class="sd">        base estimators or</span>
+<span class="sd">        :class:`sklearn.sklearn.ensemble.AdaBoostRegressor` for regressor</span>
+<span class="sd">        base estimators. &quot;Bagging&quot; will result in the use of</span>
+<span class="sd">        :class:`sklearn.sklearn.ensemble.BaggingClassifier` for classifier</span>
+<span class="sd">        base estimators or :class:`sklearn.sklearn.ensemble.BaggingRegressor`</span>
+<span class="sd">        for regressor base estimators.</span>
+
 <span class="sd">    imputer_kwargs : dict, default=None,</span>
 <span class="sd">        Key-word arguments for the imputer.</span>
 
@@ -272,6 +291,9 @@
 
 <span class="sd">    estimator_kwargs : dict, default=None,</span>
 <span class="sd">        Key-word arguments for the estimator.</span>
+
+<span class="sd">    ensemble_meta_estimator_kwargs : dict, default=None,</span>
+<span class="sd">        Key-word arguments for the ensemble meta-estimator.</span>
 
 <span class="sd">    memory : str or object with the joblib.Memory interface, default=None</span>
 <span class="sd">        Used to cache the fitted transformers of the pipeline. By default,</span>
@@ -318,7 +340,13 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">base_msg</span> <span class="o">=</span> <span class="n">Template</span><span class="p">(</span>
         <span class="s2">&quot;$</span><span class="si">{kw}</span><span class="s2"> must be one of $</span><span class="si">{allowed}</span><span class="s2"> or a class that inherits &quot;</span>
-        <span class="s2">&quot;from sklearn.base.TransformerMixin; got $</span><span class="si">{input}</span><span class="s2"> instead.&quot;</span>
+        <span class="s2">&quot;from </span><span class="si">{base_class}</span><span class="s2">; got $</span><span class="si">{input}</span><span class="s2"> instead.&quot;</span>
+    <span class="p">)</span>
+    <span class="n">transformer_msg</span> <span class="o">=</span> <span class="n">Template</span><span class="p">(</span>
+        <span class="n">base_msg</span><span class="o">.</span><span class="n">safe_substitute</span><span class="p">(</span><span class="n">base_class</span><span class="o">=</span><span class="s2">&quot;sklearn.base.TransformerMixin&quot;</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">ensembler_msg</span> <span class="o">=</span> <span class="n">Template</span><span class="p">(</span>
+        <span class="n">base_msg</span><span class="o">.</span><span class="n">safe_substitute</span><span class="p">(</span><span class="n">base_class</span><span class="o">=</span><span class="s2">&quot;sklearn.base.MetaEstimatorMixin&quot;</span><span class="p">)</span>
     <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">call_with_kwargs</span><span class="p">(</span><span class="n">Transformer</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
@@ -328,7 +356,7 @@
             <span class="k">return</span> <span class="n">Transformer</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="n">allowed</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;simple&quot;</span><span class="p">,</span> <span class="s2">&quot;knn&quot;</span><span class="p">]</span>
-    <span class="n">err_msg</span> <span class="o">=</span> <span class="n">Template</span><span class="p">(</span><span class="n">base_msg</span><span class="o">.</span><span class="n">safe_substitute</span><span class="p">(</span><span class="n">kw</span><span class="o">=</span><span class="s2">&quot;imputer&quot;</span><span class="p">,</span> <span class="n">allowed</span><span class="o">=</span><span class="n">allowed</span><span class="p">))</span>
+    <span class="n">err_msg</span> <span class="o">=</span> <span class="n">Template</span><span class="p">(</span><span class="n">transformer_msg</span><span class="o">.</span><span class="n">safe_substitute</span><span class="p">(</span><span class="n">kw</span><span class="o">=</span><span class="s2">&quot;imputer&quot;</span><span class="p">,</span> <span class="n">allowed</span><span class="o">=</span><span class="n">allowed</span><span class="p">))</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">imputer</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">imputer</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;simple&quot;</span><span class="p">:</span>
             <span class="n">pl_imputer</span> <span class="o">=</span> <span class="n">call_with_kwargs</span><span class="p">(</span><span class="n">SimpleImputer</span><span class="p">,</span> <span class="n">imputer_kwargs</span><span class="p">)</span>
@@ -345,7 +373,7 @@
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">err_msg</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="n">imputer</span><span class="p">))</span>
 
     <span class="n">allowed</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;standard&quot;</span><span class="p">,</span> <span class="s2">&quot;minmax&quot;</span><span class="p">,</span> <span class="s2">&quot;maxabs&quot;</span><span class="p">,</span> <span class="s2">&quot;robust&quot;</span><span class="p">]</span>
-    <span class="n">err_msg</span> <span class="o">=</span> <span class="n">Template</span><span class="p">(</span><span class="n">base_msg</span><span class="o">.</span><span class="n">safe_substitute</span><span class="p">(</span><span class="n">kw</span><span class="o">=</span><span class="s2">&quot;scaler&quot;</span><span class="p">,</span> <span class="n">allowed</span><span class="o">=</span><span class="n">allowed</span><span class="p">))</span>
+    <span class="n">err_msg</span> <span class="o">=</span> <span class="n">Template</span><span class="p">(</span><span class="n">transformer_msg</span><span class="o">.</span><span class="n">safe_substitute</span><span class="p">(</span><span class="n">kw</span><span class="o">=</span><span class="s2">&quot;scaler&quot;</span><span class="p">,</span> <span class="n">allowed</span><span class="o">=</span><span class="n">allowed</span><span class="p">))</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">scaler</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">scaler</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;standard&quot;</span><span class="p">:</span>
             <span class="n">pl_scaler</span> <span class="o">=</span> <span class="n">call_with_kwargs</span><span class="p">(</span><span class="n">StandardScaler</span><span class="p">,</span> <span class="n">scaler_kwargs</span><span class="p">)</span>
@@ -369,7 +397,7 @@
 
     <span class="n">allowed</span> <span class="o">=</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]</span>
     <span class="n">err_msg</span> <span class="o">=</span> <span class="n">Template</span><span class="p">(</span>
-        <span class="n">base_msg</span><span class="o">.</span><span class="n">safe_substitute</span><span class="p">(</span><span class="n">kw</span><span class="o">=</span><span class="s2">&quot;power_transformer&quot;</span><span class="p">,</span> <span class="n">allowed</span><span class="o">=</span><span class="n">allowed</span><span class="p">)</span>
+        <span class="n">transformer_msg</span><span class="o">.</span><span class="n">safe_substitute</span><span class="p">(</span><span class="n">kw</span><span class="o">=</span><span class="s2">&quot;power_transformer&quot;</span><span class="p">,</span> <span class="n">allowed</span><span class="o">=</span><span class="n">allowed</span><span class="p">)</span>
     <span class="p">)</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">power_transformer</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">power_transformer</span><span class="p">:</span>
@@ -390,6 +418,59 @@
 
     <span class="k">if</span> <span class="n">estimator</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">inspect</span><span class="o">.</span><span class="n">isclass</span><span class="p">(</span><span class="n">estimator</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">estimator</span><span class="p">,</span> <span class="n">BaseEstimator</span><span class="p">):</span>
+            <span class="n">base_estimator</span> <span class="o">=</span> <span class="n">call_with_kwargs</span><span class="p">(</span><span class="n">estimator</span><span class="p">,</span> <span class="n">estimator_kwargs</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">ensemble_meta_estimator</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">allowed</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;bagging&quot;</span><span class="p">,</span> <span class="s2">&quot;adaboost&quot;</span><span class="p">]</span>
+                <span class="n">err_msg</span> <span class="o">=</span> <span class="n">Template</span><span class="p">(</span>
+                    <span class="n">ensembler_msg</span><span class="o">.</span><span class="n">safe_substitute</span><span class="p">(</span>
+                        <span class="n">kw</span><span class="o">=</span><span class="s2">&quot;ensemble_meta_estimator&quot;</span><span class="p">,</span> <span class="n">allowed</span><span class="o">=</span><span class="n">allowed</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">ensemble_meta_estimator_kwargs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">ensembler_kwargs</span> <span class="o">=</span> <span class="n">ensemble_meta_estimator_kwargs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">ensembler_kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+
+                <span class="n">ensembler_kwargs</span><span class="p">[</span><span class="s2">&quot;base_estimator&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">base_estimator</span>
+
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ensemble_meta_estimator</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">ensemble_meta_estimator</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;bagging&quot;</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">is_classifier</span><span class="p">(</span><span class="n">base_estimator</span><span class="p">):</span>
+                            <span class="n">ensembler</span> <span class="o">=</span> <span class="n">call_with_kwargs</span><span class="p">(</span>
+                                <span class="n">BaggingClassifier</span><span class="p">,</span> <span class="n">ensembler_kwargs</span>
+                            <span class="p">)</span>
+                        <span class="k">elif</span> <span class="n">is_regressor</span><span class="p">(</span><span class="n">base_estimator</span><span class="p">):</span>
+                            <span class="n">ensembler</span> <span class="o">=</span> <span class="n">call_with_kwargs</span><span class="p">(</span>
+                                <span class="n">BaggingRegressor</span><span class="p">,</span> <span class="n">ensembler_kwargs</span>
+                            <span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">ensemble_meta_estimator</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;adaboost&quot;</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">is_classifier</span><span class="p">(</span><span class="n">base_estimator</span><span class="p">):</span>
+                            <span class="n">ensembler</span> <span class="o">=</span> <span class="n">call_with_kwargs</span><span class="p">(</span>
+                                <span class="n">AdaBoostClassifier</span><span class="p">,</span> <span class="n">ensembler_kwargs</span>
+                            <span class="p">)</span>
+                        <span class="k">elif</span> <span class="n">is_regressor</span><span class="p">(</span><span class="n">base_estimator</span><span class="p">):</span>
+                            <span class="n">ensembler</span> <span class="o">=</span> <span class="n">call_with_kwargs</span><span class="p">(</span>
+                                <span class="n">AdaBoostRegressor</span><span class="p">,</span> <span class="n">ensembler_kwargs</span>
+                            <span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                            <span class="n">err_msg</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="n">ensemble_meta_estimator</span><span class="p">)</span>
+                        <span class="p">)</span>
+                <span class="k">elif</span> <span class="n">inspect</span><span class="o">.</span><span class="n">isclass</span><span class="p">(</span><span class="n">ensemble_meta_estimator</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">ensemble_meta_estimator</span><span class="p">,</span> <span class="n">MetaEstimatorMixin</span><span class="p">):</span>
+                        <span class="n">ensembler</span> <span class="o">=</span> <span class="n">call_with_kwargs</span><span class="p">(</span>
+                            <span class="n">ensemble_meta_estimator</span><span class="p">,</span> <span class="n">ensembler_kwargs</span>
+                        <span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                            <span class="n">err_msg</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="n">ensemble_meta_estimator</span><span class="p">)</span>
+                        <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">err_msg</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="n">ensemble_meta_estimator</span><span class="p">))</span>
+
+                <span class="n">base_estimator</span> <span class="o">=</span> <span class="n">ensembler</span>
+
             <span class="k">if</span> <span class="nb">any</span><span class="p">(</span>
                 <span class="p">[</span>
                     <span class="n">target_transformer</span><span class="p">,</span>
@@ -398,14 +479,14 @@
                 <span class="p">]</span>
             <span class="p">):</span>
                 <span class="n">pl_estimator</span> <span class="o">=</span> <span class="n">TransformedTargetRegressor</span><span class="p">(</span>
-                    <span class="n">call_with_kwargs</span><span class="p">(</span><span class="n">estimator</span><span class="p">,</span> <span class="n">estimator_kwargs</span><span class="p">),</span>
+                    <span class="n">base_estimator</span><span class="p">,</span>
                     <span class="n">transformer</span><span class="o">=</span><span class="n">target_transformer</span><span class="p">,</span>
                     <span class="n">func</span><span class="o">=</span><span class="n">target_transform_func</span><span class="p">,</span>
                     <span class="n">inverse_func</span><span class="o">=</span><span class="n">target_transform_inverse_func</span><span class="p">,</span>
                     <span class="n">check_inverse</span><span class="o">=</span><span class="n">target_transform_check_inverse</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">pl_estimator</span> <span class="o">=</span> <span class="n">call_with_kwargs</span><span class="p">(</span><span class="n">estimator</span><span class="p">,</span> <span class="n">estimator_kwargs</span><span class="p">)</span>
+                <span class="n">pl_estimator</span> <span class="o">=</span> <span class="n">base_estimator</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                 <span class="s2">&quot;If provided, estimator must inherit from sklearn.base.BaseEstimator; &quot;</span>
@@ -430,9 +511,11 @@
     <span class="n">imputer</span><span class="o">=</span><span class="s2">&quot;simple&quot;</span><span class="p">,</span>
     <span class="n">scaler</span><span class="o">=</span><span class="s2">&quot;standard&quot;</span><span class="p">,</span>
     <span class="n">power_transformer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">ensemble_meta_estimator</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">imputer_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">scaler_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">power_transformer_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">ensemble_meta_estimator_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">use_cv_estimator</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">memory</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">pipeline_verbosity</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -456,8 +539,11 @@
 <span class="sd">    and ``estimator`` is an instance of</span>
 <span class="sd">    :class:`groupyr:groupyr.LogisticSGLCV` if ``use_cv_estimator=True`` or</span>
 <span class="sd">    :class:`groupyr:groupyr.LogisticSGL` if ``use_cv_estimator=False``. The</span>
-<span class="sd">    estimator may be optionally wrapped in a</span>
-<span class="sd">    :class:`sklearn:sklearn.compose.TransformedTargetRegressor` such that the</span>
+<span class="sd">    estimator may optionally be wrapped in an ensemble meta-estimator</span>
+<span class="sd">    specified by ``ensemble_meta_estimator`` and given the keyword arguments</span>
+<span class="sd">    in ``ensemble_meta_estimator_kwargs``. Additionally, the estimator may</span>
+<span class="sd">    optionally be wrapped in</span>
+<span class="sd">    ``sklearn:sklearn.compose.TransformedTargetRegressor``, such that the</span>
 <span class="sd">    computation during ``fit`` is::</span>
 
 <span class="sd">        estimator.fit(X, target_transform_func(y))</span>
@@ -502,6 +588,13 @@
 <span class="sd">        False, skip this step. Custom transformers are allowed as long as</span>
 <span class="sd">        they inherit from :class:`sklearn:sklearn.base.TransformerMixin`.</span>
 
+<span class="sd">    ensemble_meta_estimator : &quot;bagging&quot;, &quot;adaboost&quot;, or None</span>
+<span class="sd">        An optional ensemble meta-estimator to combine the predictions of</span>
+<span class="sd">        several base estimators. &quot;Adaboost&quot; will result in the use of</span>
+<span class="sd">        :class:`sklearn:sklearn.ensemble.AdaBoostClassifier` and &quot;bagging&quot;</span>
+<span class="sd">        will result in the use of</span>
+<span class="sd">        :class:`sklearn.sklearn.ensemble.BaggingClassifier`.</span>
+
 <span class="sd">    imputer_kwargs : dict, default=None,</span>
 <span class="sd">        Key-word arguments for the imputer.</span>
 
@@ -510,6 +603,9 @@
 
 <span class="sd">    power_transformer_kwargs : dict, default=None,</span>
 <span class="sd">        Key-word arguments for the power_transformer.</span>
+
+<span class="sd">    ensemble_meta_estimator_kwargs : dict, default=None,</span>
+<span class="sd">        Key-word arguments for the ensemble meta-estimator.</span>
 
 <span class="sd">    use_cv_estimator : bool, default=True,</span>
 <span class="sd">        If True, use :class:`groupyr:groupyr.LogisticSGLCV` as the final</span>
@@ -568,9 +664,11 @@
         <span class="n">scaler</span><span class="o">=</span><span class="n">scaler</span><span class="p">,</span>
         <span class="n">power_transformer</span><span class="o">=</span><span class="n">power_transformer</span><span class="p">,</span>
         <span class="n">estimator</span><span class="o">=</span><span class="n">gpr</span><span class="o">.</span><span class="n">LogisticSGLCV</span> <span class="k">if</span> <span class="n">use_cv_estimator</span> <span class="k">else</span> <span class="n">gpr</span><span class="o">.</span><span class="n">LogisticSGL</span><span class="p">,</span>
+        <span class="n">ensemble_meta_estimator</span><span class="o">=</span><span class="n">ensemble_meta_estimator</span><span class="p">,</span>
         <span class="n">imputer_kwargs</span><span class="o">=</span><span class="n">imputer_kwargs</span><span class="p">,</span>
         <span class="n">scaler_kwargs</span><span class="o">=</span><span class="n">scaler_kwargs</span><span class="p">,</span>
         <span class="n">power_transformer_kwargs</span><span class="o">=</span><span class="n">power_transformer_kwargs</span><span class="p">,</span>
+        <span class="n">ensemble_meta_estimator_kwargs</span><span class="o">=</span><span class="n">ensemble_meta_estimator_kwargs</span><span class="p">,</span>
         <span class="n">estimator_kwargs</span><span class="o">=</span><span class="n">estimator_kwargs</span><span class="p">,</span>
         <span class="n">memory</span><span class="o">=</span><span class="n">memory</span><span class="p">,</span>
         <span class="n">verbose</span><span class="o">=</span><span class="n">pipeline_verbosity</span><span class="p">,</span>
@@ -585,9 +683,11 @@
     <span class="n">imputer</span><span class="o">=</span><span class="s2">&quot;simple&quot;</span><span class="p">,</span>
     <span class="n">scaler</span><span class="o">=</span><span class="s2">&quot;standard&quot;</span><span class="p">,</span>
     <span class="n">power_transformer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">ensemble_meta_estimator</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">imputer_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">scaler_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">power_transformer_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">ensemble_meta_estimator_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">use_cv_estimator</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">memory</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">pipeline_verbosity</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -610,8 +710,11 @@
 <span class="sd">    applies a power transform featurewise to make data more Gaussian-like;</span>
 <span class="sd">    and ``estimator`` is an instance of :class:`groupyr:groupyr.SGLCV` if</span>
 <span class="sd">    ``use_cv_estimator=True`` or :class:`groupyr:groupyr.SGL` if</span>
-<span class="sd">    ``use_cv_estimator=False``. The estimator may be optionally wrapped in a</span>
-<span class="sd">    :class:`sklearn:sklearn.compose.TransformedTargetRegressor` such that the</span>
+<span class="sd">    ``use_cv_estimator=False``. The estimator may optionally be wrapped in an</span>
+<span class="sd">    ensemble meta-estimator specified by ``ensemble_meta_estimator`` and</span>
+<span class="sd">    given the keyword arguments in ``ensemble_meta_estimator_kwargs``.</span>
+<span class="sd">    Additionally, the estimator may optionally be wrapped in</span>
+<span class="sd">    ``sklearn:sklearn.compose.TransformedTargetRegressor``, such that the</span>
 <span class="sd">    computation during ``fit`` is::</span>
 
 <span class="sd">        estimator.fit(X, target_transform_func(y))</span>
@@ -655,6 +758,17 @@
 <span class="sd">        use :class:`sklearn:sklearn.preprocessing.PowerTransformer`. If</span>
 <span class="sd">        False, skip this step. Custom transformers are allowed as long as</span>
 <span class="sd">        they inherit from :class:`sklearn:sklearn.base.TransformerMixin`.</span>
+
+<span class="sd">    ensemble_meta_estimator : &quot;bagging&quot;, &quot;adaboost&quot;, or None</span>
+<span class="sd">        An optional ensemble meta-estimator to combine the predictions of</span>
+<span class="sd">        several base estimators. &quot;Adaboost&quot; will result in the use of</span>
+<span class="sd">        :class:`sklearn:sklearn.ensemble.AdaBoostClassifier` for classifier</span>
+<span class="sd">        base estimators or</span>
+<span class="sd">        :class:`sklearn.sklearn.ensemble.AdaBoostRegressor` for regressor</span>
+<span class="sd">        base estimators. &quot;Bagging&quot; will result in the use of</span>
+<span class="sd">        :class:`sklearn.sklearn.ensemble.BaggingClassifier` for classifier</span>
+<span class="sd">        base estimators or :class:`sklearn.sklearn.ensemble.BaggingRegressor`</span>
+<span class="sd">        for regressor base estimators.</span>
 
 <span class="sd">    imputer_kwargs : dict, default=None,</span>
 <span class="sd">        Key-word arguments for the imputer.</span>
@@ -721,10 +835,12 @@
         <span class="n">imputer</span><span class="o">=</span><span class="n">imputer</span><span class="p">,</span>
         <span class="n">scaler</span><span class="o">=</span><span class="n">scaler</span><span class="p">,</span>
         <span class="n">power_transformer</span><span class="o">=</span><span class="n">power_transformer</span><span class="p">,</span>
+        <span class="n">ensemble_meta_estimator</span><span class="o">=</span><span class="n">ensemble_meta_estimator</span><span class="p">,</span>
         <span class="n">estimator</span><span class="o">=</span><span class="n">gpr</span><span class="o">.</span><span class="n">SGLCV</span> <span class="k">if</span> <span class="n">use_cv_estimator</span> <span class="k">else</span> <span class="n">gpr</span><span class="o">.</span><span class="n">SGL</span><span class="p">,</span>
         <span class="n">imputer_kwargs</span><span class="o">=</span><span class="n">imputer_kwargs</span><span class="p">,</span>
         <span class="n">scaler_kwargs</span><span class="o">=</span><span class="n">scaler_kwargs</span><span class="p">,</span>
         <span class="n">power_transformer_kwargs</span><span class="o">=</span><span class="n">power_transformer_kwargs</span><span class="p">,</span>
+        <span class="n">ensemble_meta_estimator_kwargs</span><span class="o">=</span><span class="n">ensemble_meta_estimator_kwargs</span><span class="p">,</span>
         <span class="n">estimator_kwargs</span><span class="o">=</span><span class="n">estimator_kwargs</span><span class="p">,</span>
         <span class="n">memory</span><span class="o">=</span><span class="n">memory</span><span class="p">,</span>
         <span class="n">verbose</span><span class="o">=</span><span class="n">pipeline_verbosity</span><span class="p">,</span>
