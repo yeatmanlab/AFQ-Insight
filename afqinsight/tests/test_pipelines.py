@@ -39,6 +39,7 @@ type_args = [
 ensembler_args = [
     ("bagging", {True: BaggingClassifier, False: BaggingRegressor}),
     ("adaboost", {True: AdaBoostClassifier, False: AdaBoostRegressor}),
+    (AdaBoostClassifier, {True: AdaBoostClassifier, False: AdaBoostClassifier}),
     (None, None),
 ]
 
@@ -169,6 +170,12 @@ def test_pipeline_value_errors():
 
     with pytest.raises(ValueError):
         make_afq_regressor_pipeline(ensemble_meta_estimator="error")
+
+    with pytest.raises(ValueError):
+        make_afq_regressor_pipeline(ensemble_meta_estimator=object)
+
+    with pytest.raises(ValueError):
+        make_afq_regressor_pipeline(ensemble_meta_estimator=1729)
 
 
 def test_base_pipeline_with_none_estimator():
