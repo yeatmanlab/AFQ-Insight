@@ -2,7 +2,8 @@
 import inspect
 import groupyr as gpr
 
-from sklearn.base import BaseEstimator, TransformerMixin, is_classifier, is_regressor
+from sklearn.base import BaseEstimator, MetaEstimatorMixin, TransformerMixin
+from sklearn.base import is_classifier, is_regressor
 from sklearn.compose import TransformedTargetRegressor
 from sklearn.ensemble import BaggingClassifier, BaggingRegressor
 from sklearn.ensemble import AdaBoostClassifier, AdaBoostRegressor
@@ -177,7 +178,13 @@ def make_base_afq_pipeline(
     """
     base_msg = Template(
         "${kw} must be one of ${allowed} or a class that inherits "
-        "from sklearn.base.TransformerMixin; got ${input} instead."
+        "from {base_class}; got ${input} instead."
+    )
+    transformer_msg = Template(
+        base_msg.safe_substitute(base_class="sklearn.base.TransformerMixin")
+    )
+    ensembler_msg = Template(
+        base_msg.safe_substitute(base_class="sklearn.base.MetaEstimatorMixin")
     )
 
     def call_with_kwargs(Transformer, kwargs):
@@ -187,7 +194,7 @@ def make_base_afq_pipeline(
             return Transformer(**kwargs)
 
     allowed = ["simple", "knn"]
-    err_msg = Template(base_msg.safe_substitute(kw="imputer", allowed=allowed))
+    err_msg = Template(transformer_msg.safe_substitute(kw="imputer", allowed=allowed))
     if isinstance(imputer, str):
         if imputer.lower() == "simple":
             pl_imputer = call_with_kwargs(SimpleImputer, imputer_kwargs)
@@ -204,7 +211,7 @@ def make_base_afq_pipeline(
         raise ValueError(err_msg.substitute(input=imputer))
 
     allowed = ["standard", "minmax", "maxabs", "robust"]
-    err_msg = Template(base_msg.safe_substitute(kw="scaler", allowed=allowed))
+    err_msg = Template(transformer_msg.safe_substitute(kw="scaler", allowed=allowed))
     if isinstance(scaler, str):
         if scaler.lower() == "standard":
             pl_scaler = call_with_kwargs(StandardScaler, scaler_kwargs)
@@ -228,7 +235,7 @@ def make_base_afq_pipeline(
 
     allowed = [True, False]
     err_msg = Template(
-        base_msg.safe_substitute(kw="power_transformer", allowed=allowed)
+        transformer_msg.safe_substitute(kw="power_transformer", allowed=allowed)
     )
     if isinstance(power_transformer, bool):
         if power_transformer:
@@ -252,34 +259,53 @@ def make_base_afq_pipeline(
             base_estimator = call_with_kwargs(estimator, estimator_kwargs)
 
             if ensemble_meta_estimator is not None:
+                allowed = ["bagging", "adaboost"]
+                err_msg = Template(
+                    ensembler_msg.safe_substitute(
+                        kw="ensemble_meta_estimator", allowed=allowed
+                    )
+                )
                 if ensemble_meta_estimator_kwargs is not None:
                     ensembler_kwargs = ensemble_meta_estimator_kwargs.copy()
                 else:
                     ensembler_kwargs = {}
 
                 ensembler_kwargs["base_estimator"] = base_estimator
-                if ensemble_meta_estimator.lower() == "bagging":
-                    if is_classifier(base_estimator):
-                        ensembler = call_with_kwargs(
-                            BaggingClassifier, ensembler_kwargs
+
+                if isinstance(ensemble_meta_estimator, str):
+                    if ensemble_meta_estimator.lower() == "bagging":
+                        if is_classifier(base_estimator):
+                            ensembler = call_with_kwargs(
+                                BaggingClassifier, ensembler_kwargs
+                            )
+                        elif is_regressor(base_estimator):
+                            ensembler = call_with_kwargs(
+                                BaggingRegressor, ensembler_kwargs
+                            )
+                    elif ensemble_meta_estimator.lower() == "adaboost":
+                        if is_classifier(base_estimator):
+                            ensembler = call_with_kwargs(
+                                AdaBoostClassifier, ensembler_kwargs
+                            )
+                        elif is_regressor(base_estimator):
+                            ensembler = call_with_kwargs(
+                                AdaBoostRegressor, ensembler_kwargs
+                            )
+                    else:
+                        raise ValueError(
+                            err_msg.substitute(input=ensemble_meta_estimator)
                         )
-                    elif is_regressor(base_estimator):
-                        ensembler = call_with_kwargs(BaggingRegressor, ensembler_kwargs)
-                elif ensemble_meta_estimator.lower() == "adaboost":
-                    if is_classifier(base_estimator):
+                elif inspect.isclass(ensemble_meta_estimator):
+                    if issubclass(ensemble_meta_estimator, MetaEstimatorMixin):
                         ensembler = call_with_kwargs(
-                            AdaBoostClassifier, ensembler_kwargs
+                            ensemble_meta_estimator, ensembler_kwargs
                         )
-                    elif is_regressor(base_estimator):
-                        ensembler = call_with_kwargs(
-                            AdaBoostRegressor, ensembler_kwargs
+                    else:
+                        raise ValueError(
+                            err_msg.substitute(input=ensemble_meta_estimator)
                         )
                 else:
-                    allowed = ["bagging", "adaboost"]
-                    raise ValueError(
-                        "ensemble_meta_estimator must be one of {0};".format(allowed)
-                        + " got {0} instead.".format(ensemble_meta_estimator)
-                    )
+                    raise ValueError(err_msg.substitute(input=ensemble_meta_estimator))
 
                 base_estimator = ensembler
 
