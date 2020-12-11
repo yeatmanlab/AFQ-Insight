@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>API Reference &mdash; AFQ-Insight 0.2.7 documentation</title>
+  <title>API Reference &mdash; AFQ-Insight 0.2.8 documentation</title>
   
 
   
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.2.7
+                0.2.8
               </div>
             
           
@@ -187,8 +187,8 @@ following steps:</p>
 metrics along an entire bundle; <code class="docutils literal notranslate"><span class="pre">scaler</span></code> is optional and scales the
 features of the feature matrix; <code class="docutils literal notranslate"><span class="pre">power_transformer</span></code> is optional and
 applies a power transform featurewise to make data more Gaussian-like;
-and <code class="docutils literal notranslate"><span class="pre">estimator</span></code> is an instance of <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGLCV" title="(in groupyr v0.1.9)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGLCV</span></code></a> if
-<code class="docutils literal notranslate"><span class="pre">use_cv_estimator=True</span></code> or <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGL" title="(in groupyr v0.1.9)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGL</span></code></a> if
+and <code class="docutils literal notranslate"><span class="pre">estimator</span></code> is an instance of <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGLCV" title="(in groupyr v0.1.10)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGLCV</span></code></a> if
+<code class="docutils literal notranslate"><span class="pre">use_cv_estimator=True</span></code> or <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGL" title="(in groupyr v0.1.10)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGL</span></code></a> if
 <code class="docutils literal notranslate"><span class="pre">use_cv_estimator=False</span></code>. The estimator may optionally be wrapped in an
 ensemble meta-estimator specified by <code class="docutils literal notranslate"><span class="pre">ensemble_meta_estimator</span></code> and
 given the keyword arguments in <code class="docutils literal notranslate"><span class="pre">ensemble_meta_estimator_kwargs</span></code>.
@@ -252,8 +252,8 @@ for regressor base estimators.</p>
 </dd>
 <dt><strong>power_transformer_kwargs</strong><span class="classifier">dict, default=None,</span></dt><dd><p>Key-word arguments for the power_transformer.</p>
 </dd>
-<dt><strong>use_cv_estimator</strong><span class="classifier">bool, default=True,</span></dt><dd><p>If True, use <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGLCV" title="(in groupyr v0.1.9)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGLCV</span></code></a> as the final
-estimator. Otherwise, use <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGL" title="(in groupyr v0.1.9)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGL</span></code></a>.</p>
+<dt><strong>use_cv_estimator</strong><span class="classifier">bool, default=True,</span></dt><dd><p>If True, use <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGLCV" title="(in groupyr v0.1.10)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGLCV</span></code></a> as the final
+estimator. Otherwise, use <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGL" title="(in groupyr v0.1.10)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGL</span></code></a>.</p>
 </dd>
 <dt><strong>memory</strong><span class="classifier">str or object with the joblib.Memory interface, default=None</span></dt><dd><p>Used to cache the fitted transformers of the pipeline. By default,
 no caching is performed. If a string is given, it is the path to
@@ -288,8 +288,8 @@ predictions to the same space of the original training labels.</p>
 <dt><strong>target_transform_check_inverse</strong><span class="classifier">bool, default=True</span></dt><dd><p>Whether to check that <code class="docutils literal notranslate"><span class="pre">transform</span></code> followed by <code class="docutils literal notranslate"><span class="pre">inverse_transform</span></code>
 or <code class="docutils literal notranslate"><span class="pre">func</span></code> followed by <code class="docutils literal notranslate"><span class="pre">inverse_func</span></code> leads to the original targets.</p>
 </dd>
-<dt><strong>**estimator_kwargs</strong><span class="classifier">kwargs</span></dt><dd><p>Keyword arguments passed to <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGLCV" title="(in groupyr v0.1.9)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGLCV</span></code></a> if
-<code class="docutils literal notranslate"><span class="pre">use_cv_estimator=True</span></code> or <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGL" title="(in groupyr v0.1.9)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGL</span></code></a> if
+<dt><strong>**estimator_kwargs</strong><span class="classifier">kwargs</span></dt><dd><p>Keyword arguments passed to <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGLCV" title="(in groupyr v0.1.10)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGLCV</span></code></a> if
+<code class="docutils literal notranslate"><span class="pre">use_cv_estimator=True</span></code> or <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGL" title="(in groupyr v0.1.10)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGL</span></code></a> if
 <code class="docutils literal notranslate"><span class="pre">use_cv_estimator=False</span></code>.</p>
 </dd>
 </dl>
@@ -316,8 +316,8 @@ metrics along an entire bundle; <code class="docutils literal notranslate"><span
 features of the feature matrix; <code class="docutils literal notranslate"><span class="pre">power_transformer</span></code> is optional and
 applies a power transform featurewise to make data more Gaussian-like;
 and <code class="docutils literal notranslate"><span class="pre">estimator</span></code> is an instance of
-<a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGLCV" title="(in groupyr v0.1.9)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGLCV</span></code></a> if <code class="docutils literal notranslate"><span class="pre">use_cv_estimator=True</span></code> or
-<a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGL" title="(in groupyr v0.1.9)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGL</span></code></a> if <code class="docutils literal notranslate"><span class="pre">use_cv_estimator=False</span></code>. The
+<a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGLCV" title="(in groupyr v0.1.10)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGLCV</span></code></a> if <code class="docutils literal notranslate"><span class="pre">use_cv_estimator=True</span></code> or
+<a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGL" title="(in groupyr v0.1.10)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGL</span></code></a> if <code class="docutils literal notranslate"><span class="pre">use_cv_estimator=False</span></code>. The
 estimator may optionally be wrapped in an ensemble meta-estimator
 specified by <code class="docutils literal notranslate"><span class="pre">ensemble_meta_estimator</span></code> and given the keyword arguments
 in <code class="docutils literal notranslate"><span class="pre">ensemble_meta_estimator_kwargs</span></code>. Additionally, the estimator may
@@ -379,8 +379,8 @@ will result in the use of
 </dd>
 <dt><strong>ensemble_meta_estimator_kwargs</strong><span class="classifier">dict, default=None,</span></dt><dd><p>Key-word arguments for the ensemble meta-estimator.</p>
 </dd>
-<dt><strong>use_cv_estimator</strong><span class="classifier">bool, default=True,</span></dt><dd><p>If True, use <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGLCV" title="(in groupyr v0.1.9)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGLCV</span></code></a> as the final
-estimator. Otherwise, use <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGL" title="(in groupyr v0.1.9)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGL</span></code></a>.</p>
+<dt><strong>use_cv_estimator</strong><span class="classifier">bool, default=True,</span></dt><dd><p>If True, use <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGLCV" title="(in groupyr v0.1.10)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGLCV</span></code></a> as the final
+estimator. Otherwise, use <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGL" title="(in groupyr v0.1.10)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGL</span></code></a>.</p>
 </dd>
 <dt><strong>memory</strong><span class="classifier">str or object with the joblib.Memory interface, default=None</span></dt><dd><p>Used to cache the fitted transformers of the pipeline. By default,
 no caching is performed. If a string is given, it is the path to
@@ -415,8 +415,8 @@ predictions to the same space of the original training labels.</p>
 <dt><strong>target_transform_check_inverse</strong><span class="classifier">bool, default=True</span></dt><dd><p>Whether to check that <code class="docutils literal notranslate"><span class="pre">transform</span></code> followed by <code class="docutils literal notranslate"><span class="pre">inverse_transform</span></code>
 or <code class="docutils literal notranslate"><span class="pre">func</span></code> followed by <code class="docutils literal notranslate"><span class="pre">inverse_func</span></code> leads to the original targets.</p>
 </dd>
-<dt><strong>**estimator_kwargs</strong><span class="classifier">kwargs</span></dt><dd><p>Keyword arguments passed to <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGLCV" title="(in groupyr v0.1.9)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGLCV</span></code></a> if
-<code class="docutils literal notranslate"><span class="pre">use_cv_estimator=True</span></code> or <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGL" title="(in groupyr v0.1.9)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGL</span></code></a> if
+<dt><strong>**estimator_kwargs</strong><span class="classifier">kwargs</span></dt><dd><p>Keyword arguments passed to <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGLCV" title="(in groupyr v0.1.10)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGLCV</span></code></a> if
+<code class="docutils literal notranslate"><span class="pre">use_cv_estimator=True</span></code> or <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGL" title="(in groupyr v0.1.10)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGL</span></code></a> if
 <code class="docutils literal notranslate"><span class="pre">use_cv_estimator=False</span></code>.</p>
 </dd>
 </dl>
