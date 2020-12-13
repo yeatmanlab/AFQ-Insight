@@ -3,6 +3,7 @@ import pytest
 
 from afqinsight import make_afq_classifier_pipeline, make_afq_regressor_pipeline
 from afqinsight.pipeline import make_base_afq_pipeline
+from afqinsight._serial_bagging import SerialBaggingClassifier, SerialBaggingRegressor
 from sklearn.base import is_classifier
 from sklearn.ensemble import BaggingClassifier, BaggingRegressor
 from sklearn.ensemble import AdaBoostClassifier, AdaBoostRegressor
@@ -39,6 +40,7 @@ type_args = [
 ensembler_args = [
     ("bagging", {True: BaggingClassifier, False: BaggingRegressor}),
     ("adaboost", {True: AdaBoostClassifier, False: AdaBoostRegressor}),
+    ("serial-bagging", {True: SerialBaggingClassifier, False: SerialBaggingRegressor}),
     (AdaBoostClassifier, {True: AdaBoostClassifier, False: AdaBoostClassifier}),
     (None, None),
 ]
