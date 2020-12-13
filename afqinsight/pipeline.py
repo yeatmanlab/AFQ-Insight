@@ -18,6 +18,8 @@ from sklearn.preprocessing import (
 from sklearn.preprocessing import PowerTransformer
 from string import Template
 
+from ._serial_bagging import SerialBaggingClassifier, SerialBaggingRegressor
+
 __all__ = ["make_afq_classifier_pipeline", "make_afq_regressor_pipeline"]
 
 
@@ -107,7 +109,7 @@ def make_base_afq_pipeline(
         The estimator to use as the last step of the pipeline. If provided,
         it must inherit from :class:`sklearn:sklearn.base.BaseEstimator`
 
-    ensemble_meta_estimator : "bagging", "adaboost", or None
+    ensemble_meta_estimator : "bagging", "adaboost", "serial-bagging", or None
         An optional ensemble meta-estimator to combine the predictions of
         several base estimators. "Adaboost" will result in the use of
         :class:`sklearn:sklearn.ensemble.AdaBoostClassifier` for classifier
@@ -259,7 +261,7 @@ def make_base_afq_pipeline(
             base_estimator = call_with_kwargs(estimator, estimator_kwargs)
 
             if ensemble_meta_estimator is not None:
-                allowed = ["bagging", "adaboost"]
+                allowed = ["bagging", "adaboost", "serial-bagging"]
                 err_msg = Template(
                     ensembler_msg.safe_substitute(
                         kw="ensemble_meta_estimator", allowed=allowed
@@ -281,6 +283,15 @@ def make_base_afq_pipeline(
                         elif is_regressor(base_estimator):
                             ensembler = call_with_kwargs(
                                 BaggingRegressor, ensembler_kwargs
+                            )
+                    elif ensemble_meta_estimator.lower() == "serial-bagging":
+                        if is_classifier(base_estimator):
+                            ensembler = call_with_kwargs(
+                                SerialBaggingClassifier, ensembler_kwargs
+                            )
+                        elif is_regressor(base_estimator):
+                            ensembler = call_with_kwargs(
+                                SerialBaggingRegressor, ensembler_kwargs
                             )
                     elif ensemble_meta_estimator.lower() == "adaboost":
                         if is_classifier(base_estimator):
