@@ -16,21 +16,145 @@ from warnings import warn
 
 from sklearn.ensemble import BaggingClassifier, BaggingRegressor
 from sklearn.ensemble._bagging import (
-    _parallel_build_estimators,
     _parallel_predict_proba,
     _parallel_predict_log_proba,
     _parallel_decision_function,
     _parallel_predict_regression,
 )
 from sklearn.ensemble._base import _partition_estimators
-from sklearn.utils import check_random_state, check_array
+from sklearn.utils import check_random_state, check_array, indices_to_mask, resample
+from sklearn.utils.random import sample_without_replacement
 from sklearn.utils.metaestimators import if_delegate_has_method
-from sklearn.utils.validation import check_is_fitted, _check_sample_weight
+from sklearn.utils.validation import (
+    check_is_fitted,
+    _check_sample_weight,
+    has_fit_parameter,
+)
 
 
 __all__ = ["SerialBaggingClassifier"]
 
 MAX_INT = np.iinfo(np.int32).max
+
+
+def _generate_indices(random_state, bootstrap, n_population, n_samples, stratify=None):
+    """Draw randomly sampled indices."""
+    # Draw sample indices
+    if stratify is None:
+        if bootstrap:
+            indices = random_state.randint(0, n_population, n_samples)
+        else:
+            indices = sample_without_replacement(
+                n_population, n_samples, random_state=random_state
+            )
+    else:
+        indices = resample(
+            np.arange(n_population),
+            replace=bootstrap,
+            n_samples=n_samples,
+            random_state=random_state,
+            stratify=stratify,
+        )
+
+    return indices
+
+
+def _generate_bagging_indices(
+    random_state,
+    bootstrap_features,
+    bootstrap_samples,
+    n_features,
+    n_samples,
+    max_features,
+    max_samples,
+    stratify=None,
+):
+    """Randomly draw feature and sample indices."""
+    # Get valid random state
+    random_state = check_random_state(random_state)
+
+    # Draw indices
+    feature_indices = _generate_indices(
+        random_state, bootstrap_features, n_features, max_features
+    )
+    sample_indices = _generate_indices(
+        random_state, bootstrap_samples, n_samples, max_samples, stratify=stratify
+    )
+
+    return feature_indices, sample_indices
+
+
+def _parallel_build_estimators(
+    n_estimators,
+    ensemble,
+    X,
+    y,
+    sample_weight,
+    seeds,
+    total_n_estimators,
+    verbose,
+    stratify=None,
+):
+    """Private function used to build a batch of estimators within a job."""
+    # Retrieve settings
+    n_samples, n_features = X.shape
+    max_features = ensemble._max_features
+    max_samples = ensemble._max_samples
+    bootstrap = ensemble.bootstrap
+    bootstrap_features = ensemble.bootstrap_features
+    support_sample_weight = has_fit_parameter(ensemble.base_estimator_, "sample_weight")
+    if not support_sample_weight and sample_weight is not None:
+        raise ValueError("The base estimator doesn't support sample weight")
+
+    # Build estimators
+    estimators = []
+    estimators_features = []
+
+    for i in range(n_estimators):
+        if verbose > 1:
+            print(
+                "Building estimator %d of %d for this parallel run "
+                "(total %d)..." % (i + 1, n_estimators, total_n_estimators)
+            )
+
+        random_state = seeds[i]
+        estimator = ensemble._make_estimator(append=False, random_state=random_state)
+
+        # Draw random feature, sample indices
+        features, indices = _generate_bagging_indices(
+            random_state,
+            bootstrap_features,
+            bootstrap,
+            n_features,
+            n_samples,
+            max_features,
+            max_samples,
+            stratify=stratify,
+        )
+
+        # Draw samples, using sample weights, and then fit
+        if support_sample_weight:
+            if sample_weight is None:
+                curr_sample_weight = np.ones((n_samples,))
+            else:
+                curr_sample_weight = sample_weight.copy()
+
+            if bootstrap:
+                sample_counts = np.bincount(indices, minlength=n_samples)
+                curr_sample_weight *= sample_counts
+            else:
+                not_indices_mask = ~indices_to_mask(indices, n_samples)
+                curr_sample_weight[not_indices_mask] = 0
+
+            estimator.fit(X[:, features], y, sample_weight=curr_sample_weight)
+
+        else:
+            estimator.fit((X[indices])[:, features], y[indices])
+
+        estimators.append(estimator)
+        estimators_features.append(features)
+
+    return estimators, estimators_features
 
 
 class SerialBaggingClassifier(BaggingClassifier):
@@ -236,6 +360,7 @@ class SerialBaggingClassifier(BaggingClassifier):
         n_samples, self.n_features_ = X.shape
         self._n_samples = n_samples
         y = self._validate_y(y)
+        self.y_train_ = np.copy(y)
 
         # Check parameters
         self._validate_estimator()
@@ -330,6 +455,7 @@ class SerialBaggingClassifier(BaggingClassifier):
                 seeds[starts[i] : starts[i + 1]],
                 total_n_estimators,
                 verbose=self.verbose,
+                stratify=y,
             )
             for i in range(n_jobs)
         ]
@@ -346,6 +472,24 @@ class SerialBaggingClassifier(BaggingClassifier):
             self._set_oob_score(X, y)
 
         return self
+
+    def _get_estimators_indices(self):
+        # Get drawn indices along both sample and feature axes
+        for seed in self._seeds:
+            # Operations accessing random_state must be performed identically
+            # to those in `_parallel_build_estimators()`
+            feature_indices, sample_indices = _generate_bagging_indices(
+                seed,
+                self.bootstrap_features,
+                self.bootstrap,
+                self.n_features_,
+                self._n_samples,
+                self._max_features,
+                self._max_samples,
+                stratify=self.y_train_,
+            )
+
+            yield feature_indices, sample_indices
 
     def predict_proba(self, X):
         """Predict class probabilities for X.
