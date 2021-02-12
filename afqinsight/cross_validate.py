@@ -11,7 +11,7 @@ import pickle
 from joblib import delayed, Parallel
 from sklearn.base import clone, is_classifier
 from sklearn.metrics._scorer import _check_multimetric_scoring
-from sklearn.model_selection._split import check_cv
+from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection._validation import _aggregate_score_dicts, _fit_and_score
 from sklearn.pipeline import Pipeline
 from sklearn.utils import indexable
@@ -464,3 +464,35 @@ def cross_validate_checkpoint(
             ret[key] = np.array(train_scores[name])
 
     return ret
+
+
+def stratified_crossvalidate(
+    covariate_df, pipeline_estimator=None, cv_splitter=StratifiedKFold(n_splits=3)
+):
+    """
+    Given multiple covariates in covariate_df, returns training and test splits
+    such that covariate distributions are similar across both training and test splits
+
+    Parameters
+    ----------
+    covariate_df : pandas dataframe or array-like of shape (n_samples, n_features)
+        A
+
+    pipeline_estimator : default=None
+        Custom pipeline not yet supported
+
+    cv_splitter : A cv object default=StratifiedKFold
+        A scikit-learn object for splitting the dataset into
+        train/test set such that splits are stratified
+
+    Yields
+    ------
+    train : ndarray
+        The training set indices for that split.
+    test : ndarray
+        The testing set indices for that split
+    covariate: ndarray
+        The composite covariate used to stratify training and test splits
+
+    """
+    pass
