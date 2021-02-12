@@ -12,6 +12,7 @@ from joblib import delayed, Parallel
 from sklearn.base import clone, is_classifier
 from sklearn.metrics._scorer import _check_multimetric_scoring
 from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.model_selection._split import check_cv
 from sklearn.model_selection._validation import _aggregate_score_dicts, _fit_and_score
 from sklearn.manifold import Isomap
 from sklearn.neighbors import KNeighborsTransformer
