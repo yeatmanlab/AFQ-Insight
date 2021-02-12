@@ -4,6 +4,7 @@ import copy
 import deepdish.io as ddio
 import hashlib
 import json
+import pandas as pd
 import numpy as np
 import os
 import pickle
