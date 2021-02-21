@@ -340,7 +340,7 @@ def test_load_slice():
         np.testing.assert_array_equal(xs, x[s])
 
 
-def test_force_pickle():
+def test_force_pickle1():
     with tmp_filename() as fn:
         x = dict(one=dict(two=np.arange(10)), three="string")
         xf = dict(one=dict(two=x["one"]["two"]), three=x["three"])
@@ -368,7 +368,7 @@ def test_non_string_key_dict():
         assert x == x1
 
 
-def test_force_pickle():
+def test_force_pickle2():
     with tmp_filename() as fn:
         x = {0: "zero", 1: "one", 2: "two"}
         fx = h5io.ForcePickle(x)
