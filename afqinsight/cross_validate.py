@@ -1,7 +1,6 @@
 """Include functions to validate model performance using cross-validation."""
 
 import copy
-import deepdish.io as ddio
 import hashlib
 import json
 import numpy as np
@@ -15,6 +14,8 @@ from sklearn.model_selection._split import check_cv
 from sklearn.model_selection._validation import _aggregate_score_dicts, _fit_and_score
 from sklearn.pipeline import Pipeline
 from sklearn.utils import indexable
+
+from .h5io import save, load
 
 __all__ = ["cross_validate_checkpoint"]
 
@@ -116,7 +117,7 @@ def _fit_and_score_ckpt(
     pkl_file = os.path.join(workdir, cv_hash + "_estimator.pkl")
 
     if not force_refresh and os.path.exists(h5_file):
-        ckpt_dict = ddio.load(h5_file)
+        ckpt_dict = load(h5_file)
 
         scores = ckpt_dict["scores"]
 
@@ -169,7 +170,7 @@ def _fit_and_score_ckpt(
             "fitted_params": fitted_params,
         }
 
-        ddio.save(h5_file, ckpt_dict)
+        save(h5_file, ckpt_dict)
         return scores
 
 
