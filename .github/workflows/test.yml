@@ -31,7 +31,7 @@ jobs:
       - name: Test
         run: |
           cp $(python -c 'import site; print(site.getsitepackages()[0])')/afqinsight/_version.py afqinsight/_version.py
-          pytest --pyargs afqinsight --cov-report term-missing --cov-config .coveragerc --cov=afqinsight -n auto
+          tox
       - name: Coveralls
         run: |
           coveralls
