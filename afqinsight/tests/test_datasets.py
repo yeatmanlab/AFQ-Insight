@@ -11,7 +11,7 @@ test_data_path = op.join(data_path, "test_data")
 
 
 def test_load_afq_data():
-    X, y, groups, feature_names, subjects, classes = load_afq_data(
+    X, y, groups, feature_names, group_names, subjects, classes = load_afq_data(
         workdir=test_data_path,
         target_cols=["test_class"],
         label_encode_cols=["test_class"],
@@ -30,6 +30,7 @@ def test_load_afq_data():
     assert np.allclose(y, y_ref)  # nosec
     assert np.allclose(groups, groups_ref)  # nosec
     assert feature_names == cols_ref  # nosec
+    assert group_names == [tup[0:2] for tup in cols_ref if tup[2] == 0]  # nosec
     assert set(subjects) == set(nodes.subjectID.unique())  # nosec
     assert all(classes["test_class"] == np.array(["c0", "c1"]))
 
