@@ -58,6 +58,9 @@ def load_afq_data(
     feature_names : list of tuples
         The multi-indexed columns of X
 
+    group_names : list of tuples
+        The multi-indexed groups of X
+
     subjects : list
         Subject IDs
 
@@ -98,9 +101,10 @@ def load_afq_data(
     X = mapper.fit_transform(nodes)
     groups = mapper.groups_
     feature_names = mapper.feature_names_
+    group_names = [tup[0:2] for tup in feature_names if tup[2] == 0]
     subjects = mapper.subjects_
 
-    return X, y, groups, feature_names, subjects, classes
+    return X, y, groups, feature_names, group_names, subjects, classes
 
 
 def output_beta_to_afq(
