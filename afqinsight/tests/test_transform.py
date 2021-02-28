@@ -6,9 +6,6 @@ import pytest
 
 import afqinsight as afqi
 from afqinsight import AFQDataFrameMapper, GroupExtractor
-from afqinsight import remove_group, remove_groups
-from afqinsight import select_group, select_groups
-from afqinsight import shuffle_group
 from afqinsight import multicol2dicts, multicol2sets
 from afqinsight.transform import isiterable
 from sklearn.utils.estimator_checks import check_estimator
@@ -65,109 +62,6 @@ def test_isiterable():
     assert isiterable(range(10))  # nosec
     assert not isiterable(5)  # nosec
     assert isiterable(np.arange(10))  # nosec
-
-
-def test_value_errors():
-    X = np.load(op.join(test_data_path, "test_transform_x.npy"))
-    label_sets_ref = np.load(
-        op.join(test_data_path, "test_multicol2sets_label_sets.npy"), allow_pickle=True
-    )
-
-    X = X[:, :, np.newaxis]
-    with pytest.raises(ValueError):
-        remove_group(X, ("Callosum Forceps Major",), label_sets_ref)
-
-    with pytest.raises(ValueError):
-        remove_groups(X, ("Callosum Forceps Major",), label_sets_ref)
-
-    with pytest.raises(ValueError):
-        select_group(X, ("Callosum Forceps Major",), label_sets_ref)
-
-    with pytest.raises(ValueError):
-        select_groups(X, ("Callosum Forceps Major",), label_sets_ref)
-
-
-@pytest.mark.parametrize("flatten", [True, False])
-def test_remove_group(flatten):
-    X = np.load(op.join(test_data_path, "test_transform_x.npy"))
-    label_sets_ref = np.load(
-        op.join(test_data_path, "test_multicol2sets_label_sets.npy"), allow_pickle=True
-    )
-    X_ref = np.load(op.join(test_data_path, "test_remove_group_x.npy"))
-
-    if flatten:
-        idx = np.random.randint(0, X.shape[0])
-        X = np.squeeze(X[idx, :])
-        X_ref = np.squeeze(X_ref[idx, :])
-
-    X_removed = remove_group(X, ("Callosum Forceps Major",), label_sets_ref)
-    assert np.allclose(X_removed, X_ref, equal_nan=True)  # nosec
-
-
-@pytest.mark.parametrize("flatten", [True, False])
-def test_remove_groups(flatten):
-    X = np.load(op.join(test_data_path, "test_transform_x.npy"))
-    label_sets_ref = np.load(
-        op.join(test_data_path, "test_multicol2sets_label_sets.npy"), allow_pickle=True
-    )
-    X_ref = np.load(op.join(test_data_path, "test_remove_groups_x.npy"))
-
-    if flatten:
-        idx = np.random.randint(0, X.shape[0])
-        X = np.squeeze(X[idx, :])
-        X_ref = np.squeeze(X_ref[idx, :])
-
-    X_removed = remove_groups(
-        X, [("Callosum Forceps Major",), ("Uncinate",), ("fa",)], label_sets_ref
-    )
-    assert np.allclose(X_removed, X_ref, equal_nan=True)  # nosec
-
-
-@pytest.mark.parametrize("flatten", [True, False])
-def test_select_group(flatten):
-    X = np.load(op.join(test_data_path, "test_transform_x.npy"))
-    label_sets_ref = np.load(
-        op.join(test_data_path, "test_multicol2sets_label_sets.npy"), allow_pickle=True
-    )
-    X_ref = np.load(op.join(test_data_path, "test_select_group_x.npy"))
-
-    if flatten:
-        idx = np.random.randint(0, X.shape[0])
-        X = np.squeeze(X[idx, :])
-        X_ref = np.squeeze(X_ref[idx, :])
-
-    X_select = select_group(X, ("Callosum Forceps Major",), label_sets_ref)
-    assert np.allclose(X_select, X_ref, equal_nan=True)  # nosec
-
-
-@pytest.mark.parametrize("flatten", [True, False])
-def test_select_groups(flatten):
-    X = np.load(op.join(test_data_path, "test_transform_x.npy"))
-    label_sets_ref = np.load(
-        op.join(test_data_path, "test_multicol2sets_label_sets.npy"), allow_pickle=True
-    )
-    X_ref = np.load(op.join(test_data_path, "test_select_groups_x.npy"))
-
-    if flatten:
-        idx = np.random.randint(0, X.shape[0])
-        X = np.squeeze(X[idx, :])
-        X_ref = np.squeeze(X_ref[idx, :])
-
-    X_select = select_groups(
-        X, [("Callosum Forceps Major",), ("Uncinate",), ("fa",)], label_sets_ref
-    )
-    assert np.allclose(X_select, X_ref, equal_nan=True)  # nosec
-
-
-def test_shuffle_group():
-    X = np.load(op.join(test_data_path, "test_transform_x.npy"))
-    label_sets_ref = np.load(
-        op.join(test_data_path, "test_multicol2sets_label_sets.npy"), allow_pickle=True
-    )
-    X_ref = np.load(op.join(test_data_path, "test_shuffle_group_x.npy"))
-
-    X_shuffle = shuffle_group(X, ("Corticospinal",), label_sets_ref, random_seed=42)
-    assert np.allclose(X_shuffle, X_ref, equal_nan=True)  # nosec
 
 
 def test_multicol_utils():
