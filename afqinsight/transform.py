@@ -1,8 +1,9 @@
-"""Extract, transform, select, and shuffle AFQ data."""
+"""Transform AFQ data."""
 import numpy as np
 import pandas as pd
 from collections import OrderedDict
 from groupyr.utils import check_groups
+from groupyr.transform import GroupExtractor
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_array
 from sklearn_pandas import DataFrameMapper
@@ -12,15 +13,9 @@ from .utils import CANONICAL_TRACT_NAMES
 __all__ = [
     "AFQDataFrameMapper",
     "GroupExtractor",
-    "remove_group",
-    "remove_groups",
-    "select_group",
-    "select_groups",
-    "shuffle_group",
     "multicol2sets",
     "multicol2dicts",
     "sort_features",
-    "TopNGroupsExtractor",
     "beta_hat_by_groups",
     "unfold_beta_hat_by_metrics",
 ]
@@ -264,189 +259,6 @@ class GroupExtractor(BaseEstimator, TransformerMixin):
         return {"allow_nan": True, "multilabel": True, "multioutput": True}
 
 
-def remove_group(X, remove_label, label_sets):
-    """Remove all columns for group specified by ``remove_label``.
-
-    Parameters
-    ----------
-    X : ndarray
-        Feature matrix
-
-    remove_label : string or sequence
-        label for any level of the MultiIndex columns of `X`
-
-    label_sets : ndarray of sets
-        Array of sets of labels for each column of `X`
-
-    Returns
-    -------
-    ndarray
-        new feature matrix with group represented by `remove_label` removed
-
-    See Also
-    --------
-    multicol2sets
-        function to convert a pandas MultiIndex into the sequence of sets
-        expected for the parameter `label_sets`
-    """
-    mask = np.logical_not(set(remove_label) <= label_sets)
-    if len(X.shape) == 2:
-        return np.copy(X[:, mask])
-    elif len(X.shape) == 1:
-        return np.copy(X[mask])
-    else:
-        raise ValueError("`X` must be a one- or two-dimensional ndarray.")
-
-
-def remove_groups(X, remove_labels, label_sets):
-    """Remove all columns for groups specified by ``remove_labels``.
-
-    Parameters
-    ----------
-    X : ndarray
-        Feature matrix
-
-    remove_labels : sequence
-        labels for any level of the MultiIndex columns of `X`
-
-    label_sets : ndarray of sets
-        Array of sets of labels for each column of `X`
-
-    Returns
-    -------
-    ndarray
-        new feature matrix with group represented by `remove_label` removed
-
-    See Also
-    --------
-    multicol2sets
-        function to convert a pandas MultiIndex into the sequence of sets
-        expected for the parameter `label_sets`
-    """
-    mask = np.zeros_like(label_sets, dtype=np.bool)
-    for label in remove_labels:
-        mask = np.logical_or(mask, np.logical_not(set(label) <= label_sets))
-
-    if len(X.shape) == 2:
-        return np.copy(X[:, mask])
-    elif len(X.shape) == 1:
-        return np.copy(X[mask])
-    else:
-        raise ValueError("`X` must be a one- or two-dimensional ndarray.")
-
-
-def select_group(X, select_label, label_sets):
-    """Select all columns for group specified by ``select_label``.
-
-    Parameters
-    ----------
-    X : ndarray
-        Feature matrix
-
-    select_label : string or sequence
-        label for any level of the MultiIndex columns of `X`
-
-    label_sets : ndarray of sets
-        Array of sets of labels for each column of `X`
-
-    Returns
-    -------
-    ndarray
-        new feature matrix with only the group represented by `select_label`
-
-    See Also
-    --------
-    multicol2sets
-        function to convert a pandas MultiIndex into the sequence of sets
-        expected for the parameter `label_sets`
-    """
-    mask = set(select_label) <= label_sets
-    if len(X.shape) == 2:
-        return np.copy(X[:, mask])
-    elif len(X.shape) == 1:
-        return np.copy(X[mask])
-    else:
-        raise ValueError("`X` must be a one- or two-dimensional ndarray.")
-
-
-def select_groups(X, select_labels, label_sets):
-    """Select all columns for groups specified by ``select_labels``.
-
-    Parameters
-    ----------
-    X : ndarray
-        Feature matrix
-
-    select_labels : sequence
-        labels for any level of the MultiIndex columns of `X`
-
-    label_sets : ndarray of sets
-        Array of sets of labels for each column of `X`
-
-    Returns
-    -------
-    ndarray
-        new feature matrix with only the group represented by `select_label`
-
-    See Also
-    --------
-    multicol2sets
-        function to convert a pandas MultiIndex into the sequence of sets
-        expected for the parameter `label_sets`
-    """
-    mask = np.zeros_like(label_sets, dtype=np.bool)
-    for label in select_labels:
-        mask = np.logical_or(mask, set(label) <= label_sets)
-
-    if len(X.shape) == 2:
-        return np.copy(X[:, mask])
-    elif len(X.shape) == 1:
-        return np.copy(X[mask])
-    else:
-        raise ValueError("`X` must be a one- or two-dimensional ndarray.")
-
-
-def shuffle_group(X, label, label_sets, random_seed=None):
-    """Shuffle all elements for group specified by ``label``.
-
-    Parameters
-    ----------
-    X : ndarray
-        Feature matrix
-
-    label : string or sequence
-        label for any level of the MultiIndex columns of `X`
-
-    label_sets : ndarray of sets
-        Array of sets of labels for each column of `X`
-
-    random_seed : {None, int, array_like[ints], SeedSequence, BitGenerator, Generator}, optional
-        A seed to initialize the :doc:`numpy:numpy.random.BitGenerator` for
-        group shuffling. If None, then fresh, unpredictable entropy will be
-        pulled from the OS. If an ``int`` or ``array_like[ints]`` is passed,
-        then it will be passed to :doc:`numpy:numpy.random.SeedSequence` to
-        derive the initial :doc:`numpy:numpy.random.BitGenerator` state. One
-        may also pass in a`SeedSequence` instance Additionally, when passed a
-        :doc:`numpy:numpy.random.BitGenerator`, it will be wrapped by
-        :doc:`numpy:numpy.random.Generator`. If passed a
-        :doc:`numpy:numpy.random.Generator`, it will be returned unaltered.
-
-    Returns
-    -------
-    ndarray
-        new feature matrix with all elements of group `shuffle_idx` permuted
-    """
-    out = np.copy(X)
-    mask = set(label) <= label_sets
-    section = out[:, mask]
-    section_shape = section.shape
-    section = section.flatten()
-    rng = np.random.default_rng(random_seed)
-    rng.shuffle(section)
-    out[:, mask] = section.reshape(section_shape)
-    return out
-
-
 def multicol2sets(columns, tract_symmetry=True):
     """Convert a pandas MultiIndex to an array of sets.
 
@@ -548,52 +360,6 @@ def sort_features(features, scores):
     return res
 
 
-class TopNGroupsExtractor(BaseEstimator, TransformerMixin):
-    """An sklearn-compatible group extractor.
-
-    Given a sequence of all group indices and a subsequence of desired
-    group indices, this transformer returns the columns of the feature
-    matrix, `X`, that are in the desired subgroups.
-
-    Parameters
-    ----------
-    extract : sequence of tuples of labels
-        labels for any level of the MultiIndex columns of `X`
-
-    label_sets : ndarray of sets
-        Array of sets of labels for each column of `X`
-    """
-
-    def __init__(self, top_n=10, labels_by_importance=None, all_labels=None):
-        self.top_n = top_n
-        self.labels_by_importance = labels_by_importance
-        self.all_labels = all_labels
-
-    def transform(self, X, *_):
-        """Transform the input data.
-
-        Parameters
-        ----------
-        X : numpy.ndarray
-            The feature matrix
-        """
-        input_provided = (
-            self.labels_by_importance is not None and self.all_labels is not None
-        )
-
-        if input_provided:
-            out = select_groups(
-                X, self.labels_by_importance[: self.top_n], self.all_labels
-            )
-            return out
-        else:
-            return X
-
-    def fit(self, *_):
-        """Fit a transform from the given data. This is a no-op."""
-        return self
-
-
 def beta_hat_by_groups(beta_hat, columns, drop_zeros=False):
     """Transform one-dimensional beta_hat array into OrderedDict.
 
@@ -623,19 +389,16 @@ def beta_hat_by_groups(beta_hat, columns, drop_zeros=False):
         the `columns` input.
     """
     betas = OrderedDict()
-
     label_sets = multicol2sets(columns, tract_symmetry=False)
 
     for tract in columns.levels[columns.names.index("tractID")]:
-        all_metrics = select_group(
-            x=beta_hat, select_label=(tract,), label_sets=label_sets
-        )
+        tract_mask = set([tract]) <= label_sets
+        all_metrics = np.copy(beta_hat[tract_mask])
         if not drop_zeros or any(all_metrics != 0):
             betas[tract] = OrderedDict()
             for metric in columns.levels[columns.names.index("metric")]:
-                x = select_group(
-                    x=beta_hat, select_label=(tract, metric), label_sets=label_sets
-                )
+                metric_mask = set([tract, metric]) <= label_sets
+                x = np.copy(beta_hat[metric_mask])
                 if not drop_zeros or any(x != 0):
                     betas[tract][metric] = x
 
