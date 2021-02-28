@@ -2,13 +2,11 @@ import json
 import numpy as np
 import os.path as op
 import pandas as pd
-import pytest
 
 import afqinsight as afqi
-from afqinsight import AFQDataFrameMapper, GroupExtractor
+from afqinsight import AFQDataFrameMapper
 from afqinsight import multicol2dicts, multicol2sets
 from afqinsight.transform import isiterable
-from sklearn.utils.estimator_checks import check_estimator
 
 data_path = op.join(afqi.__path__[0], "data")
 test_data_path = op.join(data_path, "test_data")
@@ -86,36 +84,3 @@ def test_multicol_utils():
         label_dicts_ref = json.load(fp)
 
     assert label_dicts == label_dicts_ref  # nosec
-
-
-def test_GroupExtractor():
-    X = np.array([list(range(10))] * 10)
-    groups = [
-        np.array([0, 1, 2]),
-        np.array([3, 4, 5]),
-        np.array([6, 7, 8]),
-        np.array([9]),
-    ]
-
-    extract = 2
-    ge = GroupExtractor(groups=groups, extract=extract)
-    X_tr = ge.fit_transform(X)
-    assert np.allclose(X[:, groups[extract]], X_tr)  # nosec
-
-    extract = [0, 3]
-    ge = GroupExtractor(groups=groups, extract=extract)
-    X_tr = ge.fit_transform(X)
-    idx = np.concatenate([groups[e] for e in extract])
-    assert np.allclose(X[:, idx], X_tr)  # nosec
-
-    ge = GroupExtractor()
-    X_tr = ge.fit_transform(X)
-    assert np.allclose(X_tr, X)  # nosec
-
-    with pytest.raises(ValueError):
-        GroupExtractor(extract="error").fit_transform(X)
-
-
-@pytest.mark.parametrize("Transformer", [GroupExtractor])
-def test_all_estimators(Transformer):
-    return check_estimator(Transformer())
