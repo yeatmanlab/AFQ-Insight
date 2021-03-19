@@ -15,39 +15,29 @@ from .utils import BUNDLE_MAT_2_PYTHON
 POSITIONS = OrderedDict(
     {
         "ATR_L": (1, 0),
-        "ATR_R": (1, 4),
-        "C_L": (1, 0),
-        "C_R": (1, 4),
+        "ATR_R": (1, 3),
         "CST_L": (1, 1),
-        "CST_R": (1, 3),
+        "CST_R": (1, 2),
         "CGC_L": (3, 1),
-        "CGC_R": (3, 3),
-        "MCP": (3, 1),
-        "CCMid": (3, 3),
-        "FP": (4, 2),
-        "FA": (0, 2),
-        "CC_ForcepsMinor": (4, 2),
-        "CC_ForcepsMajor": (0, 2),
+        "CGC_R": (3, 2),
+        "FP": (0, 3),
+        "FA": (0, 0),
+        "CC_ForcepsMinor": (0, 3),
+        "CC_ForcepsMajor": (0, 0),
         "IFO_L": (4, 1),
-        "IFO_R": (4, 3),
+        "IFO_R": (4, 2),
         "IFOF_L": (4, 1),
-        "IFOF_R": (4, 3),
+        "IFOF_R": (4, 2),
         "HCC_L": (4, 0),
-        "HCC_R": (4, 4),
+        "HCC_R": (4, 3),
         "ILF_L": (3, 0),
-        "ILF_R": (3, 4),
-        "F_L": (3, 0),
-        "F_R": (3, 4),
+        "ILF_R": (3, 3),
         "SLF_L": (2, 1),
-        "SLF_R": (2, 3),
+        "SLF_R": (2, 2),
         "ARC_L": (2, 0),
-        "ARC_R": (2, 4),
-        "AF_L": (2, 0),
-        "AF_R": (2, 4),
+        "ARC_R": (2, 3),
         "UNC_L": (0, 1),
-        "UNC_R": (0, 3),
-        "UF_L": (0, 1),
-        "UF_R": (0, 3),
+        "UNC_R": (0, 2),
     }
 )
 
@@ -177,13 +167,6 @@ def plot_tract_profiles(
 
         # Arrange the bundles into a grid
         bgcolor = "white"
-        positions = POSITIONS.copy()
-        positions["FA"] = (0, 0)
-        positions["FP"] = (0, 3)
-        for bid in positions.keys():
-            if bid.endswith("_R"):
-                old_position = positions[bid]
-                positions[bid] = (old_position[0], old_position[1] - 1)
 
         # Create the subplots
         fig, axes = plt.subplots(nrows=5, ncols=4, sharex=True)
@@ -194,7 +177,7 @@ def plot_tract_profiles(
             if "HCC_" in bundle_id or "Cingulum Hippocampus" in tid:
                 continue
 
-            ax = axes[positions[bundle_id][0], positions[bundle_id][1]]
+            ax = axes[POSITIONS[bundle_id][0], POSITIONS[bundle_id][1]]
 
             if metric == "dki_md":
                 df_stat[metric] *= 1000.0
@@ -211,11 +194,11 @@ def plot_tract_profiles(
                 n_boot=500,
             )
 
-            if positions[bundle_id][0] == 4:
+            if POSITIONS[bundle_id][0] == 4:
                 _ = ax.set_xlabel("% distance along fiber bundle")
 
-            if positions[bundle_id][1] == 0 or (
-                positions[bundle_id][1] == 1 and positions[bundle_id][0] == 4
+            if POSITIONS[bundle_id][1] == 0 or (
+                POSITIONS[bundle_id][1] == 1 and POSITIONS[bundle_id][0] == 4
             ):
                 if metric in ["md", "dki_md"]:
                     _ = ax.set_ylabel(
