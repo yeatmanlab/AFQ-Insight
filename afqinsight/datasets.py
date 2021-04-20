@@ -26,6 +26,20 @@ def load_afq_data(
 ):
     """Load AFQ data from CSV, transform it, return feature matrix and target.
 
+    This function expects a directory with a diffusion metric csv file
+    (specified by ``fn_nodes``) and, optionally, a phenotypic data file
+    (specified by ``fn_subjects``). The nodes csv file must be a long format
+    dataframe with the following columns: "subjectID," "nodeID," "tractID,"
+    an optional "sessionID". All other columns are assumed to be diffusion
+    metric columns, which can be optionally subset using the ``dwi_metrics``
+    parameter.
+
+    For supervised learning problems (with parameter ``unsupervised=False``)
+    this function will also load phenotypic targets from a subjects csv/tsv
+    file. This function will load the subject data, drop subjects that are
+    not found in the dwi feature matrix, and optionally label encode
+    categorical values.
+
     Parameters
     ----------
     workdir : str
@@ -124,13 +138,25 @@ def load_afq_data(
         else:
             output = X, groups, feature_names, group_names, subjects
     else:
-        targets = pd.read_csv(fn_subjects, index_col=index_col).drop(
-            ["Unnamed: 0"], axis="columns"
+        # Read using sep=None, engine="python" to allow for both csv and tsv
+        targets = pd.read_csv(
+            fn_subjects, sep=None, engine="python", index_col=index_col
         )
 
+        # Drop unnamed columns
+        unnamed_cols = [col for col in targets.columns if "Unnamed:" in col]
+        targets.drop(unnamed_cols, axis="columns", inplace=True)
+
+        # Drop subjects that are not in the dwi feature matrix
+        targets = pd.DataFrame(index=subjects).merge(
+            targets, how="left", left_index=True, right_index=True
+        )
+
+        # Select user defined target columns
         if target_cols is not None:
             y = targets.loc[:, target_cols]
 
+        # Label encode the user-supplied categorical columns
         classes = {}
         if label_encode_cols is not None:
             if not set(label_encode_cols) <= set(target_cols):
