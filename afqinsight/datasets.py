@@ -54,12 +54,12 @@ def load_afq_data(
 
     unsupervised : bool, default=False
         If True, do not load target data from the ``fn_subjects`` file.
-    
+
     concat_subject_session : bool, default=False
         If True, create new subject IDs by concatenating the existing subject
         IDs with the session IDs. This is useful when subjects have multiple
         sessions and you with to disambiguate between them.
-    
+
     return_sessions : bool, default=False
         If True, return sessionID
 
@@ -82,7 +82,7 @@ def load_afq_data(
 
     subjects : list
         Subject IDs
-    
+
     sessions : list
         Session IDs. Returned only if ``return_sessions`` is True.
 
