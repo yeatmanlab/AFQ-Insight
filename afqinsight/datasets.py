@@ -19,6 +19,7 @@ def load_afq_data(
     index_col="subjectID",
     fn_nodes="nodes.csv",
     fn_subjects="subjects.csv",
+    unsupervised=False,
 ):
     """Load AFQ data from CSV, transform it, return feature matrix and target.
 
@@ -44,13 +45,16 @@ def load_afq_data(
     fn_subjects : str, default='subjects.csv'
         Filename for the subjects csv file.
 
+    unsupervised : bool, default=False
+        If True, do not load target data from the ``fn_subjects`` file.
+
     Returns
     -------
     X : array-like of shape (n_samples, n_features)
         The feature samples.
 
     y : array-like of shape (n_samples,) or (n_samples, n_targets), optional
-        Target values.
+        Target values. Returned only if ``unsupervised`` is False
 
     groups : list of numpy.ndarray
         feature indices for each feature group
@@ -65,7 +69,8 @@ def load_afq_data(
         Subject IDs
 
     classes : dict
-        Class labels for each column specified in ``label_encode_cols``
+        Class labels for each column specified in ``label_encode_cols``.
+        Returned only if ``unsupervised`` is False
 
     See Also
     --------
@@ -76,27 +81,6 @@ def load_afq_data(
     fn_subjects = op.join(workdir, fn_subjects)
 
     nodes = pd.read_csv(fn_nodes)
-    targets = pd.read_csv(fn_subjects, index_col=index_col).drop(
-        ["Unnamed: 0"], axis="columns"
-    )
-
-    y = targets.loc[:, target_cols]
-
-    classes = {}
-    if label_encode_cols is not None:
-        if not set(label_encode_cols) <= set(target_cols):
-            raise ValueError(
-                "label_encode_cols must be a subset of target_cols; "
-                "got {0} instead.".format(label_encode_cols)
-            )
-
-        le = LabelEncoder()
-        for col in label_encode_cols:
-            y.loc[:, col] = le.fit_transform(y[col])
-            classes[col] = le.classes_
-
-    y = np.squeeze(y.values)
-
     mapper = AFQDataFrameMapper()
     X = mapper.fit_transform(nodes)
     groups = mapper.groups_
@@ -104,7 +88,31 @@ def load_afq_data(
     group_names = [tup[0:2] for tup in feature_names if tup[2] == 0]
     subjects = mapper.subjects_
 
-    return X, y, groups, feature_names, group_names, subjects, classes
+    if unsupervised:
+        return X, groups, feature_names, group_names, subjects
+    else:
+        targets = pd.read_csv(fn_subjects, index_col=index_col).drop(
+            ["Unnamed: 0"], axis="columns"
+        )
+
+        y = targets.loc[:, target_cols]
+
+        classes = {}
+        if label_encode_cols is not None:
+            if not set(label_encode_cols) <= set(target_cols):
+                raise ValueError(
+                    "label_encode_cols must be a subset of target_cols; "
+                    "got {0} instead.".format(label_encode_cols)
+                )
+
+            le = LabelEncoder()
+            for col in label_encode_cols:
+                y.loc[:, col] = le.fit_transform(y[col])
+                classes[col] = le.classes_
+
+        y = np.squeeze(y.to_numpy())
+
+        return X, y, groups, feature_names, group_names, subjects, classes
 
 
 def output_beta_to_afq(
