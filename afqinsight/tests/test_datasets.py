@@ -10,6 +10,40 @@ data_path = op.join(afqi.__path__[0], "data")
 test_data_path = op.join(data_path, "test_data")
 
 
+def test_load_afq_data_smoke():
+    output = load_afq_data(
+        workdir=test_data_path,
+        target_cols=["test_class"],
+        label_encode_cols=["test_class"],
+    )
+    assert len(output) == 7  # nosec
+
+    output = load_afq_data(
+        workdir=test_data_path,
+        target_cols=["test_class"],
+        label_encode_cols=["test_class"],
+        return_sessions=True,
+    )
+    assert len(output) == 8  # nosec
+
+    output = load_afq_data(
+        workdir=test_data_path,
+        target_cols=["test_class"],
+        label_encode_cols=["test_class"],
+        unsupervised=True,
+    )
+    assert len(output) == 5  # nosec
+
+    output = load_afq_data(
+        workdir=test_data_path,
+        target_cols=["test_class"],
+        label_encode_cols=["test_class"],
+        unsupervised=True,
+        return_sessions=True,
+    )
+    assert len(output) == 6  # nosec
+
+
 def test_load_afq_data():
     X, y, groups, feature_names, group_names, subjects, classes = load_afq_data(
         workdir=test_data_path,
