@@ -14,12 +14,15 @@ __all__ = ["load_afq_data", "output_beta_to_afq"]
 
 def load_afq_data(
     workdir,
-    target_cols,
+    dwi_metrics=None,
+    target_cols=None,
     label_encode_cols=None,
     index_col="subjectID",
     fn_nodes="nodes.csv",
     fn_subjects="subjects.csv",
     unsupervised=False,
+    concat_subject_session=False,
+    return_sessions=False,
 ):
     """Load AFQ data from CSV, transform it, return feature matrix and target.
 
@@ -28,7 +31,11 @@ def load_afq_data(
     workdir : str
         Directory in which to find the AFQ csv files
 
-    target_cols : list of strings
+    dwi_metrics : list of strings, optional
+        List of diffusion metrics to extract from nodes csv.
+        e.g. ["dki_md", "dki_fa"]
+
+    target_cols : list of strings, optional
         List of column names in subjects csv file to use as target variables
 
     label_encode_cols : list of strings, subset of target_cols
@@ -47,6 +54,14 @@ def load_afq_data(
 
     unsupervised : bool, default=False
         If True, do not load target data from the ``fn_subjects`` file.
+    
+    concat_subject_session : bool, default=False
+        If True, create new subject IDs by concatenating the existing subject
+        IDs with the session IDs. This is useful when subjects have multiple
+        sessions and you with to disambiguate between them.
+    
+    return_sessions : bool, default=False
+        If True, return sessionID
 
     Returns
     -------
@@ -67,6 +82,9 @@ def load_afq_data(
 
     subjects : list
         Subject IDs
+    
+    sessions : list
+        Session IDs. Returned only if ``return_sessions`` is True.
 
     classes : dict
         Class labels for each column specified in ``label_encode_cols``.
@@ -81,6 +99,18 @@ def load_afq_data(
     fn_subjects = op.join(workdir, fn_subjects)
 
     nodes = pd.read_csv(fn_nodes)
+    unnamed_cols = [col for col in nodes.columns if "Unnamed:" in col]
+    nodes.drop(unnamed_cols, axis="columns", inplace=True)
+
+    sessions = nodes["sessionID"] if "sessionID" in nodes.columns else None
+    if concat_subject_session:
+        nodes["subjectID"] = nodes["subjectID"] + nodes["sessionID"].astype(str)
+
+    nodes.drop("sessionID", axis="columns", inplace=True, errors="ignore")
+
+    if dwi_metrics is not None:
+        nodes = nodes[["tractID", "nodeID", "subjectID"] + dwi_metrics]
+
     mapper = AFQDataFrameMapper()
     X = mapper.fit_transform(nodes)
     groups = mapper.groups_
@@ -89,13 +119,17 @@ def load_afq_data(
     subjects = mapper.subjects_
 
     if unsupervised:
-        return X, groups, feature_names, group_names, subjects
+        if return_sessions:
+            output = X, groups, feature_names, group_names, subjects, sessions
+        else:
+            output = X, groups, feature_names, group_names, subjects
     else:
         targets = pd.read_csv(fn_subjects, index_col=index_col).drop(
             ["Unnamed: 0"], axis="columns"
         )
 
-        y = targets.loc[:, target_cols]
+        if target_cols is not None:
+            y = targets.loc[:, target_cols]
 
         classes = {}
         if label_encode_cols is not None:
@@ -112,7 +146,21 @@ def load_afq_data(
 
         y = np.squeeze(y.to_numpy())
 
-        return X, y, groups, feature_names, group_names, subjects, classes
+        if return_sessions:
+            output = (
+                X,
+                y,
+                groups,
+                feature_names,
+                group_names,
+                subjects,
+                sessions,
+                classes,
+            )
+        else:
+            output = X, y, groups, feature_names, group_names, subjects, classes
+
+    return output
 
 
 def output_beta_to_afq(
