@@ -1,5 +1,6 @@
 import numpy as np
 from sklearn.utils.validation import check_X_y, check_is_fitted
+from sklearn.metrics import r2_score
 from keras.models import Sequential
 from keras.layers import Dense, Conv1D, Flatten, MaxPool1D, MaxPooling1D, Dropout
 from keras.regularizers import l1_l2, l2
@@ -16,6 +17,7 @@ def build_model(hp, conv_layers, input_shape):
 	regularization etc
 
 	"""
+	# TODO: fix this model
 	model = Sequential()
 
 	filters1 = hp.Int('filters1', min_value=32, max_value=512, step=32)
@@ -47,6 +49,7 @@ class ModelBuilder:
 	This class controls the building of complex model architecture and the number of layers in the model.
 	"""
 
+	# TODO: add in kwargs for tuners
 	def __init__(self, class_type, layers, input_shape, max_epochs):
 		self.class_type = class_type
 		self.layers = layers
@@ -66,22 +69,8 @@ class ModelBuilder:
 			tuner = kt.RandomSearch(hypermodel=hypermodel, objective='mean_squared_error', max_trials=self.max_epochs, overwrite=True)
 		return tuner
 
-	def find_best_hps(self, X, y):
-		# initialize tuner
-		tuner = self._get_tuner()
-
-		# Find the optimal hyperparameters
-		tuner.search(X, y, epochs=50, validation_split=0.2)
-
-		# Save the optimal hyperparameters
-		best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
-
-		# make CNN model using best hyperparameters
-		model = tuner.hypermodel.build(best_hps)
-
-		# making temporary file
-		# path = "weights.best.hdf5"
-		weights = tempfile.mkstemp()
+	def _get_best_weights(self, model, X, y):
+		weights = tempfile.mkstemp()[1]
 
 		# making model checkpoint to save best model (# epochs) to file
 		model_checkpoint_callback = ModelCheckpoint(
@@ -99,6 +88,47 @@ class ModelBuilder:
 		# return the model
 		return model
 
+	def build_basic_model(self, X, y):
+		model = Sequential()
+		model.add(Dense(128, activation='relu', input_shape=X.shape[1:]))
+		model.add(Conv1D(24, kernel_size=2, activation='relu'))
+		model.add(MaxPool1D(pool_size=2, padding='same'))
+		model.add(Conv1D(32, kernel_size=2, activation='relu'))
+		model.add(MaxPool1D(pool_size=2, padding='same'))
+		model.add(Conv1D(64, kernel_size=3, activation='relu'))
+		model.add(MaxPool1D(pool_size=2, padding='same'))
+		model.add(Conv1D(128, kernel_size=4, activation='relu'))
+		model.add(MaxPool1D(pool_size=2, padding='same'))
+		model.add(Conv1D(256, kernel_size=4, activation='relu'))
+		model.add(MaxPool1D(pool_size=2, padding='same'))
+		model.add(Dropout(0.25))
+		model.add(Flatten())
+		model.add(Dense(128, activation='relu'))
+		model.add(Dropout(0.25))
+		model.add(Dense(64, activation='relu'))
+		model.add(Dense(1, activation='linear'))
+
+		model.compile(loss='mean_squared_error', optimizer='adam', metrics=['mean_squared_error'])
+
+		best_model = self._get_best_weights(model, X, y)
+		return best_model
+
+	def build_tuned_model(self, X, y):
+		# initialize tuner
+		tuner = self._get_tuner()
+
+		# Find the optimal hyperparameters
+		tuner.search(X, y, epochs=50, validation_split=0.2)
+
+		# Save the optimal hyperparameters
+		best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
+
+		# make CNN model using best hyperparameters
+		model = tuner.hypermodel.build(best_hps)
+
+		best_model = self._get_best_weights(model, X, y)
+		return best_model
+
 
 
 class CNN:
@@ -113,10 +143,8 @@ class CNN:
 	#   .fit()
 	#   .predict()
 	#   .score()
-	#   .set_params()
-	#   .get_params()
 
-	def __init__(self, nodes, channels, layers, max_epochs, tuner="Hyperband"):
+	def __init__(self, nodes, channels, layers, max_epochs, tuner=None):
 		"""
 		Constructs a CNN that uses the given number of nodes, each with a
 		max depth of max_depth.
@@ -125,7 +153,7 @@ class CNN:
 		self.channels = channels
 		self.layers = layers
 		self.max_epochs = max_epochs
-		self.tuner = tuner # tuner can be BayesianOptimization, Hyperband, or RandomSearch
+		self.tuner = tuner # tuner can be None (no tuning) BayesianOptimization, Hyperband, or RandomSearch
 		self.model = None
 		self.best_hps_ = None
 
@@ -140,6 +168,7 @@ class CNN:
 		X = imp.transform(X)
 
 		subjects = X.shape[0]
+
 		# nodes * channels must = X.shape[1]
 		if self.nodes * self.channels != X.shape[1]:
 			pass
@@ -156,9 +185,13 @@ class CNN:
 		"""
 
 		X, y = self._preprocess(X, y)
-		# class_type, layers, input_shape, max_epochs
-		builder = ModelBuilder(self.tuner, self.layers, X.shape[1:])
-		self.model = builder.find_best_hps(X, y)
+
+		builder = ModelBuilder(self.tuner, self.layers, X.shape[1:]) # class_type, layers, input_shape, max_epochs
+		if self.tuner is None:
+			self.model = builder.build_basic_model(X, y)
+		else:
+			self.model = builder.build_tuned_model(X, y)
+
 		self.is_fitted_ = True
 
 		return self
@@ -171,3 +204,6 @@ class CNN:
 		check_is_fitted(self, 'is_fitted_')
 		pred = self.model.predict(X)
 		return pred
+
+	def score(self, y_test, y_hat):
+		return r2_score(y_test, y_hat)
