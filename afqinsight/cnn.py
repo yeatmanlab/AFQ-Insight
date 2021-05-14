@@ -1,14 +1,16 @@
 import numpy as np
-from sklearn.utils.validation import (check_X_y, check_is_fitted)
+from sklearn.utils.validation import check_X_y, check_is_fitted
 from keras.models import Sequential
 from keras.layers import Dense, Conv1D, Flatten, MaxPool1D, MaxPooling1D, Dropout
 from keras.regularizers import l1_l2, l2
 from keras.callbacks import ModelCheckpoint
 from sklearn.impute import SimpleImputer
 import kerastuner as kt
+import functools
+import tempfile
 
 
-def model_builder(hp, conv_layers, input_shape):
+def build_model(hp, conv_layers, input_shape):
 	"""
 	Uses keras tuner to build model - can control # layers, # filters in each layer, kernel size,
 	regularization etc
@@ -28,10 +30,11 @@ def model_builder(hp, conv_layers, input_shape):
 
 		model.add(Dropout(0.25))
 
-
 	model.add(Flatten())
+
 	filters7 = hp.Int('filters7', min_value=32, max_value=512, step=32)
 	model.add(Dense(filters7, activation='relu'))
+
 	model.add(Dropout(0.25))
 	model.add(Dense(64, activation='relu'))
 	model.add(Dense(1, activation='linear'))
@@ -42,35 +45,56 @@ def model_builder(hp, conv_layers, input_shape):
 class ModelBuilder:
 	"""
 	This class controls the building of complex model architecture and the number of layers in the model.
-
 	"""
 
-	def __init__(self, class_type, layers, max_epochs):
+	def __init__(self, class_type, layers, input_shape, max_epochs):
 		self.class_type = class_type
 		self.layers = layers
+		self.input_shape = input_shape
 		self.max_epochs = max_epochs
 
 	def _get_tuner(self):
+		# setting parameters beforehand
+		hypermodel = functools.partial(build_model, conv_layers=self.layers, input_shape=self.input_shape)
+
+		# instantiating tuner based on user's choice
 		if self.class_type == "Hyperband":
-			tuner = kt.Hyperband(model_builder, objective='mean_squared_error', max_epochs=self.max_epochs, overwrite=True)
+			tuner = kt.Hyperband(hypermodel=hypermodel, objective='mean_squared_error', max_epochs=self.max_epochs, overwrite=True)
 		elif self.class_type == "BayesianOptimization":
-			tuner = kt.BayesianOptimization(model_builder, objective='mean_squared_error', max_trials=self.max_epochs, overwrite=True)
+			tuner = kt.BayesianOptimization(hypermodel=hypermodel, objective='mean_squared_error', max_trials=self.max_epochs, overwrite=True)
 		elif self.class_type == "RandomSearch":
-			tuner = kt.RandomSearch(model_builder, objective='mean_squared_error', max_trials=self.max_epochs, overwrite=True)
+			tuner = kt.RandomSearch(hypermodel=hypermodel, objective='mean_squared_error', max_trials=self.max_epochs, overwrite=True)
 		return tuner
 
-	def fit(self, X_train, y_train):
+	def find_best_hps(self, X, y):
 		# initialize tuner
 		tuner = self._get_tuner()
 
 		# Find the optimal hyperparameters
-		tuner.search(X_train, y_train, epochs=50, validation_split=0.2)
+		tuner.search(X, y, epochs=50, validation_split=0.2)
 
 		# Save the optimal hyperparameters
 		best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
 
 		# make CNN model using best hyperparameters
 		model = tuner.hypermodel.build(best_hps)
+
+		# making temporary file
+		# path = "weights.best.hdf5"
+		weights = tempfile.mkstemp()
+
+		# making model checkpoint to save best model (# epochs) to file
+		model_checkpoint_callback = ModelCheckpoint(
+			filepath=weights,
+			monitor='val_accuracy',
+			mode='max',
+			save_best_only=True)
+
+		# Fitting model using model checkpoint callback to find best model which is saved to 'weights'
+		model.fit(X, y, epochs=self.max_epochs, callbacks=[model_checkpoint_callback])
+
+		# loading in weights
+		model.load_weights(weights)
 
 		# return the model
 		return model
@@ -92,18 +116,21 @@ class CNN:
 	#   .set_params()
 	#   .get_params()
 
-	def __init__(self, pixels, channels, tuner="Hyperband"):
+	def __init__(self, nodes, channels, layers, max_epochs, tuner="Hyperband"):
 		"""
-		Constructs a CNN that uses the given number of pixels, each with a
+		Constructs a CNN that uses the given number of nodes, each with a
 		max depth of max_depth.
 		"""
-		self.pixels = pixels
+		self.nodes = nodes
 		self.channels = channels
+		self.layers = layers
+		self.max_epochs = max_epochs
 		self.tuner = tuner # tuner can be BayesianOptimization, Hyperband, or RandomSearch
 		self.model = None
 		self.best_hps_ = None
 
 	def _preprocess(self, X, y):
+		X, y = check_X_y(X, y)
 		nan_mask = np.logical_not(np.isnan(y))
 		y = y[nan_mask]
 		X = X[nan_mask, :]
@@ -113,37 +140,25 @@ class CNN:
 		X = imp.transform(X)
 
 		subjects = X.shape[0]
-		# pixels * channels must = X.shape[1]
-		X = np.swapaxes(X.reshape((subjects, self.channels, self.nodes)), 1, 2)
+		# nodes * channels must = X.shape[1]
+		if self.nodes * self.channels != X.shape[1]:
+			pass
+			# error
+		else:
+			X = np.swapaxes(X.reshape((subjects, self.channels, self.nodes)), 1, 2)
 
 		return X, y
 
 
-	def fit(self, X, y, fit_epochs, objective, builder_epochs=5, validation_split=0.2):
+	def fit(self, X, y):
 		"""
 		Takes an input dataset X and a series of targets y and trains the CNN.
 		"""
 
-		X, y = self.__preprocess(X, y)
-
-		self.model = ModelBuilder(self.tuner, X.shape[1:])
-
-		# Build the model with the optimal hyperparameters and train it on the data for 50 epochs, find
-		# best # of epochs to get min mse
-		#history = self.model.fit(X, y)
-		#objective_per_epoch = history.history[objective]
-
-		# TODO: change min to max depending on the objective chosen
-		#best_epoch = objective_per_epoch.index(min(objective_per_epoch)) + 1
-
-		model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
-			filepath=checkpoint_filepath,
-			monitor='mean_squared_error',
-			mode='min',
-			save_best_only=True)
-
-		# Retrain the model with the best epoch
-		self.model.fit(X, y, )
+		X, y = self._preprocess(X, y)
+		# class_type, layers, input_shape, max_epochs
+		builder = ModelBuilder(self.tuner, self.layers, X.shape[1:])
+		self.model = builder.find_best_hps(X, y)
 		self.is_fitted_ = True
 
 		return self
