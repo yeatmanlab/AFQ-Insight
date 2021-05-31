@@ -74,3 +74,7 @@ def test_load_afq_data():
             target_cols=["test_class"],
             label_encode_cols=["test_class", "error"],
         )
+    with pytest.raises(ValueError) as ee:
+        load_afq_data(test_data_path)
+
+    assert "please set `unsupervised=True`" in str(ee.value)
