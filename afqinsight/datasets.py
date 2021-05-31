@@ -139,11 +139,13 @@ def load_afq_data(
             output = X, groups, feature_names, group_names, subjects
     else:
         if target_cols is None:
-            raise ValueError("If you are loading data for a supervised "
-                             "learning problem you must specify the "
-                             "`target_cols` input. If you intended to "
-                             "load data for an unsupervised learning "
-                             "problem, please set `unsupervised=True`")
+            raise ValueError(
+                "If you are loading data for a supervised "
+                "learning problem you must specify the "
+                "`target_cols` input. If you intended to "
+                "load data for an unsupervised learning "
+                "problem, please set `unsupervised=True`."
+            )
         # Read using sep=None, engine="python" to allow for both csv and tsv
         targets = pd.read_csv(
             fn_subjects, sep=None, engine="python", index_col=index_col
