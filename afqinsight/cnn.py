@@ -2,8 +2,8 @@ import numpy as np
 from sklearn.utils.validation import check_X_y, check_is_fitted
 from sklearn.metrics import r2_score
 from tensorflow.keras.models import Sequential
-from keras.layers import Dense, Conv1D, Flatten, MaxPool1D, MaxPooling1D, Dropout
-from keras.callbacks import ModelCheckpoint
+from tensorflow.keras.layers import Dense, Conv1D, Flatten, MaxPool1D, MaxPooling1D, Dropout
+from tensorflow.keras.callbacks import ModelCheckpoint
 from sklearn.impute import SimpleImputer
 import kerastuner as kt
 import functools
@@ -107,6 +107,7 @@ class ModelBuilder:
 		# return the model
 		return model
 
+	# TODO: Ask if I should have tuning on this
 	def build_basic_model(self, X, y):
 		model = Sequential()
 		model.add(Dense(128, activation='relu', input_shape=X.shape[1:]))
@@ -159,17 +160,48 @@ class CNN:
 		Constructs a CNN that uses the given number of nodes, each with a
 		max depth of max_depth.
 		"""
-		self.nodes = nodes
-		self.channels = channels
-		self.layers = layers
-		self.max_epochs = max_epochs
-		self.tuner = tuner  # tuner can be None (no tuning) BayesianOptimization, Hyperband, or RandomSearch
+		# checking nodes is passed as int
+		if not type(nodes) is int:
+			raise TypeError("Parameter nodes must be an integer.")
+		else:
+			self.nodes = nodes
+
+		# checking channels is passed as int
+		if not type(channels) is int:
+			raise TypeError("Parameter channels must be an integer.")
+		else:
+			self.channels = channels
+
+		# checking layers is passed as int
+		if not type(layers) is int:
+			raise TypeError("Parameter layers must be an integer.")
+		else:
+			self.layers = layers
+
+		# checking max epochs is passed as int
+		if not type(max_epochs) is int:
+			raise TypeError("Parameter max_epochs must be an integer.")
+		else:
+			self.max_epochs = max_epochs
+
+		# checking tiner is passed as str or None
+		if not type(tuner) is str:
+			raise TypeError("Parameter tuner must be str.")
+		else:
+			self.tuner = tuner  # tuner can be None (no tuning) BayesianOptimization, Hyperband, or RandomSearch
+
+		# checking val split is passed as float
+		if not type(val_split) is float:
+			raise TypeError("Parameter val_split must be a float.")
+		else:
+			self.val_split = val_split
+		self.tuner_kwargs = tuner_kwargs
 		self.model_ = None
 		self.best_hps_ = None
-		self.val_split = val_split
-		self.tuner_kwargs = tuner_kwargs
 
 	def _preprocess(self, X, y=None):
+		if len(X.shape) > 2:
+			raise ValueError("Expected X to be a 2D matrix.")
 		if y is not None:
 			nan_mask = np.logical_not(np.isnan(y))
 			X = X[nan_mask, :]
@@ -186,7 +218,7 @@ class CNN:
 
 		# nodes * channels must = X.shape[1]
 		if self.nodes * self.channels != X.shape[1]:
-			pass
+			raise ValueError("The product nodes and channels is not the correct shape.")
 		# error
 		else:
 			X = np.swapaxes(X.reshape((subjects, self.channels, self.nodes)), 1, 2)

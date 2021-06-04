@@ -10,12 +10,14 @@ from afqinsight.datasets import load_afq_data
 data_path = op.join(afqi.__path__[0], "data")
 test_data_path = op.join(data_path, "test_data")
 
-def test_basic_cnn():
-	X, y, groups, feature_names, group_names, subjects, classes = load_afq_data(
+X, y, groups, feature_names, group_names, subjects, classes = load_afq_data(
 		workdir=test_data_path,
 		target_cols=["test_class"],
 		label_encode_cols=["test_class"],
 	)
+
+
+def test_basic_cnn():
 	model = CNN(100, 6, 5)
 	model.fit(X,y)
 	assert model.is_fitted_ is True
@@ -23,12 +25,6 @@ def test_basic_cnn():
 	score = model.score(y, y_hat)
 
 def test_hyperband_cnn():
-	X, y, groups, feature_names, group_names, subjects, classes = load_afq_data(
-		workdir=test_data_path,
-		target_cols=["test_class"],
-		label_encode_cols=["test_class"],
-	)
-
 	model = CNN(100, 6, 5, "hyperband")
 	model.fit(X,y)
 	assert model.is_fitted_ is True
@@ -54,12 +50,6 @@ def test_hyperband_cnn():
 	score4 = model4.score(y, y_hat4)
 
 def test_bayesian_cnn():
-	X, y, groups, feature_names, group_names, subjects, classes = load_afq_data(
-		workdir=test_data_path,
-		target_cols=["test_class"],
-		label_encode_cols=["test_class"],
-	)
-
 	model = CNN(100, 6, 5, "bayesian")
 	model.fit(X,y)
 	assert model.is_fitted_ is True
@@ -85,12 +75,6 @@ def test_bayesian_cnn():
 	score4 = model4.score(y, y_hat4)
 
 def test_random_cnn():
-	X, y, groups, feature_names, group_names, subjects, classes = load_afq_data(
-		workdir=test_data_path,
-		target_cols=["test_class"],
-		label_encode_cols=["test_class"],
-	)
-
 	model = CNN(100, 6, 5, "random")
 	model.fit(X,y)
 	assert model.is_fitted_ is True
@@ -117,15 +101,32 @@ def test_random_cnn():
 
 def test_fail_cnn():
 	with pytest.raises(ValueError):
+		# passing in wrong tuner value
 		model = CNN(100, 6, 5, "wrong")
+		model.fit(X, y)
 
 	with pytest.raises(TypeError):
+		# passing in int for tuner
 		model = CNN(100, 6, 5, 0)
 
-	with pytest.raises(TypeError):
+	with pytest.raises(ValueError):
+		# passing in nodes and channels that multiply to equal
+		# proper dimension for given x
+		model = CNN(78, 6, 5, "random")
+		model.fit(X, y)
 
-		model = CNN(100, 6, 5, wrong)
-
 	with pytest.raises(TypeError):
+		# passing in float for tuner
 		model = CNN(100, 6, 5, 0.0)
 
+	with pytest.raises(TypeError):
+		# passing in float for nodes
+		model = CNN(1.1, 6, 5, "random")
+
+	with pytest.raises(TypeError):
+		# passing in float for channels
+		model = CNN(100, 6.0, 5, "random")
+
+	with pytest.raises(TypeError):
+		# passing in float for layers
+		model = CNN(100, 6, 5.0, "random")
