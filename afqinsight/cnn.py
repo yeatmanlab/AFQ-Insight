@@ -185,7 +185,7 @@ class CNN:
 			self.max_epochs = max_epochs
 
 		# checking tiner is passed as str or None
-		if not type(tuner) is str:
+		if type(tuner) is not str and tuner is not None:
 			raise TypeError("Parameter tuner must be str.")
 		else:
 			self.tuner = tuner  # tuner can be None (no tuning) BayesianOptimization, Hyperband, or RandomSearch
