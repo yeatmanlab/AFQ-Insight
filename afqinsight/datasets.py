@@ -382,7 +382,7 @@ def _download_afq_dataset(dataset, data_home):
 
 
 def fetch_sarica(data_home=None):
-    """Fetch the ALS classification dataset from Sarica et al. [1]_
+    """Fetch the ALS classification dataset from Sarica et al [1]_.
 
     Parameters
     ----------
