@@ -2,12 +2,22 @@ import numpy as np
 import os.path as op
 import pandas as pd
 import pytest
+import tempfile
 
 import afqinsight as afqi
-from afqinsight.datasets import load_afq_data
+from afqinsight.datasets import load_afq_data, fetch_sarica, fetch_weston_havens
 
 data_path = op.join(afqi.__path__[0], "data")
 test_data_path = op.join(data_path, "test_data")
+
+
+def test_fetch():
+    _ = fetch_sarica()
+    _ = fetch_weston_havens()
+
+    with tempfile.TemporaryDirectory() as td:
+        _ = fetch_sarica(data_home=td)
+        _ = fetch_weston_havens(data_home=td)
 
 
 def test_load_afq_data_smoke():
