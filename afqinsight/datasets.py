@@ -6,6 +6,7 @@ import os.path as op
 import pandas as pd
 import requests
 
+from groupyr.transform import GroupRemover, GroupExtractor
 from collections import namedtuple
 from shutil import copyfile
 from sklearn.preprocessing import LabelEncoder
