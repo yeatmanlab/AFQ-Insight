@@ -45,7 +45,7 @@ do_group_pca = True
 if do_group_pca:
     n_components = 10
 
-    # The next three lines are just to retrieve the group structure of the group-wise PCA
+    # The next three lines retrieve the group structure of the group-wise PCA
     # and store it in ``groups_pca``. We do not use the imputer or GroupPCA transformer
     # for anything else
     imputer = SimpleImputer(strategy="median")
