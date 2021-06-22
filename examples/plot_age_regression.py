@@ -5,7 +5,7 @@ Predict age from white matter features
 
 Predict subject age from white matter features. This example fetches the Weston-Havens
 dataset described in Yeatman et al [1]_. This dataset contains tractometry
-features 77 subjects with ages 6-50. The plots display the absolute value of the
+features from 77 subjects ages 6-50. The plots display the absolute value of the
 mean regression coefficients (averaged across cross-validation splits) for the
 mean diffusivity (MD) features.
 
