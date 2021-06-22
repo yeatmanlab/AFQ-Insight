@@ -9,7 +9,7 @@ features from 24 patients with ALS and 24 demographically matched control
 subjects.
 
 To save computational time, we take the first 10 principal components from each
-feature group (i.e. from each metric-bundle combination). 
+feature group (i.e. from each metric-bundle combination).
 For more details on this approach in a research setting, please see [2]_.
 
 .. [1]  Alessia Sarica, et al.
@@ -32,7 +32,7 @@ from afqinsight import make_afq_classifier_pipeline
 from groupyr.decomposition import GroupPCA
 
 from sklearn.impute import SimpleImputer
-from sklearn.model_selection import train_test_split, cross_validate
+from sklearn.model_selection import cross_validate
 
 X, y, groups, feature_names, group_names, subjects, classes = fetch_sarica()
 
@@ -59,8 +59,8 @@ else:
 pipe = make_afq_classifier_pipeline(
     imputer_kwargs={"strategy": "median"},  # Use median imputation
     use_cv_estimator=True,  # Automatically determine the best hyperparameters
-    power_transformer=transformer,  # See note above about group PCA
-    power_transformer_kwargs=transformer_kwargs,
+    feature_transformer=transformer,  # See note above about group PCA
+    feature_transformer_kwargs=transformer_kwargs,
     scaler="standard",  # Standard scale the features before regression
     groups=groups_pca
     if do_group_pca

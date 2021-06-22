@@ -26,12 +26,12 @@ __all__ = ["make_afq_classifier_pipeline", "make_afq_regressor_pipeline"]
 def make_base_afq_pipeline(
     imputer="simple",
     scaler="standard",
-    power_transformer=False,
+    feature_transformer=False,
     estimator=None,
     ensemble_meta_estimator=None,
     imputer_kwargs=None,
     scaler_kwargs=None,
-    power_transformer_kwargs=None,
+    feature_transformer_kwargs=None,
     estimator_kwargs=None,
     ensemble_meta_estimator_kwargs=None,
     memory=None,
@@ -46,12 +46,12 @@ def make_base_afq_pipeline(
     This function returns a :ref:`Pipeline <sklearn:pipeline>` instance with the
     following steps::
 
-        [imputer, scaler, power_transformer, estimator]
+        [imputer, scaler, feature_transformer, estimator]
 
     where ``imputer`` imputes missing data due to individual subjects missing
     metrics along an entire bundle; ``scaler`` is optional and scales the
-    features of the feature matrix; ``power_transformer`` is optional and
-    applies a power transform featurewise to make data more Gaussian-like;
+    features of the feature matrix; ``feature_transformer`` is optional and
+    applies a transform featurewise to make data more Gaussian-like;
     and ``estimator`` is a scikit-learn compatible estimator. The estimator
     may optionally be wrapped in an ensemble meta-estimator specified by
     ``ensemble_meta_estimator`` and given the keyword arguments in
@@ -99,8 +99,8 @@ def make_base_afq_pipeline(
         transformers are allowed as long as they inherit from
         :class:`sklearn:sklearn.base.TransformerMixin`.
 
-    power_transformer : bool or sklearn-compatible transformer, default=False
-        An optional power transformer for use on the feature matrix. If True,
+    feature_transformer : bool or sklearn-compatible transformer, default=False
+        An optional feature transformer for use on the feature matrix. If True,
         use :class:`sklearn:sklearn.preprocessing.PowerTransformer`. If
         False, skip this step. Custom transformers are allowed as long as
         they inherit from :class:`sklearn:sklearn.base.TransformerMixin`.
@@ -126,8 +126,8 @@ def make_base_afq_pipeline(
     scaler_kwargs : dict, default=None,
         Key-word arguments for the scaler.
 
-    power_transformer_kwargs : dict, default=None,
-        Key-word arguments for the power_transformer.
+    feature_transformer_kwargs : dict, default=None,
+        Key-word arguments for the feature_transformer.
 
     estimator_kwargs : dict, default=None,
         Key-word arguments for the estimator.
@@ -237,24 +237,24 @@ def make_base_afq_pipeline(
 
     allowed = [True, False]
     err_msg = Template(
-        transformer_msg.safe_substitute(kw="power_transformer", allowed=allowed)
+        transformer_msg.safe_substitute(kw="feature_transformer", allowed=allowed)
     )
-    if isinstance(power_transformer, bool):
-        if power_transformer:
-            pl_power_transformer = call_with_kwargs(
-                PowerTransformer, power_transformer_kwargs
+    if isinstance(feature_transformer, bool):
+        if feature_transformer:
+            pl_feature_transformer = call_with_kwargs(
+                PowerTransformer, feature_transformer_kwargs
             )
         else:
-            pl_power_transformer = None
-    elif inspect.isclass(power_transformer):
-        if issubclass(power_transformer, TransformerMixin):
-            pl_power_transformer = call_with_kwargs(
-                power_transformer, power_transformer_kwargs
+            pl_feature_transformer = None
+    elif inspect.isclass(feature_transformer):
+        if issubclass(feature_transformer, TransformerMixin):
+            pl_feature_transformer = call_with_kwargs(
+                feature_transformer, feature_transformer_kwargs
             )
         else:
-            raise ValueError(err_msg.substitute(input=power_transformer))
+            raise ValueError(err_msg.substitute(input=feature_transformer))
     else:
-        raise ValueError(err_msg.substitute(input=power_transformer))
+        raise ValueError(err_msg.substitute(input=feature_transformer))
 
     if estimator is not None:
         if inspect.isclass(estimator) and issubclass(estimator, BaseEstimator):
@@ -345,11 +345,11 @@ def make_base_afq_pipeline(
         pl_estimator = None
 
     # Build the pipeline steps. We will always start with the imputer and end
-    # with the estimator. The scaler and power_transform steps are optional.
+    # with the estimator. The scaler and feature_transform steps are optional.
     pl = [
         ("impute", pl_imputer),
         ("scale", pl_scaler),
-        ("power_transform", pl_power_transformer),
+        ("feature_transform", pl_feature_transformer),
         ("estimate", pl_estimator),
     ]
 
@@ -359,11 +359,11 @@ def make_base_afq_pipeline(
 def make_afq_classifier_pipeline(
     imputer="simple",
     scaler="standard",
-    power_transformer=False,
+    feature_transformer=False,
     ensemble_meta_estimator=None,
     imputer_kwargs=None,
     scaler_kwargs=None,
-    power_transformer_kwargs=None,
+    feature_transformer_kwargs=None,
     ensemble_meta_estimator_kwargs=None,
     use_cv_estimator=True,
     memory=None,
@@ -379,12 +379,12 @@ def make_afq_classifier_pipeline(
     This function returns a :ref:`Pipeline <sklearn:pipeline>` instance with the
     following steps::
 
-        [imputer, scaler, power_transformer, estimator]
+        [imputer, scaler, feature_transformer, estimator]
 
     where ``imputer`` imputes missing data due to individual subjects missing
     metrics along an entire bundle; ``scaler`` is optional and scales the
-    features of the feature matrix; ``power_transformer`` is optional and
-    applies a power transform featurewise to make data more Gaussian-like;
+    features of the feature matrix; ``feature_transformer`` is optional and
+    applies a transform featurewise to make data more Gaussian-like;
     and ``estimator`` is an instance of
     :class:`groupyr:groupyr.LogisticSGLCV` if ``use_cv_estimator=True`` or
     :class:`groupyr:groupyr.LogisticSGL` if ``use_cv_estimator=False``. The
@@ -431,8 +431,8 @@ def make_afq_classifier_pipeline(
         transformers are allowed as long as they inherit from
         :class:`sklearn:sklearn.base.TransformerMixin`.
 
-    power_transformer : bool or sklearn-compatible transformer, default=False
-        An optional power transformer for use on the feature matrix. If True,
+    feature_transformer : bool or sklearn-compatible transformer, default=False
+        An optional transformer for use on the feature matrix. If True,
         use :class:`sklearn:sklearn.preprocessing.PowerTransformer`. If
         False, skip this step. Custom transformers are allowed as long as
         they inherit from :class:`sklearn:sklearn.base.TransformerMixin`.
@@ -450,8 +450,8 @@ def make_afq_classifier_pipeline(
     scaler_kwargs : dict, default=None,
         Key-word arguments for the scaler.
 
-    power_transformer_kwargs : dict, default=None,
-        Key-word arguments for the power_transformer.
+    feature_transformer_kwargs : dict, default=None,
+        Key-word arguments for the feature_transformer.
 
     ensemble_meta_estimator_kwargs : dict, default=None,
         Key-word arguments for the ensemble meta-estimator.
@@ -511,12 +511,12 @@ def make_afq_classifier_pipeline(
     return make_base_afq_pipeline(
         imputer=imputer,
         scaler=scaler,
-        power_transformer=power_transformer,
+        feature_transformer=feature_transformer,
         estimator=gpr.LogisticSGLCV if use_cv_estimator else gpr.LogisticSGL,
         ensemble_meta_estimator=ensemble_meta_estimator,
         imputer_kwargs=imputer_kwargs,
         scaler_kwargs=scaler_kwargs,
-        power_transformer_kwargs=power_transformer_kwargs,
+        feature_transformer_kwargs=feature_transformer_kwargs,
         ensemble_meta_estimator_kwargs=ensemble_meta_estimator_kwargs,
         estimator_kwargs=estimator_kwargs,
         memory=memory,
@@ -531,11 +531,11 @@ def make_afq_classifier_pipeline(
 def make_afq_regressor_pipeline(
     imputer="simple",
     scaler="standard",
-    power_transformer=False,
+    feature_transformer=False,
     ensemble_meta_estimator=None,
     imputer_kwargs=None,
     scaler_kwargs=None,
-    power_transformer_kwargs=None,
+    feature_transformer_kwargs=None,
     ensemble_meta_estimator_kwargs=None,
     use_cv_estimator=True,
     memory=None,
@@ -551,12 +551,12 @@ def make_afq_regressor_pipeline(
     This function returns a :ref:`Pipeline <sklearn:pipeline>` instance with the
     following steps::
 
-        [imputer, scaler, power_transformer, estimator]
+        [imputer, scaler, feature_transformer, estimator]
 
     where ``imputer`` imputes missing data due to individual subjects missing
     metrics along an entire bundle; ``scaler`` is optional and scales the
-    features of the feature matrix; ``power_transformer`` is optional and
-    applies a power transform featurewise to make data more Gaussian-like;
+    features of the feature matrix; ``feature_transformer`` is optional and
+    applies a transform featurewise to make data more Gaussian-like;
     and ``estimator`` is an instance of :class:`groupyr:groupyr.SGLCV` if
     ``use_cv_estimator=True`` or :class:`groupyr:groupyr.SGL` if
     ``use_cv_estimator=False``. The estimator may optionally be wrapped in an
@@ -602,8 +602,8 @@ def make_afq_regressor_pipeline(
         transformers are allowed as long as they inherit from
         :class:`sklearn:sklearn.base.TransformerMixin`.
 
-    power_transformer : bool or sklearn-compatible transformer, default=False
-        An optional power transformer for use on the feature matrix. If True,
+    feature_transformer : bool or sklearn-compatible transformer, default=False
+        An optional transformer for use on the feature matrix. If True,
         use :class:`sklearn:sklearn.preprocessing.PowerTransformer`. If
         False, skip this step. Custom transformers are allowed as long as
         they inherit from :class:`sklearn:sklearn.base.TransformerMixin`.
@@ -625,8 +625,8 @@ def make_afq_regressor_pipeline(
     scaler_kwargs : dict, default=None,
         Key-word arguments for the scaler.
 
-    power_transformer_kwargs : dict, default=None,
-        Key-word arguments for the power_transformer.
+    feature_transformer_kwargs : dict, default=None,
+        Key-word arguments for the feature_transformer.
 
     use_cv_estimator : bool, default=True,
         If True, use :class:`groupyr:groupyr.SGLCV` as the final
@@ -683,12 +683,12 @@ def make_afq_regressor_pipeline(
     return make_base_afq_pipeline(
         imputer=imputer,
         scaler=scaler,
-        power_transformer=power_transformer,
+        feature_transformer=feature_transformer,
         ensemble_meta_estimator=ensemble_meta_estimator,
         estimator=gpr.SGLCV if use_cv_estimator else gpr.SGL,
         imputer_kwargs=imputer_kwargs,
         scaler_kwargs=scaler_kwargs,
-        power_transformer_kwargs=power_transformer_kwargs,
+        feature_transformer_kwargs=feature_transformer_kwargs,
         ensemble_meta_estimator_kwargs=ensemble_meta_estimator_kwargs,
         estimator_kwargs=estimator_kwargs,
         memory=memory,
