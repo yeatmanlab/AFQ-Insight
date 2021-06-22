@@ -48,7 +48,7 @@ ensembler_args = [
 
 @pytest.mark.parametrize("scaler, ScalerStep", scaler_args)
 @pytest.mark.parametrize("imputer, ImputerStep", imputer_args)
-@pytest.mark.parametrize("power_transformer, PowerStep", power_args)
+@pytest.mark.parametrize("feature_transformer, PowerStep", power_args)
 @pytest.mark.parametrize("make_pipe, use_cv, EstimatorStep", type_args)
 @pytest.mark.parametrize("target_transformer", [None, PowerTransformer])
 @pytest.mark.parametrize("ensembler, EnsembleEstimators", ensembler_args)
@@ -60,7 +60,7 @@ def test_classifier_pipeline_steps(
     ScalerStep,
     imputer,
     ImputerStep,
-    power_transformer,
+    feature_transformer,
     PowerStep,
     target_transformer,
     ensembler,
@@ -70,7 +70,7 @@ def test_classifier_pipeline_steps(
         imputer=imputer,
         scaler=scaler,
         use_cv_estimator=use_cv,
-        power_transformer=power_transformer,
+        feature_transformer=feature_transformer,
         target_transformer=target_transformer,
         ensemble_meta_estimator=ensembler,
     )
@@ -91,14 +91,14 @@ def test_classifier_pipeline_steps(
     else:
         assert pipeline.named_steps["impute"] is None  # nosec
 
-    if power_transformer:
-        assert isinstance(pipeline.named_steps["power_transform"], PowerStep)  # nosec
+    if feature_transformer:
+        assert isinstance(pipeline.named_steps["feature_transform"], PowerStep)  # nosec
         assert (  # nosec
-            pipeline.named_steps["power_transform"].get_params()
+            pipeline.named_steps["feature_transform"].get_params()
             == PowerStep().get_params()
         )
     else:
-        assert pipeline.named_steps["power_transform"] is None  # nosec
+        assert pipeline.named_steps["feature_transform"] is None  # nosec
 
     if ensembler is not None:
         EnsembleStep = EnsembleEstimators[is_classifier(EstimatorStep())]
@@ -159,10 +159,10 @@ def test_pipeline_value_errors():
         make_base_afq_pipeline(imputer=1729)
 
     with pytest.raises(ValueError):
-        make_base_afq_pipeline(power_transformer=object)
+        make_base_afq_pipeline(feature_transformer=object)
 
     with pytest.raises(ValueError):
-        make_base_afq_pipeline(power_transformer=1729)
+        make_base_afq_pipeline(feature_transformer=1729)
 
     with pytest.raises(ValueError):
         make_base_afq_pipeline(estimator=object)
