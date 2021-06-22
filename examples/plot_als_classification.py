@@ -6,7 +6,9 @@ Classify ALS diagnosis from white matter features
 Predict ALS diagnosis from white matter features. This example fetches the ALS
 classification dataset from Sarica et al [1]_. This dataset contains tractometry
 features from 24 patients with ALS and 24 demographically matched control
-subjects.
+subjects. The plots display the absolute value of the mean regression
+coefficients (averaged across cross-validation splits) for the fractional
+anisotropy (FA) features.
 
 To save computational time, we take the first 10 principal components from each
 feature group (i.e. from each metric-bundle combination).
