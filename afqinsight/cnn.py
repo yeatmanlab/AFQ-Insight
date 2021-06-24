@@ -2,12 +2,13 @@ import numpy as np
 from sklearn.utils.validation import check_X_y, check_is_fitted
 from sklearn.metrics import r2_score
 from sklearn.impute import SimpleImputer
-import kerastuner as kt
+from sklearn.model_selection import train_test_split
 import functools
 import tempfile
 import os.path as op
 
 try:
+	import kerastuner as kt
 	from tensorflow.keras.models import Sequential
 	from tensorflow.keras.layers import Dense, Conv1D, Flatten, MaxPool1D, MaxPooling1D, Dropout
 	from tensorflow.keras.callbacks import ModelCheckpoint
@@ -65,6 +66,14 @@ def build_model(hp, conv_layers, input_shape):
 	model.compile(loss='mean_squared_error', optimizer='adam', metrics=['mean_squared_error'])
 	return model
 
+def _check_keras():
+	if not HAS_KERAS:
+		raise ImportError(
+			"To use afqinsight's convolutional neural nets for tractometry data, you will need "
+			"to have tensorflow, keras, and kerastuner installed. You can do this by installing "
+			"afqinsight with `pip install afqinsight[cnn]`, or by separately installing these packages "
+			"with `pip install tensorflow keras kerastuner`."
+		)
 
 class ModelBuilder:
 	"""
@@ -260,7 +269,7 @@ class CNN:
 	"""
 
 	def __init__(self, nodes, channels, max_epochs=50, batch_size=32, tuner=None, layers=1, val_split=0.2,
-	             **tuner_kwargs):
+	             random_state=200, **tuner_kwargs):
 		"""
 		Constructs a CNN that uses the given number of nodes, each with a
 		max depth of max_depth.
@@ -305,6 +314,12 @@ class CNN:
 			raise TypeError("Parameter val_split must be a float.")
 		else:
 			self.val_split = val_split
+
+		if not isinstance(random_state, int):
+			raise TypeError("Parameter random_state must be an int.")
+		else:
+			self.random_state = random_state
+
 		self.tuner_kwargs = tuner_kwargs
 		self.model_ = None
 		self.best_hps_ = None
@@ -356,9 +371,9 @@ class CNN:
 		else:
 			return X
 
-	def fit(self, X, y, X_test, y_test):
+	def fit(self, X, y):
 		"""
-		fit(X, y, X_test, y_test)
+		fit(X, y)
 
 		Preprocesses X and y, builds CNN model, tunes model hyperparameters and
 		fits the model to given X and y, using X_test and y_test to validate and
@@ -388,17 +403,16 @@ class CNN:
 		if self.nodes * self.channels != X.shape[1]:
 			raise ValueError("The product nodes and channels is not the correct shape.")
 		# error
-		else:
-			X, y = self._preprocess(X, y)
-		X_test, y_test = self._preprocess(X_test, y_test)
+		X, y = self._preprocess(X, y)
+		X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=self.random_state)
 		# CNN gets nodes, channels, max_epochs, tuner=None, layers=None
 		# Model Builder takes class_type, input_shape, layers, max_epochs, **kwargs
-		builder = ModelBuilder(self.tuner, X.shape[1:], self.layers, self.max_epochs, X_test, y_test,
+		builder = ModelBuilder(self.tuner, X_train.shape[1:], self.layers, self.max_epochs, X_test, y_test,
 		                       self.batch_size, self.val_split, **self.tuner_kwargs)
 		if self.tuner is None:
-			self.model_ = builder.build_basic_model(X, y)
+			self.model_ = builder.build_basic_model(X_train, y_train)
 		else:
-			self.model_ = builder.build_tuned_model(X, y)
+			self.model_ = builder.build_tuned_model(X_train, y_train)
 
 		self.is_fitted_ = True
 
