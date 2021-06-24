@@ -1,28 +1,52 @@
 import numpy as np
 from sklearn.utils.validation import check_X_y, check_is_fitted
 from sklearn.metrics import r2_score
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Conv1D, Flatten, MaxPool1D, MaxPooling1D, Dropout
-from tensorflow.keras.callbacks import ModelCheckpoint
 from sklearn.impute import SimpleImputer
 import kerastuner as kt
 import functools
 import tempfile
 import os.path as op
 
+try:
+	from tensorflow.keras.models import Sequential
+	from tensorflow.keras.layers import Dense, Conv1D, Flatten, MaxPool1D, MaxPooling1D, Dropout
+	from tensorflow.keras.callbacks import ModelCheckpoint
+
+    HAS_KERAS = True
+except ImportError:  # pragma: no cover
+    HAS_KERAS = False
+
 
 def build_model(hp, conv_layers, input_shape):
 	"""
+	build_model(hp, conv_layers, input_shape)
+
 	Uses keras tuner to build model - can control # layers, # filters in each layer, kernel size,
 	regularization etc
 
+	Parameters
+	----------
+	hp : tensorflow.keras.HyperParameters()
+		Hyperparameters class from which to sample hyperparameters
+
+	conv_layers : int
+		number of layers (one layer is Conv and MaxPool) in the sequential model.
+
+	input_shape : int
+		input shape of X so the model gets built continuously as you are adding layers
+
+	Returns
+	-------
+	model : tensorflow.keras.Model
+		compiled model that uses hyperparameters defined inline to hypertune the model
+
 	"""
 	model = Sequential()
+	model.add(Conv1D(filters=hp.Int('init_conv_filters' + str(i), min_value=32, max_value=512, step=32),
+	                 kernel_size=hp.Int('init_conv_kernel' + str(i), min_value=1, max_value=4, step=1),
+	                 activation='relu', input_shape=input_shape ))
 
-	dense_filters = hp.Int('dense_filters', min_value=32, max_value=512, step=32)
-	model.add(Dense(dense_filters, activation='relu', input_shape=input_shape))
-
-	for i in range(conv_layers):
+	for i in range(conv_layers - 1):
 		model.add(Conv1D(filters=hp.Int('conv_filters' + str(i), min_value=32, max_value=512, step=32),
 		                 kernel_size=hp.Int('conv_kernel' + str(i), min_value=1, max_value=4, step=1),
 		                 activation='relu'))
@@ -47,7 +71,8 @@ class ModelBuilder:
 	This class controls the building of complex model architecture and the number of layers in the model.
 	"""
 
-	def __init__(self, class_type, input_shape, layers, max_epochs, X_test, y_test, batch_size, val_split, **tuner_kwargs):
+	def __init__(self, class_type, input_shape, layers, max_epochs, X_test, y_test, batch_size, val_split,
+	             **tuner_kwargs):
 		self.class_type = class_type
 		self.layers = layers
 		self.input_shape = input_shape
@@ -59,6 +84,18 @@ class ModelBuilder:
 		self.tuner_kwargs = tuner_kwargs
 
 	def _get_tuner(self):
+		"""
+		_get_tuner()
+
+		Calls build_model and instantiates a Keras Tuner
+		for the returned model depending on user choice of tuner.
+
+		Returns
+		-------
+		tuner : kerastuner.tuners
+			BayesianOptimization, Hyperband, or RandomSearch tuner
+
+		"""
 		# setting parameters beforehand
 		hypermodel = functools.partial(build_model, conv_layers=self.layers, input_shape=self.input_shape)
 		if isinstance(self.class_type, str):
@@ -90,6 +127,30 @@ class ModelBuilder:
 			raise TypeError()
 
 	def _get_best_weights(self, model, X, y):
+		"""
+		_get_best_weights(model, X, y)
+
+		Uses keras ModelCheckpoint to fit CNN and save the weights from the epoch that produced
+		the lowest validation loss to a temporary file. Uses temporary file to load the
+		best weights into the CNN model and returns this best model.
+
+		Parameters
+		----------
+		model : tensorflow.keras.Sequential()
+			Hyperparameters class from which to sample hyperparameters
+
+		X : array-like of shape (n_samples, n_features)
+			The feature samples
+
+		y : array-like of shape (n_samples,) or (n_samples, n_targets)
+			Target values
+
+		Returns
+		-------
+		model : tensorflow.keras.Model
+			fitted keras model with best weights loaded
+
+		"""
 		weights_path = op.join(tempfile.mkdtemp(), 'weights.hdf5')
 		# making model checkpoint to save best model (# epochs) to file
 		model_checkpoint_callback = ModelCheckpoint(
@@ -101,7 +162,7 @@ class ModelBuilder:
 			verbose=True)
 
 		# Fitting model using model checkpoint callback to find best model which is saved to 'weights'
-		#model.fit(X, y, epochs=self.max_epochs, batch_size=self.batch_size, callbacks=[model_checkpoint_callback], validation_split=self.val_split)
+		# model.fit(X, y, epochs=self.max_epochs, batch_size=self.batch_size, callbacks=[model_checkpoint_callback], validation_split=self.val_split)
 		model.fit(X, y, epochs=self.max_epochs, batch_size=self.batch_size, callbacks=[model_checkpoint_callback],
 		          validation_data=(self.X_test, self.y_test))
 		# loading in weights
@@ -111,6 +172,26 @@ class ModelBuilder:
 		return model
 
 	def build_basic_model(self, X, y):
+		"""
+		build_basic_model(X, y)
+
+		Builds a static, basic sequential model with no hyperparameter tuning with the
+		architecture used to produce state of the art Weston Havens results.
+
+		Parameters
+		----------
+		X : array-like of shape (n_samples, n_features)
+			The feature samples
+
+		y : array-like of shape (n_samples,) or (n_samples, n_targets)
+			Target values
+
+		Returns
+		-------
+		model : tensorflow.keras.Model
+			compiled model using basic Weston Havens architecture
+
+		"""
 		model = Sequential()
 		model.add(Dense(128, activation='relu', input_shape=X.shape[1:]))
 		model.add(Conv1D(24, kernel_size=2, activation='relu'))
@@ -136,6 +217,27 @@ class ModelBuilder:
 		return best_model
 
 	def build_tuned_model(self, X, y):
+		"""
+		build_tuned_model(X, y)
+
+		Initializes a Keras tuner on user's model, searches for best hyperparameters, and saves them.
+		Then builds "best" model using saved best hyperparameters found during the search and returns model
+		with best weights loaded from _get_best_weights.
+
+		Parameters
+		----------
+		X : array-like of shape (n_samples, n_features)
+			The feature samples
+
+		y : array-like of shape (n_samples,) or (n_samples, n_targets)
+			Target values
+
+		Returns
+		-------
+		model : tensorflow.keras.Model
+			compiled model that uses hyperparameters defined inline to hypertune the model
+
+		"""
 		# initialize tuner
 		tuner = self._get_tuner()
 
@@ -157,48 +259,49 @@ class CNN:
 	This class implements the common sklearn model interface (has a fit and predict function).
 	"""
 
-	def __init__(self, nodes, channels, max_epochs=50, batch_size=32, tuner=None, layers=1, val_split=0.2, **tuner_kwargs):
+	def __init__(self, nodes, channels, max_epochs=50, batch_size=32, tuner=None, layers=1, val_split=0.2,
+	             **tuner_kwargs):
 		"""
 		Constructs a CNN that uses the given number of nodes, each with a
 		max depth of max_depth.
 		"""
 		# checking nodes is passed as int
-		if not type(nodes) is int:
+		if not isinstance(nodes, int):
 			raise TypeError("Parameter nodes must be an integer.")
 		else:
 			self.nodes = nodes
 
 		# checking channels is passed as int
-		if not type(channels) is int:
+		if not isinstance(channels, int):
 			raise TypeError("Parameter channels must be an integer.")
 		else:
 			self.channels = channels
 
 		# checking layers is passed as int
-		if not type(layers) is int:
+		if not isinstance(layers, int):
 			raise TypeError("Parameter layers must be an integer.")
 		else:
 			self.layers = layers
 
 		# checking max epochs is passed as int
-		if not type(max_epochs) is int:
+		if not isinstance(max_epochs, int):
 			raise TypeError("Parameter max_epochs must be an integer.")
 		else:
 			self.max_epochs = max_epochs
 
-		if not type(batch_size) is int:
+		if not isinstance(batch_size, int):
 			raise TypeError("Parameter max_epochs must be an integer.")
 		else:
 			self.batch_size = batch_size
 
 		# checking tiner is passed as str or None
-		if type(tuner) is not str and tuner is not None:
+		if not isinstance(tuner, str) and tuner is not None:
 			raise TypeError("Parameter tuner must be str.")
 		else:
 			self.tuner = tuner  # tuner can be None (no tuning) BayesianOptimization, Hyperband, or RandomSearch
 
 		# checking val split is passed as float
-		if not type(val_split) is float:
+		if not isinstance(val_split, float):
 			raise TypeError("Parameter val_split must be a float.")
 		else:
 			self.val_split = val_split
@@ -207,6 +310,29 @@ class CNN:
 		self.best_hps_ = None
 
 	def _preprocess(self, X, y=None):
+		"""
+		_preprocess(X, y)
+
+		Masks NAN values for X and y (if y is given), imputes X, and reshapes X
+		to be in proper form for CNN model.
+
+		Parameters
+		----------
+		X : array-like of shape (n_samples, n_features)
+			The feature samples
+
+		y : array-like of shape (n_samples,) or (n_samples, n_targets)
+			Target values
+
+		Returns
+		-------
+		X : array-like of shape (n_samples, n_features)
+			The feature samples
+
+		y : array-like of shape (n_samples,) or (n_samples, n_targets)
+			Target values
+
+		"""
 		if len(X.shape) > 2:
 			raise ValueError("Expected X to be a 2D matrix.")
 		if y is not None:
@@ -223,7 +349,6 @@ class CNN:
 
 		subjects = X.shape[0]
 
-
 		X = np.swapaxes(X.reshape((subjects, self.channels, self.nodes)), 1, 2)
 
 		if y is not None:
@@ -233,7 +358,31 @@ class CNN:
 
 	def fit(self, X, y, X_test, y_test):
 		"""
-		Takes an input dataset X and a series of targets y and trains the CNN.
+		fit(X, y, X_test, y_test)
+
+		Preprocesses X and y, builds CNN model, tunes model hyperparameters and
+		fits the model to given X and y, using X_test and y_test to validate and
+		find best weights and hyperparameters.
+
+		Parameters
+		----------
+		X : array-like of shape (n_samples, n_features)
+			The feature samples
+
+		y : array-like of shape (n_samples,) or (n_samples, n_targets)
+			Target values
+
+		X_test : array-like of shape (n_samples, n_features)
+			The feature test samples
+
+		y_test : array-like of shape (n_samples,) or (n_samples, n_targets)
+			Target test values
+
+		Returns
+		-------
+		self : CNN
+			updated CNN instantiation
+
 		"""
 		# nodes * channels must = X.shape[1]
 		if self.nodes * self.channels != X.shape[1]:
@@ -257,14 +406,47 @@ class CNN:
 
 	def predict(self, X):
 		"""
-		Takes an input dataset X and returns the predictions for each example in X.
+		predict(X)
+
+		Preprocesses X and returns predicted y values for x from fitted CNN model.
+
+		Parameters
+		----------
+		X : array-like of shape (n_samples, n_features)
+			The feature samples
+
+		Returns
+		-------
+		pred : array-like of shape (n_samples,) or (n_samples, n_targets)
+			predicted values
+
 		"""
+
 		X = self._preprocess(X)
 		check_is_fitted(self, 'is_fitted_')
 		pred = self.model_.predict(X).squeeze()
 		return pred
 
 	def score(self, y_test, y_hat):
+		"""
+		predict(X)
+
+		Applies a NAN mask to y_test and returns r-squared score for the CNN model.
+
+		Parameters
+		----------
+		y_test : array-like of shape (n_samples,) or (n_samples, n_targets)
+			Testing target values
+
+		y_hat : array-like of shape (n_samples,) or (n_samples, n_targets)
+			Predicted target values
+
+		Returns
+		-------
+		r2_score : float
+			r-squared score for y_test and y_hat for CNN model
+
+		"""
 		nan_mask = np.logical_not(np.isnan(y_test))
 		y_test = y_test[nan_mask]
 		return r2_score(y_test, y_hat)
