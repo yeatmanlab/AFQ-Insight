@@ -43,7 +43,6 @@ For more details on this approach in a research setting, please see [2]_.
    PLOS Computational Biology, 2021
    DOI: 10.1371/journal.pcbi.1009136
 
-
 .. GENERATED FROM PYTHON SOURCE LINES 28-111
 
 
@@ -63,7 +62,7 @@ For more details on this approach in a research setting, please see [2]_.
     Downloading https://github.com/yeatmanlab/Sarica_2017/raw/gh-pages/data/subjects.csv to ../../../../.afq-insight/sarica_data/subjects.csv.
     Mean train score: 1.000
     Mean test score:  0.793
-    Mean fit time:     8.24s
+    Mean fit time:     8.50s
     Mean score time:   0.00s
 
 
@@ -162,7 +161,7 @@ For more details on this approach in a research setting, please see [2]_.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  42.498 seconds)
+   **Total running time of the script:** ( 0 minutes  43.930 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_als_classification.py:

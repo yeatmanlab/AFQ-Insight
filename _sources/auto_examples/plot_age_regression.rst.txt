@@ -43,7 +43,6 @@ For more details, please see [2]_.
    PLOS Computational Biology, 2021
    DOI: 10.1371/journal.pcbi.1009136
 
-
 .. GENERATED FROM PYTHON SOURCE LINES 28-82
 
 
@@ -61,9 +60,9 @@ For more details, please see [2]_.
 
     Downloading https://yeatmanlab.github.io/AFQBrowser-demo/data/nodes.csv to ../../../../.afq-insight/weston_havens_data/nodes.csv.
     Downloading https://yeatmanlab.github.io/AFQBrowser-demo/data/subjects.csv to ../../../../.afq-insight/weston_havens_data/subjects.csv.
-    Mean train score: 0.852
-    Mean test score:  -0.374
-    Mean fit time:    12.61s
+    Mean train score: 0.904
+    Mean test score:  -0.588
+    Mean fit time:    12.53s
     Mean score time:   0.00s
 
 
@@ -133,7 +132,7 @@ For more details, please see [2]_.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 1 minutes  5.476 seconds)
+   **Total running time of the script:** ( 1 minutes  6.622 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_age_regression.py:
