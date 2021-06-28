@@ -60,9 +60,9 @@ For more details, please see [2]_.
 
     Downloading https://yeatmanlab.github.io/AFQBrowser-demo/data/nodes.csv to ../../../../.afq-insight/weston_havens_data/nodes.csv.
     Downloading https://yeatmanlab.github.io/AFQBrowser-demo/data/subjects.csv to ../../../../.afq-insight/weston_havens_data/subjects.csv.
-    Mean train score: 0.904
-    Mean test score:  -0.588
-    Mean fit time:    12.53s
+    Mean train score: 0.834
+    Mean test score:  -0.378
+    Mean fit time:    13.42s
     Mean score time:   0.00s
 
 
@@ -132,7 +132,7 @@ For more details, please see [2]_.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 1 minutes  6.622 seconds)
+   **Total running time of the script:** ( 1 minutes  8.469 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_age_regression.py:
