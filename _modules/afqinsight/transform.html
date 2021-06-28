@@ -3,23 +3,29 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>afqinsight.transform &mdash; AFQ-Insight 0.2.8 documentation</title>
+  <title>afqinsight.transform &mdash; AFQ-Insight 0.3.0 documentation</title>
   
 
   
   <link rel="stylesheet" href="../../_static/css/afqinsight.css" type="text/css" />
   <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/afqinsight.css" type="text/css" />
   <link rel="stylesheet" href="../../_static/gallery.css" type="text/css" />
   <link rel="stylesheet" href="../../_static/gallery-binder.css" type="text/css" />
   <link rel="stylesheet" href="../../_static/gallery-dataframe.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/gallery-rendered-html.css" type="text/css" />
 
   
   
+
   
+  
+
   
 
   
@@ -29,10 +35,10 @@
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
         <script src="../../_static/jquery.js"></script>
         <script src="../../_static/underscore.js"></script>
         <script src="../../_static/doctools.js"></script>
-        <script src="../../_static/language_data.js"></script>
         <script src="../../_static/js/copybutton.js"></script>
     
     <script type="text/javascript" src="../../_static/js/theme.js"></script>
@@ -53,7 +59,7 @@
           
 
           
-            <a href="../../index.html" class="icon icon-home" alt="Documentation Home"> AFQ-Insight
+            <a href="../../index.html" class="icon icon-home"> AFQ-Insight
           
 
           
@@ -63,7 +69,7 @@
             
             
               <div class="version">
-                0.2.8
+                0.3.0
               </div>
             
           
@@ -136,6 +142,8 @@
 
 
 
+
+
 <div role="navigation" aria-label="breadcrumbs navigation">
 
   <ul class="wy-breadcrumbs">
@@ -160,29 +168,19 @@
            <div itemprop="articleBody">
             
   <h1>Source code for afqinsight.transform</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Extract, transform, select, and shuffle AFQ data.&quot;&quot;&quot;</span>
+<span></span><span class="sd">&quot;&quot;&quot;Transform AFQ data.&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
-<span class="kn">from</span> <span class="nn">groupyr.utils</span> <span class="kn">import</span> <span class="n">check_groups</span>
-<span class="kn">from</span> <span class="nn">sklearn.base</span> <span class="kn">import</span> <span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">TransformerMixin</span>
-<span class="kn">from</span> <span class="nn">sklearn.utils</span> <span class="kn">import</span> <span class="n">check_array</span>
 <span class="kn">from</span> <span class="nn">sklearn_pandas</span> <span class="kn">import</span> <span class="n">DataFrameMapper</span>
 
 <span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">CANONICAL_TRACT_NAMES</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s2">&quot;AFQDataFrameMapper&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;GroupExtractor&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;remove_group&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;remove_groups&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;select_group&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;select_groups&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;shuffle_group&quot;</span><span class="p">,</span>
     <span class="s2">&quot;multicol2sets&quot;</span><span class="p">,</span>
     <span class="s2">&quot;multicol2dicts&quot;</span><span class="p">,</span>
     <span class="s2">&quot;sort_features&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;TopNGroupsExtractor&quot;</span><span class="p">,</span>
     <span class="s2">&quot;beta_hat_by_groups&quot;</span><span class="p">,</span>
     <span class="s2">&quot;unfold_beta_hat_by_metrics&quot;</span><span class="p">,</span>
 <span class="p">]</span>
@@ -356,259 +354,6 @@
         <span class="k">return</span> <span class="kc">True</span>
 
 
-<span class="k">class</span> <span class="nc">GroupExtractor</span><span class="p">(</span><span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">TransformerMixin</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;An sklearn-compatible group extractor.</span>
-
-<span class="sd">    Given a sequence of all group indices and a subsequence of desired</span>
-<span class="sd">    group indices, this transformer returns the columns of the feature</span>
-<span class="sd">    matrix, `X`, that are in the desired subgroups.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    extract : numpy.ndarray or int, optional</span>
-<span class="sd">        subsequence of desired groups to extract from feature matrix</span>
-
-<span class="sd">    groups : numpy.ndarray or int, optional</span>
-<span class="sd">        all group indices for feature matrix</span>
-
-<span class="sd">    copy_X : bool, default=False</span>
-<span class="sd">        if ``True``, X will be copied; else, ``transform`` may return a view</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">extract</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">groups</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">copy_X</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">extract</span> <span class="o">=</span> <span class="n">extract</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">groups</span> <span class="o">=</span> <span class="n">groups</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">copy_X</span> <span class="o">=</span> <span class="n">copy_X</span>
-
-    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Transform the input data.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        X : numpy.ndarray</span>
-<span class="sd">            The feature matrix</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">X</span> <span class="o">=</span> <span class="n">check_array</span><span class="p">(</span>
-            <span class="n">X</span><span class="p">,</span>
-            <span class="n">copy</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">copy_X</span><span class="p">,</span>
-            <span class="n">dtype</span><span class="o">=</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span>
-            <span class="n">force_all_finite</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="n">groups</span> <span class="o">=</span> <span class="n">check_groups</span><span class="p">(</span><span class="n">groups</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">groups_</span><span class="p">,</span> <span class="n">X</span><span class="o">=</span><span class="n">X</span><span class="p">,</span> <span class="n">allow_overlap</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">extract</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">X</span>
-        <span class="k">elif</span> <span class="n">isiterable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">extract</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">extract</span><span class="p">):</span>
-            <span class="n">extract</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">extract</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">extract</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
-            <span class="n">extract</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">extract</span><span class="p">])</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;extract must be an int; got </span><span class="si">{0}</span><span class="s2"> instead&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">extract</span><span class="p">)</span>
-            <span class="p">)</span>
-
-        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">groups</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">extract</span><span class="p">])</span>
-        <span class="k">return</span> <span class="n">X</span><span class="p">[:,</span> <span class="n">idx</span><span class="p">]</span>
-
-    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Fit a transform from the given data. This is a no-op.&quot;&quot;&quot;</span>
-        <span class="n">X</span> <span class="o">=</span> <span class="n">check_array</span><span class="p">(</span>
-            <span class="n">X</span><span class="p">,</span>
-            <span class="n">copy</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">copy_X</span><span class="p">,</span>
-            <span class="n">dtype</span><span class="o">=</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span>
-            <span class="n">force_all_finite</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="n">_</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_features_in_</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">groups_</span> <span class="o">=</span> <span class="n">check_groups</span><span class="p">(</span><span class="n">groups</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">,</span> <span class="n">X</span><span class="o">=</span><span class="n">X</span><span class="p">,</span> <span class="n">allow_overlap</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span>
-
-    <span class="k">def</span> <span class="nf">_more_tags</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>  <span class="c1"># pylint: disable=no-self-use</span>
-        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;allow_nan&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;multilabel&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;multioutput&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
-
-
-<span class="k">def</span> <span class="nf">remove_group</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">remove_label</span><span class="p">,</span> <span class="n">label_sets</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Remove all columns for group specified by ``remove_label``.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    X : ndarray</span>
-<span class="sd">        Feature matrix</span>
-
-<span class="sd">    remove_label : string or sequence</span>
-<span class="sd">        label for any level of the MultiIndex columns of `X`</span>
-
-<span class="sd">    label_sets : ndarray of sets</span>
-<span class="sd">        Array of sets of labels for each column of `X`</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    ndarray</span>
-<span class="sd">        new feature matrix with group represented by `remove_label` removed</span>
-
-<span class="sd">    See Also</span>
-<span class="sd">    --------</span>
-<span class="sd">    multicol2sets</span>
-<span class="sd">        function to convert a pandas MultiIndex into the sequence of sets</span>
-<span class="sd">        expected for the parameter `label_sets`</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">remove_label</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">label_sets</span><span class="p">)</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span> <span class="n">mask</span><span class="p">])</span>
-    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">mask</span><span class="p">])</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;`X` must be a one- or two-dimensional ndarray.&quot;</span><span class="p">)</span>
-
-
-<span class="k">def</span> <span class="nf">remove_groups</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">remove_labels</span><span class="p">,</span> <span class="n">label_sets</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Remove all columns for groups specified by ``remove_labels``.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    X : ndarray</span>
-<span class="sd">        Feature matrix</span>
-
-<span class="sd">    remove_labels : sequence</span>
-<span class="sd">        labels for any level of the MultiIndex columns of `X`</span>
-
-<span class="sd">    label_sets : ndarray of sets</span>
-<span class="sd">        Array of sets of labels for each column of `X`</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    ndarray</span>
-<span class="sd">        new feature matrix with group represented by `remove_label` removed</span>
-
-<span class="sd">    See Also</span>
-<span class="sd">    --------</span>
-<span class="sd">    multicol2sets</span>
-<span class="sd">        function to convert a pandas MultiIndex into the sequence of sets</span>
-<span class="sd">        expected for the parameter `label_sets`</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">label_sets</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">remove_labels</span><span class="p">:</span>
-        <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_or</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">label</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">label_sets</span><span class="p">))</span>
-
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span> <span class="n">mask</span><span class="p">])</span>
-    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">mask</span><span class="p">])</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;`X` must be a one- or two-dimensional ndarray.&quot;</span><span class="p">)</span>
-
-
-<span class="k">def</span> <span class="nf">select_group</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">select_label</span><span class="p">,</span> <span class="n">label_sets</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Select all columns for group specified by ``select_label``.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    X : ndarray</span>
-<span class="sd">        Feature matrix</span>
-
-<span class="sd">    select_label : string or sequence</span>
-<span class="sd">        label for any level of the MultiIndex columns of `X`</span>
-
-<span class="sd">    label_sets : ndarray of sets</span>
-<span class="sd">        Array of sets of labels for each column of `X`</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    ndarray</span>
-<span class="sd">        new feature matrix with only the group represented by `select_label`</span>
-
-<span class="sd">    See Also</span>
-<span class="sd">    --------</span>
-<span class="sd">    multicol2sets</span>
-<span class="sd">        function to convert a pandas MultiIndex into the sequence of sets</span>
-<span class="sd">        expected for the parameter `label_sets`</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">mask</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">select_label</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">label_sets</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span> <span class="n">mask</span><span class="p">])</span>
-    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">mask</span><span class="p">])</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;`X` must be a one- or two-dimensional ndarray.&quot;</span><span class="p">)</span>
-
-
-<span class="k">def</span> <span class="nf">select_groups</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">select_labels</span><span class="p">,</span> <span class="n">label_sets</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Select all columns for groups specified by ``select_labels``.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    X : ndarray</span>
-<span class="sd">        Feature matrix</span>
-
-<span class="sd">    select_labels : sequence</span>
-<span class="sd">        labels for any level of the MultiIndex columns of `X`</span>
-
-<span class="sd">    label_sets : ndarray of sets</span>
-<span class="sd">        Array of sets of labels for each column of `X`</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    ndarray</span>
-<span class="sd">        new feature matrix with only the group represented by `select_label`</span>
-
-<span class="sd">    See Also</span>
-<span class="sd">    --------</span>
-<span class="sd">    multicol2sets</span>
-<span class="sd">        function to convert a pandas MultiIndex into the sequence of sets</span>
-<span class="sd">        expected for the parameter `label_sets`</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">label_sets</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">select_labels</span><span class="p">:</span>
-        <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_or</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="nb">set</span><span class="p">(</span><span class="n">label</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">label_sets</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span> <span class="n">mask</span><span class="p">])</span>
-    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">mask</span><span class="p">])</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;`X` must be a one- or two-dimensional ndarray.&quot;</span><span class="p">)</span>
-
-
-<span class="k">def</span> <span class="nf">shuffle_group</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">label_sets</span><span class="p">,</span> <span class="n">random_seed</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Shuffle all elements for group specified by ``label``.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    X : ndarray</span>
-<span class="sd">        Feature matrix</span>
-
-<span class="sd">    label : string or sequence</span>
-<span class="sd">        label for any level of the MultiIndex columns of `X`</span>
-
-<span class="sd">    label_sets : ndarray of sets</span>
-<span class="sd">        Array of sets of labels for each column of `X`</span>
-
-<span class="sd">    random_seed : {None, int, array_like[ints], SeedSequence, BitGenerator, Generator}, optional</span>
-<span class="sd">        A seed to initialize the :doc:`numpy:numpy.random.BitGenerator` for</span>
-<span class="sd">        group shuffling. If None, then fresh, unpredictable entropy will be</span>
-<span class="sd">        pulled from the OS. If an ``int`` or ``array_like[ints]`` is passed,</span>
-<span class="sd">        then it will be passed to :doc:`numpy:numpy.random.SeedSequence` to</span>
-<span class="sd">        derive the initial :doc:`numpy:numpy.random.BitGenerator` state. One</span>
-<span class="sd">        may also pass in a`SeedSequence` instance Additionally, when passed a</span>
-<span class="sd">        :doc:`numpy:numpy.random.BitGenerator`, it will be wrapped by</span>
-<span class="sd">        :doc:`numpy:numpy.random.Generator`. If passed a</span>
-<span class="sd">        :doc:`numpy:numpy.random.Generator`, it will be returned unaltered.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    ndarray</span>
-<span class="sd">        new feature matrix with all elements of group `shuffle_idx` permuted</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
-    <span class="n">mask</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">label</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">label_sets</span>
-    <span class="n">section</span> <span class="o">=</span> <span class="n">out</span><span class="p">[:,</span> <span class="n">mask</span><span class="p">]</span>
-    <span class="n">section_shape</span> <span class="o">=</span> <span class="n">section</span><span class="o">.</span><span class="n">shape</span>
-    <span class="n">section</span> <span class="o">=</span> <span class="n">section</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
-    <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">random_seed</span><span class="p">)</span>
-    <span class="n">rng</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">section</span><span class="p">)</span>
-    <span class="n">out</span><span class="p">[:,</span> <span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">section</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">section_shape</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">out</span>
-
-
 <span class="k">def</span> <span class="nf">multicol2sets</span><span class="p">(</span><span class="n">columns</span><span class="p">,</span> <span class="n">tract_symmetry</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Convert a pandas MultiIndex to an array of sets.</span>
 
@@ -710,52 +455,6 @@
     <span class="k">return</span> <span class="n">res</span>
 
 
-<span class="k">class</span> <span class="nc">TopNGroupsExtractor</span><span class="p">(</span><span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">TransformerMixin</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;An sklearn-compatible group extractor.</span>
-
-<span class="sd">    Given a sequence of all group indices and a subsequence of desired</span>
-<span class="sd">    group indices, this transformer returns the columns of the feature</span>
-<span class="sd">    matrix, `X`, that are in the desired subgroups.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    extract : sequence of tuples of labels</span>
-<span class="sd">        labels for any level of the MultiIndex columns of `X`</span>
-
-<span class="sd">    label_sets : ndarray of sets</span>
-<span class="sd">        Array of sets of labels for each column of `X`</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">top_n</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">labels_by_importance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">all_labels</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">top_n</span> <span class="o">=</span> <span class="n">top_n</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">labels_by_importance</span> <span class="o">=</span> <span class="n">labels_by_importance</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">all_labels</span> <span class="o">=</span> <span class="n">all_labels</span>
-
-    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Transform the input data.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        X : numpy.ndarray</span>
-<span class="sd">            The feature matrix</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">input_provided</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">labels_by_importance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_labels</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-        <span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">input_provided</span><span class="p">:</span>
-            <span class="n">out</span> <span class="o">=</span> <span class="n">select_groups</span><span class="p">(</span>
-                <span class="n">X</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels_by_importance</span><span class="p">[:</span> <span class="bp">self</span><span class="o">.</span><span class="n">top_n</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_labels</span>
-            <span class="p">)</span>
-            <span class="k">return</span> <span class="n">out</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">X</span>
-
-    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Fit a transform from the given data. This is a no-op.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span>
-
-
 <span class="k">def</span> <span class="nf">beta_hat_by_groups</span><span class="p">(</span><span class="n">beta_hat</span><span class="p">,</span> <span class="n">columns</span><span class="p">,</span> <span class="n">drop_zeros</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Transform one-dimensional beta_hat array into OrderedDict.</span>
 
@@ -785,19 +484,16 @@
 <span class="sd">        the `columns` input.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">betas</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
-
     <span class="n">label_sets</span> <span class="o">=</span> <span class="n">multicol2sets</span><span class="p">(</span><span class="n">columns</span><span class="p">,</span> <span class="n">tract_symmetry</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="n">tract</span> <span class="ow">in</span> <span class="n">columns</span><span class="o">.</span><span class="n">levels</span><span class="p">[</span><span class="n">columns</span><span class="o">.</span><span class="n">names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s2">&quot;tractID&quot;</span><span class="p">)]:</span>
-        <span class="n">all_metrics</span> <span class="o">=</span> <span class="n">select_group</span><span class="p">(</span>
-            <span class="n">x</span><span class="o">=</span><span class="n">beta_hat</span><span class="p">,</span> <span class="n">select_label</span><span class="o">=</span><span class="p">(</span><span class="n">tract</span><span class="p">,),</span> <span class="n">label_sets</span><span class="o">=</span><span class="n">label_sets</span>
-        <span class="p">)</span>
+        <span class="n">tract_mask</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">tract</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="n">label_sets</span>
+        <span class="n">all_metrics</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">beta_hat</span><span class="p">[</span><span class="n">tract_mask</span><span class="p">])</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">drop_zeros</span> <span class="ow">or</span> <span class="nb">any</span><span class="p">(</span><span class="n">all_metrics</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">):</span>
             <span class="n">betas</span><span class="p">[</span><span class="n">tract</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
             <span class="k">for</span> <span class="n">metric</span> <span class="ow">in</span> <span class="n">columns</span><span class="o">.</span><span class="n">levels</span><span class="p">[</span><span class="n">columns</span><span class="o">.</span><span class="n">names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s2">&quot;metric&quot;</span><span class="p">)]:</span>
-                <span class="n">x</span> <span class="o">=</span> <span class="n">select_group</span><span class="p">(</span>
-                    <span class="n">x</span><span class="o">=</span><span class="n">beta_hat</span><span class="p">,</span> <span class="n">select_label</span><span class="o">=</span><span class="p">(</span><span class="n">tract</span><span class="p">,</span> <span class="n">metric</span><span class="p">),</span> <span class="n">label_sets</span><span class="o">=</span><span class="n">label_sets</span>
-                <span class="p">)</span>
+                <span class="n">metric_mask</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">tract</span><span class="p">,</span> <span class="n">metric</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="n">label_sets</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">beta_hat</span><span class="p">[</span><span class="n">metric_mask</span><span class="p">])</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">drop_zeros</span> <span class="ow">or</span> <span class="nb">any</span><span class="p">(</span><span class="n">x</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">):</span>
                     <span class="n">betas</span><span class="p">[</span><span class="n">tract</span><span class="p">][</span><span class="n">metric</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span>
 
@@ -859,28 +555,25 @@
            
           </div>
           <footer>
-  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        
-        &copy; Copyright 2020, Adam Richie-Halford
+        &#169; Copyright 2020, Adam Richie-Halford.
 
     </p>
   </div>
     
     
     
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     
     provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
-
         </div>
       </div>
 

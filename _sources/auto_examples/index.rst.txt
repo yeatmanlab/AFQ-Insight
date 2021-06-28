@@ -12,6 +12,48 @@ General examples
 Introductory examples.
 
 
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Predict subject age from white matter features. This example fetches the Weston-Havens dataset ...">
+
+.. only:: html
+
+ .. figure:: /auto_examples/images/thumb/sphx_glr_plot_age_regression_thumb.png
+     :alt: Predict age from white matter features
+
+     :ref:`sphx_glr_auto_examples_plot_age_regression.py`
+
+.. raw:: html
+
+    </div>
+
+
+.. toctree::
+   :hidden:
+
+   /auto_examples/plot_age_regression
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Predict ALS diagnosis from white matter features. This example fetches the ALS classification d...">
+
+.. only:: html
+
+ .. figure:: /auto_examples/images/thumb/sphx_glr_plot_als_classification_thumb.png
+     :alt: Classify ALS diagnosis from white matter features
+
+     :ref:`sphx_glr_auto_examples_plot_als_classification.py`
+
+.. raw:: html
+
+    </div>
+
+
+.. toctree::
+   :hidden:
+
+   /auto_examples/plot_als_classification
 .. raw:: html
 
     <div class="sphx-glr-clear"></div>
