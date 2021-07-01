@@ -1,3 +1,5 @@
+"""Build, fit, and predict with 1-D convolutional neural networks."""
+
 import numpy as np
 from sklearn.utils.validation import check_X_y, check_is_fitted
 from sklearn.metrics import r2_score
@@ -10,14 +12,7 @@ import os.path as op
 try:
     import kerastuner as kt
     from tensorflow.keras.models import Sequential
-    from tensorflow.keras.layers import (
-        Dense,
-        Conv1D,
-        Flatten,
-        MaxPool1D,
-        MaxPooling1D,
-        Dropout,
-    )
+    from tensorflow.keras.layers import Dense, Conv1D, Flatten, MaxPool1D, Dropout
     from tensorflow.keras.callbacks import ModelCheckpoint
 
     HAS_KERAS = True
@@ -26,8 +21,7 @@ except ImportError:  # pragma: no cover
 
 
 def build_model(hp, conv_layers, input_shape):
-    """
-    build_model(hp, conv_layers, input_shape)
+    """Build a keras model.
 
     Uses keras tuner to build model - can control # layers, # filters in each layer, kernel size,
     regularization etc
@@ -100,9 +94,7 @@ def _check_keras():
 
 
 class ModelBuilder:
-    """
-    This class controls the building of complex model architecture and the number of layers in the model.
-    """
+    """Build a complex model architecture with the specified number of layers."""
 
     def __init__(
         self,
@@ -125,11 +117,7 @@ class ModelBuilder:
         self.tuner_kwargs = tuner_kwargs
 
     def _get_tuner(self):
-        """
-        _get_tuner()
-
-        Calls build_model and instantiates a Keras Tuner
-        for the returned model depending on user choice of tuner.
+        """Call build_model and instantiate a Keras Tuner for the returned model depending on user choice of tuner.
 
         Returns
         -------
@@ -178,12 +166,12 @@ class ModelBuilder:
             raise TypeError()
 
     def _get_best_weights(self, model, X, y):
-        """
-        _get_best_weights(model, X, y)
+        """Fit a CNN and save the best weights.
 
-        Uses keras ModelCheckpoint to fit CNN and save the weights from the epoch that produced
-        the lowest validation loss to a temporary file. Uses temporary file to load the
-        best weights into the CNN model and returns this best model.
+        Use keras ModelCheckpoint to fit CNN and save the weights from the epoch
+        that produced the lowest validation loss to a temporary file. Uses
+        temporary file to load the best weights into the CNN model and returns
+        this best model.
 
         Parameters
         ----------
@@ -229,8 +217,7 @@ class ModelBuilder:
         return model
 
     def build_basic_model(self, X, y):
-        """
-        build_basic_model(X, y)
+        """Build a sequential model without hyperparameter tuning.
 
         Builds a static, basic sequential model with no hyperparameter tuning with the
         architecture used to produce state of the art Weston Havens results.
@@ -276,8 +263,7 @@ class ModelBuilder:
         return best_model
 
     def build_tuned_model(self, X, y):
-        """
-        build_tuned_model(X, y)
+        """Build a tuned model using Keras tuner.
 
         Initializes a Keras tuner on user's model, searches for best hyperparameters, and saves them.
         Then builds "best" model using saved best hyperparameters found during the search and returns model
@@ -314,9 +300,7 @@ class ModelBuilder:
 
 
 class CNN:
-    """
-    This class implements the common sklearn model interface (has a fit and predict function).
-    """
+    """A Convolutional Neural Network model with a fit/predict interface."""
 
     def __init__(
         self,
@@ -331,9 +315,9 @@ class CNN:
         random_state=200,
         **tuner_kwargs,
     ):
-        """
-        Constructs a CNN that uses the given number of n_nodes, each with a
-        max depth of max_depth.
+        """Construct a CNN.
+
+        Use the given number of n_nodes, each with a max depth of max_depth.
         """
         # checking n_nodes is passed as int
         if not isinstance(n_nodes, int):
@@ -368,7 +352,8 @@ class CNN:
         if not isinstance(tuner, str) and tuner is not None:
             raise TypeError("Parameter tuner must be str.")
         else:
-            self.tuner = tuner  # tuner can be None (no tuning) BayesianOptimization, Hyperband, or RandomSearch
+            # tuner can be None (no tuning) BayesianOptimization, Hyperband, or RandomSearch
+            self.tuner = tuner
 
         # checking val split is passed as float
         if not isinstance(test_size, float):
@@ -394,12 +379,16 @@ class CNN:
         self.best_hps_ = None
 
     def _preprocess(self, X, y=None):
-        """
-        _preprocess(X, y)
+        """Convert feature matrix for input into a CNN.
 
         Masks NAN values for X and y (if y is given), imputes X, and reshapes X
-        to be in proper form for CNN model. By reshaping the data, we are treating
-        each tract as a channel.
+        to be in proper form for CNN model. In more conventionall machine
+        learning, X has shape (n_samples, n_features), where n_features is
+        n_nodes * n_bundles * n_metrics. However, in our CNN approach, we treat
+        each bundle/metric combination as a separate channel, analogous to RGB
+        channels in a 2D image. The remaining one dimension is the nodes
+        dimension. Thus the output has shape (n_samples, n_channels, n_nodes),
+        where n_channels = n_metrics * n_bundles.
 
         Parameters
         ----------
@@ -411,8 +400,8 @@ class CNN:
 
         Returns
         -------
-        X : array-like of shape (n_samples, n_features)
-                The feature samples
+        X : array-like of shape (n_samples, n_channels, n_nodes)
+                The imputed and reshaped feature samples
 
         y : array-like of shape (n_samples,) or (n_samples, n_targets)
                 Target values
@@ -448,8 +437,7 @@ class CNN:
             return X
 
     def fit(self, X, y):
-        """
-        fit(X, y)
+        """Fit the model.
 
         Preprocesses X and y, builds CNN model, tunes model hyperparameters and
         fits the model to given X and y, using X_test and y_test to validate and
@@ -495,10 +483,9 @@ class CNN:
         return self
 
     def predict(self, X):
-        """
-        predict(X)
+        """Predict target values.
 
-        Preprocesses X and returns predicted y values for x from fitted CNN model.
+        Preprocesses X and returns predicted y values for X from fitted CNN model.
 
         Parameters
         ----------
@@ -509,17 +496,14 @@ class CNN:
         -------
         pred : array-like of shape (n_samples,) or (n_samples, n_targets)
                 predicted values
-
         """
-
         X = self._preprocess(X)
         check_is_fitted(self, "is_fitted_")
         pred = self.model_.predict(X).squeeze()
         return pred
 
     def score(self, y_test, y_hat):
-        """
-        predict(X)
+        """Score the performance of the model.
 
         Applies a NAN mask to y_test and returns r-squared score for the CNN model.
 
