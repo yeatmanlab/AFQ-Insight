@@ -12,22 +12,35 @@ test_data_path = op.join(data_path, "test_data")
 
 
 def test_fetch():
-    X, y, groups, feature_names, group_names, subjects, _ = fetch_sarica()
-    assert X.shape == (48, 3600)
+    sarica_dir = fetch_sarica()
+    X, y, groups, feature_names, group_names, subjects, _ = load_afq_data(
+        workdir=sarica_dir,
+        dwi_metrics=["md", "fa"],
+        target_cols=["class"],
+        label_encode_cols=["class"],
+    )
+
+    assert X.shape == (48, 4000)
     assert y.shape == (48,)
-    assert len(groups) == 36
-    assert len(feature_names) == 3600
-    assert len(group_names) == 36
+    assert len(groups) == 40
+    assert len(feature_names) == 4000
+    assert len(group_names) == 40
     assert len(subjects) == 48
     assert op.isfile(op.join(afqi.datasets.DATA_DIR, "sarica_data", "nodes.csv"))
     assert op.isfile(op.join(afqi.datasets.DATA_DIR, "sarica_data", "subjects.csv"))
 
-    X, y, groups, feature_names, group_names, subjects = fetch_weston_havens()
-    assert X.shape == (77, 3600)
+    wh_dir = fetch_weston_havens()
+    X, y, groups, feature_names, group_names, subjects, classes = load_afq_data(
+        workdir=wh_dir,
+        dwi_metrics=["md", "fa"],
+        target_cols=["Age"],
+    )
+
+    assert X.shape == (77, 4000)
     assert y.shape == (77,)
-    assert len(groups) == 36
-    assert len(feature_names) == 3600
-    assert len(group_names) == 36
+    assert len(groups) == 40
+    assert len(feature_names) == 4000
+    assert len(group_names) == 40
     assert len(subjects) == 77
     assert op.isfile(op.join(afqi.datasets.DATA_DIR, "weston_havens_data", "nodes.csv"))
     assert op.isfile(
