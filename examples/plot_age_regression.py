@@ -28,12 +28,18 @@ For more details, please see [2]_.
 import matplotlib.pyplot as plt
 import numpy as np
 
-from afqinsight.datasets import fetch_weston_havens
+from afqinsight.datasets import fetch_weston_havens, load_afq_data
 from afqinsight import make_afq_regressor_pipeline
 
 from sklearn.model_selection import cross_validate
 
-X, y, groups, feature_names, group_names, subjects = fetch_weston_havens()
+workdir = fetch_weston_havens()
+
+X, y, groups, feature_names, group_names, subjects, classes = load_afq_data(
+    workdir=workdir,
+    dwi_metrics=["md", "fa"],
+    target_cols=["Age"],
+)
 
 pipe = make_afq_regressor_pipeline(
     imputer_kwargs={"strategy": "median"},  # Use median imputation

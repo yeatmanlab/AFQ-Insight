@@ -14,7 +14,7 @@ from sklearn.preprocessing import LabelEncoder
 from .transform import AFQDataFrameMapper
 
 __all__ = ["load_afq_data", "output_beta_to_afq"]
-DATA_DIR = op.join(op.expanduser("~"), ".afq-insight")
+DATA_DIR = op.join(op.expanduser("~"), ".cache", ".afq-insight")
 
 
 def load_afq_data(
@@ -430,25 +430,7 @@ def fetch_sarica(data_home=None):
     """
     data_home = data_home if data_home is not None else DATA_DIR
     _download_afq_dataset("sarica", data_home=data_home)
-    X, y, groups, feature_names, group_names, subjects, classes = load_afq_data(
-        workdir=op.join(data_home, "sarica_data"),
-        dwi_metrics=["md", "fa"],
-        target_cols=["class"],
-        label_encode_cols=["class"],
-    )
-
-    gr = GroupRemover(
-        select=["Right Cingulum Hippocampus", "Left Cingulum Hippocampus"],
-        groups=groups,
-        group_names=group_names,
-    )
-    X = gr.fit_transform(X)
-
-    groups = groups[:36]
-    group_names = [grp for grp in group_names if "Cingulum Hippocampus" not in grp[1]]
-    feature_names = [fn for fn in feature_names if "Cingulum Hippocampus" not in fn[1]]
-
-    return X, y, groups, feature_names, group_names, subjects, classes
+    return op.join(data_home, "sarica_data")
 
 
 def fetch_weston_havens(data_home=None):
@@ -489,21 +471,4 @@ def fetch_weston_havens(data_home=None):
     """
     data_home = data_home if data_home is not None else DATA_DIR
     _download_afq_dataset("weston_havens", data_home=data_home)
-    X, y, groups, feature_names, group_names, subjects, classes = load_afq_data(
-        workdir=op.join(data_home, "weston_havens_data"),
-        dwi_metrics=["md", "fa"],
-        target_cols=["Age"],
-    )
-
-    gr = GroupRemover(
-        select=["Right Cingulum Hippocampus", "Left Cingulum Hippocampus"],
-        groups=groups,
-        group_names=group_names,
-    )
-    X = gr.fit_transform(X)
-
-    groups = groups[:36]
-    group_names = [grp for grp in group_names if "Cingulum Hippocampus" not in grp[1]]
-    feature_names = [fn for fn in feature_names if "Cingulum Hippocampus" not in fn[1]]
-
-    return X, y, groups, feature_names, group_names, subjects
+    return op.join(data_home, "weston_havens_data")
