@@ -14,7 +14,7 @@ from sklearn.preprocessing import LabelEncoder
 from .transform import AFQDataFrameMapper
 
 __all__ = ["load_afq_data", "output_beta_to_afq"]
-DATA_DIR = op.join(op.expanduser("~"), ".cache", ".afq-insight")
+DATA_DIR = op.join(op.expanduser("~"), ".cache", "afq-insight")
 
 
 def load_afq_data(
