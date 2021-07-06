@@ -27,7 +27,7 @@ more thorough search of the hyperparameter space. For more details, please see
 import matplotlib.pyplot as plt
 import numpy as np
 
-from afqinsight.datasets import fetch_weston_havens, load_afq_data
+from afqinsight.datasets import download_weston_havens, load_afq_data
 from afqinsight import make_afq_regressor_pipeline
 
 from sklearn.model_selection import cross_validate
@@ -36,7 +36,7 @@ from sklearn.model_selection import cross_validate
 # Fetch example data
 # ------------------
 #
-# The :func:`fetch_weston_havens` function download the data used in this
+# The :func:`download_weston_havens` function download the data used in this
 # example and places it in the `~/.cache/afq-insight/weston_havens` directory.
 # If the directory does not exist, it is created. The data follows the format
 # expected by the :func:`load_afq_data` function: a file called `nodes.csv` that
@@ -46,7 +46,7 @@ from sklearn.model_selection import cross_validate
 # about this format, see also the `AFQ-Browser documentation
 # <https://yeatmanlab.github.io/AFQ-Browser/dataformat.html>`_ (items 2 and 3).
 
-workdir = fetch_weston_havens()
+workdir = download_weston_havens()
 
 ##########################################################################
 # Read in the data

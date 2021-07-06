@@ -28,7 +28,7 @@ For more details on this approach in a research setting, please see [2]_.
 import matplotlib.pyplot as plt
 import numpy as np
 
-from afqinsight.datasets import fetch_sarica, load_afq_data
+from afqinsight.datasets import download_sarica, load_afq_data
 from afqinsight import make_afq_classifier_pipeline
 
 from groupyr.decomposition import GroupPCA
@@ -36,7 +36,7 @@ from groupyr.decomposition import GroupPCA
 from sklearn.impute import SimpleImputer
 from sklearn.model_selection import cross_validate
 
-workdir = fetch_sarica()
+workdir = download_sarica()
 
 X, y, groups, feature_names, group_names, subjects, classes = load_afq_data(
     workdir=workdir,
