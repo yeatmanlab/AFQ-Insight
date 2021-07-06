@@ -388,7 +388,7 @@ def _download_afq_dataset(dataset, data_home):
         _download_url_to_file(dict_["url"], dict_["file"])
 
 
-def fetch_sarica(data_home=None):
+def download_sarica(data_home=None):
     """Fetch the ALS classification dataset from Sarica et al [1]_.
 
     Parameters
@@ -432,7 +432,7 @@ def fetch_sarica(data_home=None):
     return op.join(data_home, "sarica_data")
 
 
-def fetch_weston_havens(data_home=None):
+def download_weston_havens(data_home=None):
     """Load the age prediction dataset from Weston-Havens [1]_.
 
     Parameters

@@ -5,14 +5,14 @@ import pytest
 import tempfile
 
 import afqinsight as afqi
-from afqinsight.datasets import load_afq_data, fetch_sarica, fetch_weston_havens
+from afqinsight.datasets import load_afq_data, download_sarica, download_weston_havens
 
 data_path = op.join(afqi.__path__[0], "data")
 test_data_path = op.join(data_path, "test_data")
 
 
 def test_fetch():
-    sarica_dir = fetch_sarica()
+    sarica_dir = download_sarica()
     X, y, groups, feature_names, group_names, subjects, _ = load_afq_data(
         workdir=sarica_dir,
         dwi_metrics=["md", "fa"],
@@ -29,7 +29,7 @@ def test_fetch():
     assert op.isfile(op.join(afqi.datasets.DATA_DIR, "sarica_data", "nodes.csv"))
     assert op.isfile(op.join(afqi.datasets.DATA_DIR, "sarica_data", "subjects.csv"))
 
-    wh_dir = fetch_weston_havens()
+    wh_dir = download_weston_havens()
     X, y, groups, feature_names, group_names, subjects, classes = load_afq_data(
         workdir=wh_dir,
         dwi_metrics=["md", "fa"],
@@ -48,8 +48,8 @@ def test_fetch():
     )
 
     with tempfile.TemporaryDirectory() as td:
-        _ = fetch_sarica(data_home=td)
-        _ = fetch_weston_havens(data_home=td)
+        _ = download_sarica(data_home=td)
+        _ = download_weston_havens(data_home=td)
         assert op.isfile(op.join(td, "sarica_data", "nodes.csv"))
         assert op.isfile(op.join(td, "sarica_data", "subjects.csv"))
         assert op.isfile(op.join(td, "weston_havens_data", "nodes.csv"))
