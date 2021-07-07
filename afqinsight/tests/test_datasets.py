@@ -20,40 +20,44 @@ def test_fetch():
         label_encode_cols=["class"],
     )
 
-    assert X.shape == (48, 4000)
-    assert y.shape == (48,)
-    assert len(groups) == 40
-    assert len(feature_names) == 4000
-    assert len(group_names) == 40
-    assert len(subjects) == 48
-    assert op.isfile(op.join(afqi.datasets._DATA_DIR, "sarica_data", "nodes.csv"))
-    assert op.isfile(op.join(afqi.datasets._DATA_DIR, "sarica_data", "subjects.csv"))
+    assert X.shape == (48, 4000)  # nosec
+    assert y.shape == (48,)  # nosec
+    assert len(groups) == 40  # nosec
+    assert len(feature_names) == 4000  # nosec
+    assert len(group_names) == 40  # nosec
+    assert len(subjects) == 48  # nosec
+    assert op.isfile(
+        op.join(afqi.datasets._DATA_DIR, "sarica_data", "nodes.csv")
+    )  # nosec
+    assert op.isfile(
+        op.join(afqi.datasets._DATA_DIR, "sarica_data", "subjects.csv")
+    )  # nosec
 
     wh_dir = download_weston_havens()
     X, y, groups, feature_names, group_names, subjects, _, _, _ = load_afq_data(
         workdir=wh_dir, dwi_metrics=["md", "fa"], target_cols=["Age"]
     )
 
-    assert X.shape == (77, 4000)
-    assert y.shape == (77,)
-    assert len(groups) == 40
-    assert len(feature_names) == 4000
-    assert len(group_names) == 40
-    assert len(subjects) == 77
+    assert X.shape == (77, 4000)  # nosec
+    assert y.shape == (77,)  # nosec
+    assert len(groups) == 40  # nosec
+    assert len(feature_names) == 4000  # nosec
+    assert len(group_names) == 40  # nosec
+    assert len(subjects) == 77  # nosec
     assert op.isfile(
         op.join(afqi.datasets._DATA_DIR, "weston_havens_data", "nodes.csv")
-    )
+    )  # nosec
     assert op.isfile(
         op.join(afqi.datasets._DATA_DIR, "weston_havens_data", "subjects.csv")
-    )
+    )  # nosec
 
     with tempfile.TemporaryDirectory() as td:
         _ = download_sarica(data_home=td)
         _ = download_weston_havens(data_home=td)
-        assert op.isfile(op.join(td, "sarica_data", "nodes.csv"))
-        assert op.isfile(op.join(td, "sarica_data", "subjects.csv"))
-        assert op.isfile(op.join(td, "weston_havens_data", "nodes.csv"))
-        assert op.isfile(op.join(td, "weston_havens_data", "subjects.csv"))
+        assert op.isfile(op.join(td, "sarica_data", "nodes.csv"))  # nosec
+        assert op.isfile(op.join(td, "sarica_data", "subjects.csv"))  # nosec
+        assert op.isfile(op.join(td, "weston_havens_data", "nodes.csv"))  # nosec
+        assert op.isfile(op.join(td, "weston_havens_data", "subjects.csv"))  # nosec
 
 
 def test_load_afq_data_smoke():
