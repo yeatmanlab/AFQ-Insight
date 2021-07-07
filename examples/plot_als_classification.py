@@ -38,7 +38,7 @@ from sklearn.model_selection import cross_validate
 
 workdir = download_sarica()
 
-X, y, groups, feature_names, group_names, subjects, classes = load_afq_data(
+X, y, groups, feature_names, group_names, subjects, _, classes, _ = load_afq_data(
     workdir=workdir,
     dwi_metrics=["md", "fa"],
     target_cols=["class"],

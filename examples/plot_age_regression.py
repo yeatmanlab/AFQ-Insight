@@ -55,10 +55,8 @@ workdir = download_weston_havens()
 # input that points to a directory that holds appropriately-shaped data and
 # returns variables that we will use below in our analysis of the data.
 
-X, y, groups, feature_names, group_names, subjects, classes = load_afq_data(
-    workdir=workdir,
-    dwi_metrics=["md", "fa"],
-    target_cols=["Age"],
+X, y, groups, feature_names, group_names, subjects, _, classes, _ = load_afq_data(
+    workdir=workdir, dwi_metrics=["md", "fa"], target_cols=["Age"]
 )
 
 ##########################################################################
