@@ -39,6 +39,22 @@ class AFQDataFrameMapper(DataFrameMapper):
         of train/test leakage. You will probably not need to change these
         defaults.
 
+    bundle_agg_func : function, str, list or dict, optional
+        If provided, a function to use for aggregating the nodes in each tract.
+        If a function, must either work when passed a DataFrame or when passed
+        to DataFrame.apply.
+
+        Accepted combinations are:
+
+        - function
+
+        - string function name
+
+        - list of functions and/or function names, e.g. [np.sum, 'mean']
+
+        By default, this mapper will not aggregate but will return values at
+        each node.
+
     Attributes
     ----------
     subjects_ : list
@@ -54,13 +70,33 @@ class AFQDataFrameMapper(DataFrameMapper):
         List of feature column names.
     """
 
-    def __init__(self, pd_interpolate_kwargs=None, **dataframe_mapper_kwargs):
+    def __init__(
+        self,
+        pd_interpolate_kwargs=None,
+        bundle_agg_func=None,
+        **dataframe_mapper_kwargs,
+    ):
         self.subjects_ = []
         self.groups_ = []
         self.pd_interpolate_kwargs = pd_interpolate_kwargs
+        self.bundle_agg_func = bundle_agg_func
         kwargs = {"features": [], "default": None}
         kwargs.update(dataframe_mapper_kwargs)
         super().__init__(**kwargs)
+
+    def _bundle_agg(self, X, agg_func, set_attributes=True):
+        features = (
+            X.groupby(["subjectID", "tractID"])
+            .agg(agg_func)
+            .drop("nodeID", axis="columns")
+            .unstack("tractID")
+        )
+
+        if set_attributes:
+            self.subjects_ = features.index.tolist()
+            self.groups_ = [np.array([idx]) for idx in range(len(features.columns))]
+
+        return features
 
     def _preprocess(self, X, set_attributes=True):
         # We'd like to interpolate the missing values, but first we need to
@@ -104,7 +140,7 @@ class AFQDataFrameMapper(DataFrameMapper):
         # above, the only NaN values left should be the ones created after
         # stacking and unstacking due to a subject missing an entire tract. In
         # this case, we do not fill these values and instead recommend that
-        # users use the sklearn.impute.SimpleImputer
+        # users use an imputer from sklearn.impute
 
         if set_attributes:
             # Construct bundle group membership
@@ -138,7 +174,10 @@ class AFQDataFrameMapper(DataFrameMapper):
         y : array-like of shape (n_samples,) or (n_samples, n_targets), optional
             Target values. Unused in this transformer
         """
-        features = self._preprocess(X, set_attributes=True)
+        if self.bundle_agg_func is None:
+            features = self._preprocess(X, set_attributes=True)
+        else:
+            features = self._bundle_agg(X, self.bundle_agg_func, set_attributes=True)
         return super().fit(features, y)
 
     def transform(self, X):
@@ -151,7 +190,12 @@ class AFQDataFrameMapper(DataFrameMapper):
         X : pandas.DataFrame
             The data to transform
         """
-        features = self._preprocess(X, set_attributes=False)
+        if self.bundle_agg_func is None:
+            features = self._preprocess(X, set_attributes=False)
+        else:
+            features = self._bundle_agg(
+                X, agg_func=self.bundle_agg_func, set_attributes=False
+            )
         return super().transform(features)
 
     def fit_transform(self, X, y=None):
@@ -165,7 +209,12 @@ class AFQDataFrameMapper(DataFrameMapper):
         y : array-like of shape (n_samples,) or (n_samples, n_targets), optional
             Target values. Unused in this transformer
         """
-        features = self._preprocess(X, set_attributes=True)
+        if self.bundle_agg_func is None:
+            features = self._preprocess(X, set_attributes=True)
+        else:
+            features = self._bundle_agg(
+                X, agg_func=self.bundle_agg_func, set_attributes=True
+            )
         return super().fit_transform(features, y)
 
     @property
