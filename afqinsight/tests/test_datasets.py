@@ -26,8 +26,8 @@ def test_fetch():
     assert len(feature_names) == 4000
     assert len(group_names) == 40
     assert len(subjects) == 48
-    assert op.isfile(op.join(afqi.datasets.DATA_DIR, "sarica_data", "nodes.csv"))
-    assert op.isfile(op.join(afqi.datasets.DATA_DIR, "sarica_data", "subjects.csv"))
+    assert op.isfile(op.join(afqi.datasets._DATA_DIR, "sarica_data", "nodes.csv"))
+    assert op.isfile(op.join(afqi.datasets._DATA_DIR, "sarica_data", "subjects.csv"))
 
     wh_dir = download_weston_havens()
     X, y, groups, feature_names, group_names, subjects, _, _, _ = load_afq_data(
@@ -40,9 +40,11 @@ def test_fetch():
     assert len(feature_names) == 4000
     assert len(group_names) == 40
     assert len(subjects) == 77
-    assert op.isfile(op.join(afqi.datasets.DATA_DIR, "weston_havens_data", "nodes.csv"))
     assert op.isfile(
-        op.join(afqi.datasets.DATA_DIR, "weston_havens_data", "subjects.csv")
+        op.join(afqi.datasets._DATA_DIR, "weston_havens_data", "nodes.csv")
+    )
+    assert op.isfile(
+        op.join(afqi.datasets._DATA_DIR, "weston_havens_data", "subjects.csv")
     )
 
     with tempfile.TemporaryDirectory() as td:

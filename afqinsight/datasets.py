@@ -13,22 +13,23 @@ from sklearn.preprocessing import LabelEncoder
 from .transform import AFQDataFrameMapper
 
 __all__ = ["load_afq_data", "output_beta_to_afq"]
-DATA_DIR = op.join(op.expanduser("~"), ".cache", "afq-insight")
-AFQData = namedtuple(
-    "AFQData",
-    [
-        "X",
-        "y",
-        "groups",
-        "feature_names",
-        "group_names",
-        "subjects",
-        "sessions",
-        "classes",
-        "bundle_means",
-    ],
-    defaults=[None] * 9,
-)
+_DATA_DIR = op.join(op.expanduser("~"), ".cache", "afq-insight")
+_FIELDS = [
+    "X",
+    "y",
+    "groups",
+    "feature_names",
+    "group_names",
+    "subjects",
+    "sessions",
+    "classes",
+    "bundle_means",
+]
+try:
+    AFQData = namedtuple("AFQData", _FIELDS, defaults=(None,) * 9)
+except TypeError:
+    AFQData = namedtuple("AFQData", _FIELDS)
+    AFQData.__new__.__defaults__ = (None,) * len(AFQData._fields)
 
 
 def load_afq_data(
@@ -456,7 +457,7 @@ def download_sarica(data_home=None):
         Human Brain Mapping, vol. 38, pp. 727-739, 2017
         DOI: 10.1002/hbm.23412
     """
-    data_home = data_home if data_home is not None else DATA_DIR
+    data_home = data_home if data_home is not None else _DATA_DIR
     _download_afq_dataset("sarica", data_home=data_home)
     return op.join(data_home, "sarica_data")
 
@@ -497,6 +498,6 @@ def download_weston_havens(data_home=None):
         Nature Communications, vol. 5:1, pp. 4932, 2014
         DOI: 10.1038/ncomms5932
     """
-    data_home = data_home if data_home is not None else DATA_DIR
+    data_home = data_home if data_home is not None else _DATA_DIR
     _download_afq_dataset("weston_havens", data_home=data_home)
     return op.join(data_home, "weston_havens_data")
