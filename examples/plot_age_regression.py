@@ -55,9 +55,16 @@ workdir = download_weston_havens()
 # input that points to a directory that holds appropriately-shaped data and
 # returns variables that we will use below in our analysis of the data.
 
-X, y, groups, feature_names, group_names, subjects, _, classes, _ = load_afq_data(
-    workdir=workdir, dwi_metrics=["md", "fa"], target_cols=["Age"]
-)
+afqdata = load_afq_data(workdir=workdir, dwi_metrics=["md", "fa"], target_cols=["Age"])
+
+# afqdata is a namedtuple. You can access it's fields using dot notation or by
+# unpacking the tuple. To see all of the available fields use `afqdata._fields`
+X = afqdata.X
+y = afqdata.y
+groups = afqdata.groups
+feature_names = afqdata.feature_names
+group_names = afqdata.group_names
+subjects = afqdata.subjects
 
 ##########################################################################
 # Create an analysis pipeline

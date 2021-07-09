@@ -23,7 +23,6 @@ _FIELDS = [
     "subjects",
     "sessions",
     "classes",
-    "bundle_means",
 ]
 try:
     AFQData = namedtuple("AFQData", _FIELDS, defaults=(None,) * 9)
@@ -99,8 +98,8 @@ def load_afq_data(
         If True, return sessionID
 
     return_bundle_means : bool, default=False
-        If True, return an additional feature matrix with metrics averaged along
-        the length of each bundle.
+        If True, return diffusion metrics averaged along the length of each
+        bundle.
 
     Returns
     -------
@@ -132,10 +131,6 @@ def load_afq_data(
             Class labels for each column specified in ``label_encode_cols``.
             This will be None if ``unsupervised`` is True
 
-        bundle_means : np.ndarray
-            A feature matrix composed of just the mean metric values along each
-            bundle. This will be None if ``return_bundle_means`` is False
-
     See Also
     --------
     transform.AFQDataFrameMapper
@@ -157,12 +152,20 @@ def load_afq_data(
     if dwi_metrics is not None:
         nodes = nodes[["tractID", "nodeID", "subjectID"] + dwi_metrics]
 
-    mapper = AFQDataFrameMapper()
+    if return_bundle_means:
+        mapper = AFQDataFrameMapper(bundle_agg_func="mean")
+    else:
+        mapper = AFQDataFrameMapper()
+
     X = mapper.fit_transform(nodes)
+    subjects = mapper.subjects_
     groups = mapper.groups_
     feature_names = mapper.feature_names_
-    group_names = [tup[0:2] for tup in feature_names if tup[2] == 0]
-    subjects = mapper.subjects_
+
+    if return_bundle_means:
+        group_names = feature_names
+    else:
+        group_names = [tup[0:2] for tup in feature_names if tup[2] == 0]
 
     if unsupervised:
         y = None
@@ -212,12 +215,6 @@ def load_afq_data(
 
         y = np.squeeze(y.to_numpy())
 
-    if return_bundle_means:
-        mapper = AFQDataFrameMapper(bundle_agg_func="mean")
-        bundle_means = mapper.fit_transform(nodes)
-    else:
-        bundle_means = None
-
     return AFQData(
         X=X,
         y=y,
@@ -227,7 +224,6 @@ def load_afq_data(
         subjects=subjects,
         sessions=sessions,
         classes=classes,
-        bundle_means=bundle_means,
     )
 
 
