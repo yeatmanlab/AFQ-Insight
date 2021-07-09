@@ -13,7 +13,22 @@ from sklearn.preprocessing import LabelEncoder
 from .transform import AFQDataFrameMapper
 
 __all__ = ["load_afq_data", "output_beta_to_afq"]
-DATA_DIR = op.join(op.expanduser("~"), ".cache", "afq-insight")
+_DATA_DIR = op.join(op.expanduser("~"), ".cache", "afq-insight")
+_FIELDS = [
+    "X",
+    "y",
+    "groups",
+    "feature_names",
+    "group_names",
+    "subjects",
+    "sessions",
+    "classes",
+]
+try:
+    AFQData = namedtuple("AFQData", _FIELDS, defaults=(None,) * 9)
+except TypeError:
+    AFQData = namedtuple("AFQData", _FIELDS)
+    AFQData.__new__.__defaults__ = (None,) * len(AFQData._fields)
 
 
 def load_afq_data(
@@ -27,6 +42,7 @@ def load_afq_data(
     unsupervised=False,
     concat_subject_session=False,
     return_sessions=False,
+    return_bundle_means=False,
 ):
     """Load AFQ data from CSV, transform it, return feature matrix and target.
 
@@ -81,32 +97,39 @@ def load_afq_data(
     return_sessions : bool, default=False
         If True, return sessionID
 
+    return_bundle_means : bool, default=False
+        If True, return diffusion metrics averaged along the length of each
+        bundle.
+
     Returns
     -------
-    X : array-like of shape (n_samples, n_features)
-        The feature samples.
+    AFQData : namedtuple
+        A namedtuple with the fields:
 
-    y : array-like of shape (n_samples,) or (n_samples, n_targets), optional
-        Target values. Returned only if ``unsupervised`` is False
+        X : array-like of shape (n_samples, n_features)
+            The feature samples.
 
-    groups : list of numpy.ndarray
-        feature indices for each feature group
+        y : array-like of shape (n_samples,) or (n_samples, n_targets), optional
+            Target values. This will be None if ``unsupervised`` is True
 
-    feature_names : list of tuples
-        The multi-indexed columns of X
+        groups : list of numpy.ndarray
+            feature indices for each feature group
 
-    group_names : list of tuples
-        The multi-indexed groups of X
+        feature_names : list of tuples
+            The multi-indexed columns of X
 
-    subjects : list
-        Subject IDs
+        group_names : list of tuples
+            The multi-indexed groups of X
 
-    sessions : list
-        Session IDs. Returned only if ``return_sessions`` is True.
+        subjects : list
+            Subject IDs
 
-    classes : dict
-        Class labels for each column specified in ``label_encode_cols``.
-        Returned only if ``unsupervised`` is False
+        sessions : list
+            Session IDs. This will be None if ``return_sessions`` is False.
+
+        classes : dict
+            Class labels for each column specified in ``label_encode_cols``.
+            This will be None if ``unsupervised`` is True
 
     See Also
     --------
@@ -129,18 +152,24 @@ def load_afq_data(
     if dwi_metrics is not None:
         nodes = nodes[["tractID", "nodeID", "subjectID"] + dwi_metrics]
 
-    mapper = AFQDataFrameMapper()
+    if return_bundle_means:
+        mapper = AFQDataFrameMapper(bundle_agg_func="mean")
+    else:
+        mapper = AFQDataFrameMapper()
+
     X = mapper.fit_transform(nodes)
+    subjects = mapper.subjects_
     groups = mapper.groups_
     feature_names = mapper.feature_names_
-    group_names = [tup[0:2] for tup in feature_names if tup[2] == 0]
-    subjects = mapper.subjects_
+
+    if return_bundle_means:
+        group_names = feature_names
+    else:
+        group_names = [tup[0:2] for tup in feature_names if tup[2] == 0]
 
     if unsupervised:
-        if return_sessions:
-            output = X, groups, feature_names, group_names, subjects, sessions
-        else:
-            output = X, groups, feature_names, group_names, subjects
+        y = None
+        classes = None
     else:
         if target_cols is None:
             raise ValueError(
@@ -150,6 +179,7 @@ def load_afq_data(
                 "load data for an unsupervised learning "
                 "problem, please set `unsupervised=True`."
             )
+
         # Read using sep=None, engine="python" to allow for both csv and tsv
         targets = pd.read_csv(
             fn_subjects, sep=None, engine="python", index_col=index_col
@@ -165,12 +195,11 @@ def load_afq_data(
         )
 
         # Select user defined target columns
-        if target_cols is not None:
-            y = targets.loc[:, target_cols]
+        y = targets.loc[:, target_cols]
 
         # Label encode the user-supplied categorical columns
-        classes = {}
         if label_encode_cols is not None:
+            classes = {}
             if not set(label_encode_cols) <= set(target_cols):
                 raise ValueError(
                     "label_encode_cols must be a subset of target_cols; "
@@ -181,24 +210,21 @@ def load_afq_data(
             for col in label_encode_cols:
                 y.loc[:, col] = le.fit_transform(y[col])
                 classes[col] = le.classes_
+        else:
+            classes = None
 
         y = np.squeeze(y.to_numpy())
 
-        if return_sessions:
-            output = (
-                X,
-                y,
-                groups,
-                feature_names,
-                group_names,
-                subjects,
-                sessions,
-                classes,
-            )
-        else:
-            output = X, y, groups, feature_names, group_names, subjects, classes
-
-    return output
+    return AFQData(
+        X=X,
+        y=y,
+        groups=groups,
+        feature_names=feature_names,
+        group_names=group_names,
+        subjects=subjects,
+        sessions=sessions,
+        classes=classes,
+    )
 
 
 def output_beta_to_afq(
@@ -427,7 +453,7 @@ def download_sarica(data_home=None):
         Human Brain Mapping, vol. 38, pp. 727-739, 2017
         DOI: 10.1002/hbm.23412
     """
-    data_home = data_home if data_home is not None else DATA_DIR
+    data_home = data_home if data_home is not None else _DATA_DIR
     _download_afq_dataset("sarica", data_home=data_home)
     return op.join(data_home, "sarica_data")
 
@@ -468,6 +494,6 @@ def download_weston_havens(data_home=None):
         Nature Communications, vol. 5:1, pp. 4932, 2014
         DOI: 10.1038/ncomms5932
     """
-    data_home = data_home if data_home is not None else DATA_DIR
+    data_home = data_home if data_home is not None else _DATA_DIR
     _download_afq_dataset("weston_havens", data_home=data_home)
     return op.join(data_home, "weston_havens_data")
