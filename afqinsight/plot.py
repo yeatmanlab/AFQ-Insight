@@ -14,30 +14,38 @@ from .utils import BUNDLE_MAT_2_PYTHON
 
 POSITIONS = OrderedDict(
     {
+        "IFO_L": (0, 0),
+        "IFO_R": (0, 3),
+        "IFOF_L": (0, 0),
+        "IFOF_R": (0, 3),
+        "UNC_L": (0, 1),
+        "UNC_R": (0, 2),
         "ATR_L": (1, 0),
         "ATR_R": (1, 3),
         "CST_L": (1, 1),
         "CST_R": (1, 2),
-        "CGC_L": (3, 1),
-        "CGC_R": (3, 2),
-        "FP": (0, 3),
-        "FA": (0, 0),
-        "CC_ForcepsMinor": (0, 3),
-        "CC_ForcepsMajor": (0, 0),
-        "IFO_L": (4, 1),
-        "IFO_R": (4, 2),
-        "IFOF_L": (4, 1),
-        "IFOF_R": (4, 2),
-        "HCC_L": (4, 0),
-        "HCC_R": (4, 3),
-        "ILF_L": (3, 0),
-        "ILF_R": (3, 3),
-        "SLF_L": (2, 1),
-        "SLF_R": (2, 2),
         "ARC_L": (2, 0),
         "ARC_R": (2, 3),
-        "UNC_L": (0, 1),
-        "UNC_R": (0, 2),
+        "SLF_L": (2, 1),
+        "SLF_R": (2, 2),
+        "ILF_L": (3, 0),
+        "ILF_R": (3, 3),
+        "CGC_L": (3, 1),
+        "CGC_R": (3, 2),
+        "HCC_L": (4, 0),
+        "HCC_R": (4, 3),
+        "FA": (4, 1),
+        "FP": (4, 2),
+        "CC_ForcepsMinor": (4, 1),
+        "CC_ForcepsMajor": (4, 2),
+        "AntFrontal": (4, 0),
+        "Motor": (4, 1),
+        "Occipital": (4, 2),
+        "Orbital": (4, 3),
+        "PostParietal": (5, 0),
+        "SupFrontal": (5, 1),
+        "SupParietal": (5, 2),
+        "Temporal": (5, 3),
     }
 )
 
@@ -169,7 +177,12 @@ def plot_tract_profiles(
         bgcolor = "white"
 
         # Create the subplots
-        fig, axes = plt.subplots(nrows=5, ncols=4, sharex=True)
+        nrows = 5
+        cc_bundles = ["PostParietal", "SupFrontal", "SupParietal", "Temporal"]
+        if any([tid in tract_stats.keys() for tid in cc_bundles]):
+            nrows = 6
+
+        fig, axes = plt.subplots(nrows=nrows, ncols=4, sharex=True)
 
         for tid, df_stat in tqdm(tract_stats.items()):
             bundle_id = BUNDLE_MAT_2_PYTHON.get(tid, tid)
@@ -194,20 +207,15 @@ def plot_tract_profiles(
                 n_boot=500,
             )
 
-            if POSITIONS[bundle_id][0] == 4:
+            if POSITIONS[bundle_id][0] == nrows - 1:
                 _ = ax.set_xlabel("% distance along fiber bundle")
 
             if POSITIONS[bundle_id][1] == 0 or (
-                POSITIONS[bundle_id][1] == 1 and POSITIONS[bundle_id][0] == 4
+                POSITIONS[bundle_id][1] == 1
+                and POSITIONS[bundle_id][0] == 4
+                and nrows == 5
             ):
-                if metric in ["md", "dki_md"]:
-                    _ = ax.set_ylabel(
-                        r"{} $\left[ \mu \textrm{{m}}^2 / \textrm{{ms}} \right]$".format(
-                            metric.lower().replace("_", " ")
-                        )
-                    )
-                else:
-                    _ = ax.set_ylabel(metric.lower().replace("_", " "))
+                _ = ax.set_ylabel(metric.lower().replace("_", " "))
             else:
                 _ = ax.set(ylabel=None)
 
@@ -219,8 +227,9 @@ def plot_tract_profiles(
                 bundle_id.replace("_", "").replace("FA", "CFA").replace("FP", "CFP")
             )
 
-        _ = axes[4, 0].axis("off")
-        _ = axes[4, 3].axis("off")
+        if nrows == 5:
+            _ = axes[4, 0].axis("off")
+            _ = axes[4, 3].axis("off")
 
         handles, labels = ax.get_legend_handles_labels()
 
