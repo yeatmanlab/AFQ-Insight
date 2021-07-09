@@ -38,12 +38,21 @@ from sklearn.model_selection import cross_validate
 
 workdir = download_sarica()
 
-X, y, groups, feature_names, group_names, subjects, classes = load_afq_data(
+afqdata = load_afq_data(
     workdir=workdir,
     dwi_metrics=["md", "fa"],
     target_cols=["class"],
     label_encode_cols=["class"],
 )
+
+# afqdata is a namedtuple. You can access it's fields using dot notation or by
+# unpacking the tuple. To see all of the available fields use `afqdata._fields`
+X = afqdata.X
+y = afqdata.y
+groups = afqdata.groups
+feature_names = afqdata.feature_names
+group_names = afqdata.group_names
+subjects = afqdata.subjects
 
 # Here we reduce computation time by taking the first 10 principal components of each feature group and performing SGL logistic regression on those components.
 # If you want to train an SGL model without group PCA, set ``do_group_pca = False``. This will increase the number of features by an order of magnitude and slow down execution time.

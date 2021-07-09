@@ -34,6 +34,36 @@ def test_AFQDataFrameMapper():
     assert set(subjects) == set(nodes.subjectID.unique())  # nosec
 
 
+def test_AFQDataFrameMapper_mean():
+    nodes_path = op.join(test_data_path, "nodes.csv")
+    nodes = pd.read_csv(nodes_path)
+    transformer = AFQDataFrameMapper(bundle_agg_func="mean")
+    X = transformer.fit_transform(nodes)
+    groups = transformer.groups_
+    cols = transformer.feature_names_
+    subjects = transformer.subjects_
+
+    X_ref = (
+        nodes.groupby(["subjectID", "tractID"])
+        .agg("mean")
+        .drop("nodeID", axis="columns")
+        .unstack("tractID")
+        .to_numpy()
+    )
+    groups_ref = [np.array([idx]) for idx in range(X.shape[1])]
+    cols_ref = set(
+        [
+            tuple([item[0], item[1]])
+            for item in np.load(op.join(test_data_path, "test_transform_cols.npy"))
+        ]
+    )
+
+    assert np.allclose(groups, groups_ref)  # nosec
+    assert set(cols) == cols_ref  # nosec
+    assert set(subjects) == set(nodes.subjectID.unique())  # nosec
+    assert np.allclose(X, X_ref, equal_nan=True)  # nosec
+
+
 def test_AFQDataFrameMapper_fit_transform():
     nodes_path = op.join(test_data_path, "nodes.csv")
     nodes = pd.read_csv(nodes_path)
