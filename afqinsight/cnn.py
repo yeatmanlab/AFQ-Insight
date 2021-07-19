@@ -11,6 +11,8 @@ import os.path as op
 
 try:
     import kerastuner as kt
+    import tensorflow as tf
+
     from tensorflow.keras.models import Sequential
     from tensorflow.keras.layers import Dense, Conv1D, Flatten, MaxPool1D, Dropout
     from tensorflow.keras.callbacks import ModelCheckpoint
@@ -91,6 +93,9 @@ def build_model(hp, conv_layers, input_shape):
     model.compile(
         loss="mean_squared_error", optimizer="adam", metrics=["mean_squared_error"]
     )
+
+    tf.keras.backend.get_session().run(tf.global_variables_initializer())
+
     return model
 
 
@@ -260,6 +265,8 @@ class ModelBuilder:
         model.compile(
             loss="mean_squared_error", optimizer="adam", metrics=["mean_squared_error"]
         )
+
+        tf.keras.backend.get_session().run(tf.global_variables_initializer())
 
         best_model = self._get_best_weights(model, X, y)
         return best_model
