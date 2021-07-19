@@ -11,7 +11,6 @@ import os.path as op
 
 try:
     import kerastuner as kt
-    import tensorflow as tf
 
     from tensorflow.keras.models import Sequential
     from tensorflow.keras.layers import Dense, Conv1D, Flatten, MaxPool1D, Dropout
