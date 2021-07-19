@@ -20,6 +20,16 @@ except ImportError:  # pragma: no cover
     HAS_KERAS = False
 
 
+def _check_keras():
+    if not HAS_KERAS:
+        raise ImportError(
+            "To use afqinsight's convolutional neural nets for tractometry data, you will need "
+            "to have tensorflow, keras, and kerastuner installed. You can do this by installing "
+            "afqinsight with `pip install afqinsight[cnn]`, or by separately installing these packages "
+            "with `pip install tensorflow keras kerastuner`."
+        )
+
+
 def build_model(hp, conv_layers, input_shape):
     """Build a keras model.
 
@@ -43,6 +53,7 @@ def build_model(hp, conv_layers, input_shape):
             compiled model that uses hyperparameters defined inline to hypertune the model
 
     """
+    _check_keras()
     model = Sequential()
     model.add(
         Conv1D(
@@ -83,16 +94,6 @@ def build_model(hp, conv_layers, input_shape):
     return model
 
 
-def _check_keras():
-    if not HAS_KERAS:
-        raise ImportError(
-            "To use afqinsight's convolutional neural nets for tractometry data, you will need "
-            "to have tensorflow, keras, and kerastuner installed. You can do this by installing "
-            "afqinsight with `pip install afqinsight[cnn]`, or by separately installing these packages "
-            "with `pip install tensorflow keras kerastuner`."
-        )
-
-
 class ModelBuilder:
     """Build a complex model architecture with the specified number of layers."""
 
@@ -115,6 +116,7 @@ class ModelBuilder:
         self.X_test = X_test
         self.y_test = y_test
         self.tuner_kwargs = tuner_kwargs
+        _check_keras()
 
     def _get_tuner(self):
         """Call build_model and instantiate a Keras Tuner for the returned model depending on user choice of tuner.
@@ -319,6 +321,8 @@ class CNN:
 
         Use the given number of n_nodes, each with a max depth of max_depth.
         """
+        _check_keras()
+
         # checking n_nodes is passed as int
         if not isinstance(n_nodes, int):
             raise TypeError("Parameter n_nodes must be an integer.")
