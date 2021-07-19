@@ -59,6 +59,7 @@ def plot_tract_profiles(
     bins=None,
     quantiles=None,
     palette="colorblind",
+    ci=95.0,
 ):
     """Plot profiles for each bundle and each metric.
 
@@ -105,6 +106,9 @@ def plot_tract_profiles(
         onto hue. String values are passed to seaborn.color_palette(). List
         or dict values imply categorical mapping, while a colormap object
         implies numeric mapping.
+
+    ci : float, default=95.0
+        Confidence interval with which to shade the bundle profiles
 
     Returns
     -------
@@ -200,7 +204,7 @@ def plot_tract_profiles(
                 y=metric,
                 hue=hue,
                 data=df_stat,
-                ci=68.2,
+                ci=ci,
                 palette=palette,
                 ax=ax,
                 linewidth=1.0,
