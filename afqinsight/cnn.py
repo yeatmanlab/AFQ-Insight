@@ -26,7 +26,7 @@ def _check_keras():
             "To use afqinsight's convolutional neural nets for tractometry data, you will need "
             "to have tensorflow, keras, and kerastuner installed. You can do this by installing "
             "afqinsight with `pip install afqinsight[cnn]`, or by separately installing these packages "
-            "with `pip install tensorflow keras kerastuner`."
+            "with `pip install tensorflow kerastuner`."
         )
 
 
