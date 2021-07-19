@@ -94,9 +94,6 @@ def build_model(hp, conv_layers, input_shape):
         loss="mean_squared_error", optimizer="adam", metrics=["mean_squared_error"]
     )
 
-    sess = tf.Session()
-    sess.run(tf.global_variables_initializer())
-
     return model
 
 
@@ -266,9 +263,6 @@ class ModelBuilder:
         model.compile(
             loss="mean_squared_error", optimizer="adam", metrics=["mean_squared_error"]
         )
-
-        sess = tf.Session()
-        sess.run(tf.global_variables_initializer())
 
         best_model = self._get_best_weights(model, X, y)
         return best_model
