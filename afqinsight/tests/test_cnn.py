@@ -11,7 +11,7 @@ from afqinsight.datasets import load_afq_data
 data_path = op.join(afqi.__path__[0], "data")
 test_data_path = op.join(data_path, "test_data")
 
-X, y, groups, feature_names, group_names, n_subjects, classes = load_afq_data(
+X, y, groups, feature_names, group_names, subjects, _, _ = load_afq_data(
     workdir=test_data_path, target_cols=["test_class"], label_encode_cols=["test_class"]
 )
 
