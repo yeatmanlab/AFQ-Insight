@@ -10,7 +10,7 @@ import tempfile
 import os.path as op
 
 try:
-    import kerastuner as kt
+    import keras_tuner as kt
 
     from tensorflow.keras.models import Sequential
     from tensorflow.keras.layers import Dense, Conv1D, Flatten, MaxPool1D, Dropout
@@ -108,6 +108,8 @@ class ModelBuilder:
         X_test,
         y_test,
         batch_size,
+        directory=None,
+        project_name=None,
         **tuner_kwargs,
     ):
         self.class_type = class_type
@@ -117,6 +119,8 @@ class ModelBuilder:
         self.batch_size = batch_size
         self.X_test = X_test
         self.y_test = y_test
+        self.directory = directory
+        self.project_name = project_name
         self.tuner_kwargs = tuner_kwargs
         _check_keras()
 
@@ -141,6 +145,8 @@ class ModelBuilder:
                     objective="mean_squared_error",
                     max_epochs=10,
                     overwrite=True,
+                    project_name=self.project_name,
+                    directory=self.directory,
                     **self.tuner_kwargs,
                 )
 
@@ -150,6 +156,8 @@ class ModelBuilder:
                     objective="mean_squared_error",
                     max_trials=10,
                     overwrite=True,
+                    project_name=self.project_name,
+                    directory=self.directory,
                     **self.tuner_kwargs,
                 )
 
@@ -159,6 +167,8 @@ class ModelBuilder:
                     objective="mean_squared_error",
                     max_trials=10,
                     overwrite=True,
+                    project_name=self.project_name,
+                    directory=self.directory,
                     **self.tuner_kwargs,
                 )
             else:
@@ -317,6 +327,8 @@ class CNN:
         test_size=0.2,
         strategy="median",
         random_state=200,
+        directory=None,
+        project_name=None,
         **tuner_kwargs,
     ):
         """Construct a CNN.
@@ -380,6 +392,8 @@ class CNN:
         else:
             self.random_state = random_state
 
+        self.directory = directory
+        self.project_name = project_name
         self.tuner_kwargs = tuner_kwargs
         self.model_ = None
         self.best_hps_ = None
@@ -477,6 +491,8 @@ class CNN:
             X_test,
             y_test,
             self.batch_size,
+            self.directory,
+            self.project_name,
             **self.tuner_kwargs,
         )
         if self.tuner is None:
