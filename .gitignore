@@ -113,6 +113,9 @@ src
 # local data
 data
 data_with_weights
+untitled_project
+old_examples
+Untitled.ipynb
 
 # Line contributors file
 line-contributors.txt
