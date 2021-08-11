@@ -510,8 +510,8 @@ class CNN:
 
         Parameters
         ----------
-        X : array-like of shape (n_samples, n_features)
-                The feature samples
+        X : array-like of shape (n_samples, n_metrics * n_nodes)
+                Tractometry features (columns) for each subject in the sample (rows).
 
         Returns
         -------
