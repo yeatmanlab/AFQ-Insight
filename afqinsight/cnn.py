@@ -233,8 +233,7 @@ class ModelBuilder:
     def build_basic_model(self, X, y):
         """Build a sequential model without hyperparameter tuning.
 
-        Builds a static, basic sequential model with no hyperparameter tuning with the
-        architecture used to produce state of the art Weston Havens results.
+        Builds a static baseline sequential model with no hyperparameter tuning.
 
         Parameters
         ----------
