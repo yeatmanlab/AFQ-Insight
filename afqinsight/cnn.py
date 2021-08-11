@@ -412,7 +412,7 @@ class CNN:
         Parameters
         ----------
         X : array-like of shape (n_samples, n_metrics * n_nodes)
-                The feature samples
+                Diffusion MRI tractometry features (columns) for each subject in the sample (rows).
 
         y : array-like of shape (n_samples,) or (n_samples, n_targets)
                 Target values
