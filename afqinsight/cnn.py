@@ -401,7 +401,7 @@ class CNN:
         """Convert feature matrix for input into a CNN.
 
         Masks NAN values for X and y (if y is given), imputes X, and reshapes X
-        to be in proper form for CNN model. In more conventionall machine
+        to be in proper form for CNN model. In more conventional machine
         learning, X has shape (n_samples, n_features), where n_features is
         n_nodes * n_bundles * n_metrics. However, in our CNN approach, we treat
         each bundle/metric combination as a separate channel, analogous to RGB
