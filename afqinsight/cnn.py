@@ -464,7 +464,7 @@ class CNN:
 
         Parameters
         ----------
-        X : array-like of shape (n_samples, n_features)
+        X : array-like of shape (n_samples, n_metrics * n_nodes)
                 The feature samples
 
         y : array-like of shape (n_samples,) or (n_samples, n_targets)
