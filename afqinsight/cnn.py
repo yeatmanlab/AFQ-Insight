@@ -526,7 +526,7 @@ class CNN:
     def score(self, y_test, y_hat):
         """Score the performance of the model.
 
-        Applies a NAN mask to y_test and returns r-squared score for the CNN model.
+        Masks out NaN values from y_test and returns $R^2$ score for the CNN model comparing to y_hat
 
         Parameters
         ----------
