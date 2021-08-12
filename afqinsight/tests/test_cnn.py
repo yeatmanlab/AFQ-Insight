@@ -182,7 +182,7 @@ def test_fail_cnn():
 
     with pytest.raises(TypeError):
         # passing in float for layers
-        model = CNN(100, 6, layers=5.0, 64, "random")
+        model = CNN(100, 6, layers=5.0)
 
     with pytest.raises(TypeError):
         # passing in float for batch size
