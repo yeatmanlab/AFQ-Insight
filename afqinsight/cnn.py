@@ -101,24 +101,33 @@ class ModelBuilder:
 
     Parameters
     ----------
-    class_type : str or class.
+    tuner_type : str or class.
         Tuner to use. One of {"hyperband", "bayesian", "random"}.
+
     input_shape : tuple
         Expected shape of the input data.
+
     layers : int
         Number of layers in the model.
+
     max_epochs : int
         Number of epochs to train the model.
+
     X_test : numpy.ndarray
         Test data.
+
     y_test : numpy.ndarray
         Test labels or test values.
+
     batch_size : int
         Batch size to use when training.
+
     directory : str
         Directory to save the model to.
+
     project_name : str, optional
         A string, the name to use as prefix for files saved by the tuner object. Defaults to None
+
     tuner_kwargs : dict, optional
         Keyword arguments to pass to the tuner class on initialization.
         Defaults to tuner defaults.
@@ -345,29 +354,40 @@ class CNN:
     ----------
     n_nodes : int
         Number of nodes in each bundle profile.
+
     n_channels : int
         Number of metrics in each bundle profile.
+
     max_epochs : int
         Maximum number of epochs to train model.
+
     batch_size : int
         Number of samples per batch.
+
     tuner_type : str
         Type of hyperparameter tuner to use. One of 'hyperband', 'bayesian', or
         'random'.
+
     layers : int
         Number of convolutional layers to use.
+
     test_size : float
         Fraction of data to use as test set.
+
     impute_strategy : str, optional
         Imputation strategy to use. One of 'mean', 'median', or 'knn'.
         Default: "median".
+
     random_state : int or RandomState instance, optional
         Default: None.
+
     directory : str, optional
         Directory to save model and hyperparameters. Default: "."
+
     project_name : str, optional
         A string, the name to use as prefix for files saved by the tuner
         object. Defaults to None
+
     tuner_kwargs : dict, optional
         Keyword arguments to pass to tuner. Default: tuner defaults.
     """
