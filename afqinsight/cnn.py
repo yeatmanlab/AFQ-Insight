@@ -441,10 +441,10 @@ class CNN:
         else:
             self.impute_strategy = impute_strategy
 
-        if not isinstance(random_state, int):
-            raise TypeError("Parameter random_state must be an int.")
-        else:
-            self.random_state = random_state
+        if random_state is not None:
+            if not (isinstance(random_state, int) or isinstance(np.random.RandomState)):
+                raise TypeError("Parameter random_state must be an int.")
+        self.random_state = random_state
 
         self.directory = directory
         self.project_name = project_name
