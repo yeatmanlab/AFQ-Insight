@@ -22,7 +22,7 @@ except ImportError:  # pragma: no cover
 
 
 def _check_keras():
-    if not HAS_KERAS:
+    if not HAS_KERAS:  # pragma: no cover
         raise ImportError(
             "To use afqinsight's convolutional neural nets for tractometry data, you will need "
             "to have tensorflow, keras, and kerastuner installed. You can do this by installing "
@@ -199,11 +199,15 @@ class ModelBuilder:
                 )
             else:
                 raise ValueError(
-                    "tuner parameter expects 'hyperband', 'bayesian', or 'random'"
+                    f"tuner parameter expects 'hyperband', 'bayesian', or 'random', but you provided {self.tuner_type}"
                 )
             return tuner
-        else:
-            raise TypeError()
+        # We do not cover the following line, because CNN also handles this
+        # error:
+        else:  # pragma: no cover
+            raise TypeError(
+                f"`tuner` parameter should be a string, but you provided {self.tuner_type}"
+            )
 
     def _get_best_weights(self, model, X, y):
         """Fit a CNN and save the best weights.
@@ -436,14 +440,16 @@ class CNN:
             raise TypeError("Parameter impute_strategy must be a string.")
         elif impute_strategy not in ["median", "mean", "knn"]:
             raise ValueError(
-                "Parameter impute_strategy must be 'median', 'mean', or 'knn'."
+                f"Parameter impute_strategy must be 'median', 'mean', or 'knn' but you provided {impute_strategy}"
             )
         else:
             self.impute_strategy = impute_strategy
 
         if random_state is not None:
             if not (isinstance(random_state, int) or isinstance(np.random.RandomState)):
-                raise TypeError("Parameter random_state must be an int.")
+                raise TypeError(
+                    f"Parameter random_state must be an int or RandomState, but you provided {random_state}"
+                )
         self.random_state = random_state
 
         self.directory = directory
@@ -487,7 +493,9 @@ class CNN:
                 "The product n_nodes and n_channels is not the correct shape."
             )
 
-        if len(X.shape) > 2:
+        # We don't cover the following line, because this case is also handled
+        # in the fall to fit:
+        if len(X.shape) > 2:  # pragma: no cover
             raise ValueError("Expected X to be a 2D matrix.")
         if y is not None:
             nan_mask = np.logical_not(np.isnan(y))

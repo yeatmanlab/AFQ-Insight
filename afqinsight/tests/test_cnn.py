@@ -147,6 +147,12 @@ def test_random_cnn():
 
 
 def test_fail_cnn():
+
+    with pytest.raises(ValueError):
+        # passing in wrong shape of X (not 2d):
+        model = CNN(100, 6, 5, 64)
+        model.fit(X.reshape((7, 100, -1)), y)
+
     with pytest.raises(ValueError):
         # passing in wrong tuner value
         model = CNN(100, 6, 5, 64, "wrong")
@@ -163,7 +169,7 @@ def test_fail_cnn():
         model.fit(X, y)
 
     with pytest.raises(TypeError):
-        # passing in float for tuner
+        # passing in float for tuner_type
         model = CNN(100, 6, 5, 64, 0.0)
 
     with pytest.raises(TypeError):
@@ -176,7 +182,7 @@ def test_fail_cnn():
 
     with pytest.raises(TypeError):
         # passing in float for layers
-        model = CNN(100, 6, 5.0, 64, "random")
+        model = CNN(100, 6, layers=5.0, 64, "random")
 
     with pytest.raises(TypeError):
         # passing in float for batch size
@@ -185,3 +191,19 @@ def test_fail_cnn():
     with pytest.raises(TypeError):
         # passing in string for batch size
         model = CNN(100, 6, 5, "64", "random")
+
+    with pytest.raises(TypeError):
+        # passing in an integer for test_size
+        model = CNN(100, 6, test_size=20)
+
+    with pytest.raises(TypeError):
+        # passing in an integer for impute_strategy (this should be a string).
+        model = CNN(100, 6, impute_strategy=20)
+
+    with pytest.raises(TypeError):
+        # passing in the wrong string for impute_strategy:
+        model = CNN(100, 6, impute_strategy="foo")
+
+    with pytest.raises(TypeError):
+        # passing in a string for random_state (should be int or RandomState).
+        model = CNN(100, 6, random_state="foo")
