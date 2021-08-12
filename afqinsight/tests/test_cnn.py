@@ -200,7 +200,7 @@ def test_fail_cnn():
         # passing in an integer for impute_strategy (this should be a string).
         model = CNN(100, 6, impute_strategy=20)
 
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         # passing in the wrong string for impute_strategy:
         model = CNN(100, 6, impute_strategy="foo")
 
