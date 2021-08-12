@@ -97,11 +97,36 @@ def build_model(hp, conv_layers, input_shape):
 
 
 class ModelBuilder:
-    """Build a complex model architecture with the specified number of layers."""
+    """Build a complex model architecture with the specified number of layers.
+
+    Parameters
+    ----------
+    class_type : str or class.
+        Tuner to use. One of {"hyperband", "bayesian", "random"}.
+    input_shape : tuple
+        Expected shape of the input data.
+    layers : int
+        Number of layers in the model.
+    max_epochs : int
+        Number of epochs to train the model.
+    X_test : numpy.ndarray
+        Test data.
+    y_test : numpy.ndarray
+        Test labels or test values.
+    batch_size : int
+        Batch size to use when training.
+    directory : str
+        Directory to save the model to.
+    project_name : str, optional
+        A string, the name to use as prefix for files saved by the tuner object. Defaults to None
+    tuner_kwargs : dict, optional
+        Keyword arguments to pass to the tuner class on initialization.
+        Defaults to tuner defaults.
+    """
 
     def __init__(
         self,
-        class_type,
+        tuner_type,
         input_shape,
         layers,
         max_epochs,
@@ -112,7 +137,8 @@ class ModelBuilder:
         project_name=None,
         **tuner_kwargs,
     ):
-        self.class_type = class_type
+
+        self.tuner_type = tuner_type
         self.layers = layers
         self.input_shape = input_shape
         self.max_epochs = max_epochs
@@ -137,9 +163,9 @@ class ModelBuilder:
         hypermodel = functools.partial(
             build_model, conv_layers=self.layers, input_shape=self.input_shape
         )
-        if isinstance(self.class_type, str):
+        if isinstance(self.tuner_type, str):
             # instantiating tuner based on user's choice
-            if self.class_type == "hyperband":
+            if self.tuner_type == "hyperband":
                 tuner = kt.Hyperband(
                     hypermodel=hypermodel,
                     objective="mean_squared_error",
@@ -150,7 +176,7 @@ class ModelBuilder:
                     **self.tuner_kwargs,
                 )
 
-            elif self.class_type == "bayesian":
+            elif self.tuner_type == "bayesian":
                 tuner = kt.BayesianOptimization(
                     hypermodel=hypermodel,
                     objective="mean_squared_error",
@@ -161,7 +187,7 @@ class ModelBuilder:
                     **self.tuner_kwargs,
                 )
 
-            elif self.class_type == "random":
+            elif self.tuner_type == "random":
                 tuner = kt.RandomSearch(
                     hypermodel=hypermodel,
                     objective="mean_squared_error",
@@ -313,7 +339,38 @@ class ModelBuilder:
 
 
 class CNN:
-    """A Convolutional Neural Network model with a fit/predict interface."""
+    """A Convolutional Neural Network model with a fit/predict interface.
+
+    Parameters
+    ----------
+    n_nodes : int
+        Number of nodes in each bundle profile.
+    n_channels : int
+        Number of metrics in each bundle profile.
+    max_epochs : int
+        Maximum number of epochs to train model.
+    batch_size : int
+        Number of samples per batch.
+    tuner_type : str
+        Type of hyperparameter tuner to use. One of 'hyperband', 'bayesian', or
+        'random'.
+    layers : int
+        Number of convolutional layers to use.
+    test_size : float
+        Fraction of data to use as test set.
+    impute_strategy : str, optional
+        Imputation strategy to use. One of 'mean', 'median', or 'knn'.
+        Default: "median".
+    random_state : int or RandomState instance, optional
+        Default: None.
+    directory : str, optional
+        Directory to save model and hyperparameters. Default: "."
+    project_name : str, optional
+        A string, the name to use as prefix for files saved by the tuner
+        object. Defaults to None
+    tuner_kwargs : dict, optional
+        Keyword arguments to pass to tuner. Default: tuner defaults.
+    """
 
     def __init__(
         self,
@@ -321,19 +378,15 @@ class CNN:
         n_channels,
         max_epochs=50,
         batch_size=32,
-        tuner=None,
+        tuner_type=None,
         layers=1,
         test_size=0.2,
-        strategy="median",
-        random_state=200,
+        impute_strategy="median",
+        random_state=None,
         directory=None,
         project_name=None,
         **tuner_kwargs,
     ):
-        """Construct a CNN.
-
-        Use the given number of n_nodes, each with a max depth of max_depth.
-        """
         _check_keras()
 
         # checking n_nodes is passed as int
@@ -366,11 +419,11 @@ class CNN:
             self.batch_size = batch_size
 
         # checking tiner is passed as str or None
-        if not isinstance(tuner, str) and tuner is not None:
+        if not isinstance(tuner_type, str) and tuner_type is not None:
             raise TypeError("Parameter tuner must be str.")
         else:
             # tuner can be None (no tuning) BayesianOptimization, Hyperband, or RandomSearch
-            self.tuner = tuner
+            self.tuner_type = tuner_type
 
         # checking val split is passed as float
         if not isinstance(test_size, float):
@@ -379,12 +432,14 @@ class CNN:
             self.test_size = test_size
 
         # checking strategy is passed as str and has value of 'median', 'mean', or 'knn'
-        if not isinstance(strategy, str):
-            raise TypeError("Parameter strategy must be a string.")
-        elif strategy not in ["median", "mean", "knn"]:
-            raise ValueError("Parameter strategy must be 'median', 'mean', or 'knn'.")
+        if not isinstance(impute_strategy, str):
+            raise TypeError("Parameter impute_strategy must be a string.")
+        elif impute_strategy not in ["median", "mean", "knn"]:
+            raise ValueError(
+                "Parameter impute_strategy must be 'median', 'mean', or 'knn'."
+            )
         else:
-            self.strategy = strategy
+            self.impute_strategy = impute_strategy
 
         if not isinstance(random_state, int):
             raise TypeError("Parameter random_state must be an int.")
@@ -439,9 +494,8 @@ class CNN:
             X = X[nan_mask, :]
             y = y[nan_mask]
 
-        imp = SimpleImputer(strategy=self.strategy)
-        imp.fit(X)
-        X = imp.transform(X)
+        imp = SimpleImputer(strategy=self.impute_strategy)
+        X = imp.fit_transform(X)
 
         if y is not None:
             X, y = check_X_y(X, y)
@@ -481,9 +535,9 @@ class CNN:
             X, y, test_size=self.test_size, random_state=self.random_state
         )
         # CNN gets n_nodes, n_channels, max_epochs, tuner=None, layers=None
-        # Model Builder takes class_type, input_shape, layers, max_epochs, **kwargs
+        # Model Builder takes tuner_type, input_shape, layers, max_epochs, **kwargs
         builder = ModelBuilder(
-            self.tuner,
+            self.tuner_type,
             X_train.shape[1:],
             self.layers,
             self.max_epochs,
