@@ -568,7 +568,7 @@ class CNN:
             self.project_name,
             **self.tuner_kwargs,
         )
-        if self.tuner is None:
+        if self.tuner_type is None:
             self.model_ = builder.build_basic_model(X_train, y_train)
         else:
             self.model_ = builder.build_tuned_model(X_train, y_train)

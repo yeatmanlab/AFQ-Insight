@@ -137,14 +137,15 @@ def test_random_cnn():
         y_hat3 = model3.predict(X)
         _ = model3.score(y, y_hat3)
 
-        model4 = CNN(100, 6, 5, 64, "random", 4, 0.3, strategy="mean", directory=tdir)
+        model4 = CNN(
+            100, 6, 5, 64, "random", 4, 0.3, impute_strategy="mean", directory=tdir
+        )
         model4.fit(X, y)
         assert model4.is_fitted_ is True
         y_hat4 = model4.predict(X)
         _ = model4.score(y, y_hat4)
 
 
-# n_nodes, n_channels, max_epochs=50, batch_size=32, tuner=None, layers=1, test_size=0.2, strategy='median', random_state=200, **tuner_kwargs
 def test_fail_cnn():
     with pytest.raises(ValueError):
         # passing in wrong tuner value
