@@ -41,6 +41,19 @@ POSITIONS = OrderedDict(
     }
 )
 
+POSITIONS_CALLOSAL = OrderedDict(
+    {
+        "Orbital": (0),
+        "AntFrontal": (1),
+        "SupFrontal": (2),
+        "Motor": (3),
+        "SupParietal": (4),
+        "PostParietal": (5),
+        "Temporal": (6),
+        "Occipital": (7),
+    }
+)
+
 
 def plot_tract_profiles(
     X,
@@ -165,6 +178,10 @@ def plot_tract_profiles(
             df["nodeID"] = df["nodeID"].astype(int)
             tract_stats[tid] = df
 
+            if tid in POSITIONS_CALLOSAL.keys():
+                plot_callosal = True
+                fig_cc, axes_cc = plt.subplots(nrows=1, ncols=8)
+
         # Arrange the bundles into a grid
         bgcolor = "white"
 
@@ -177,7 +194,12 @@ def plot_tract_profiles(
             if "HCC_" in bundle_id or "Cingulum Hippocampus" in tid:
                 continue
 
-            ax = axes[POSITIONS[bundle_id][0], POSITIONS[bundle_id][1]]
+            if tid in POSITIONS_CALLOSAL.keys():
+                is_callosal = True
+                ax = axes_cc[POSITIONS_CALLOSAL[tid]]
+            else:
+                is_callosal = False
+                ax = axes[POSITIONS[bundle_id][0], POSITIONS[bundle_id][1]]
 
             if metric == "dki_md":
                 df_stat[metric] *= 1000.0
@@ -194,15 +216,16 @@ def plot_tract_profiles(
                 n_boot=500,
             )
 
-            if POSITIONS[bundle_id][0] == 4:
+            if is_callosal or POSITIONS[bundle_id][0] == 4:
                 _ = ax.set_xlabel("% distance along fiber bundle")
 
-            if POSITIONS[bundle_id][1] == 0 or (
-                POSITIONS[bundle_id][1] == 1 and POSITIONS[bundle_id][0] == 4
+            if (is_callosal and tid == "Orbital") or (
+                POSITIONS[bundle_id][1] == 0
+                or (POSITIONS[bundle_id][1] == 1 and POSITIONS[bundle_id][0] == 4)
             ):
                 if metric in ["md", "dki_md"]:
                     _ = ax.set_ylabel(
-                        r"{} $\left[ \mu \textrm{{m}}^2 / \textrm{{ms}} \right]$".format(
+                        r"{} $\left[ \mu \mathrm{{m}}^2 / \mathrm{{ms}} \right]$".format(
                             metric.lower().replace("_", " ")
                         )
                     )
@@ -218,9 +241,13 @@ def plot_tract_profiles(
             _ = ax.set_title(
                 bundle_id.replace("_", "").replace("FA", "CFA").replace("FP", "CFP")
             )
+        if not is_callosal:
+            _ = axes[4, 0].axis("off")
+            _ = axes[4, 3].axis("off")
 
-        _ = axes[4, 0].axis("off")
-        _ = axes[4, 3].axis("off")
+        if not is_callosal and plot_callosal:
+            _ = axes[0, 0].axis("off")
+            _ = axes[0, 3].axis("off")
 
         handles, labels = ax.get_legend_handles_labels()
 
@@ -245,6 +272,10 @@ def plot_tract_profiles(
 
         fig.tight_layout(h_pad=0.5, w_pad=-0.5)
 
-        figs[metric] = fig
+        if plot_callosal:
+            fig_cc.tight_layout(h_pad=0.5, w_pad=-0.5)
+            figs[metric] = [fig, fig_cc]
+        else:
+            figs[metric] = fig
 
     return figs
