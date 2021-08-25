@@ -10,6 +10,13 @@ from collections import namedtuple
 from shutil import copyfile
 from sklearn.preprocessing import LabelEncoder
 
+try:
+    import torch
+
+    HAS_PYTORCH = True
+except ImportError:  # pragma: no cover
+    HAS_PYTORCH = False
+
 from .transform import AFQDataFrameMapper
 
 __all__ = ["load_afq_data", "output_beta_to_afq"]
@@ -29,6 +36,16 @@ try:
 except TypeError:
     AFQData = namedtuple("AFQData", _FIELDS)
     AFQData.__new__.__defaults__ = (None,) * len(AFQData._fields)
+
+
+def _check_pytorch():
+    if not HAS_PYTORCH:
+        raise ImportError(
+            "To use AFQ-Insight's pytorch classes, you will need to have pytorch "
+            "installed. You can do this by installing afqinsight with `pip install "
+            "afqinsight[torch]`, or by separately installing these packages with "
+            "`pip install torch`."
+        )
 
 
 def load_afq_data(
@@ -497,3 +514,141 @@ def download_weston_havens(data_home=None):
     data_home = data_home if data_home is not None else _DATA_DIR
     _download_afq_dataset("weston_havens", data_home=data_home)
     return op.join(data_home, "weston_havens_data")
+
+
+class AFQTorchDataset(torch.utils.data.Dataset):
+    def __init__(
+        self,
+        workdir,
+        dwi_metrics=None,
+        target_cols=None,
+        label_encode_cols=None,
+        index_col="subjectID",
+        fn_nodes="nodes.csv",
+        fn_subjects="subjects.csv",
+        unsupervised=False,
+        concat_subject_session=False,
+        return_sessions=False,
+        return_bundle_means=False,
+        bundles_as_channels=True,
+        n_nodes=None,
+        n_channels=None,
+        channels_last=False,
+    ):
+        """Load AFQ data from CSV, transform it, return data as a pytorch Dataset.
+
+        Parameters
+        ----------
+        workdir : str
+            Directory in which to find the AFQ csv files
+
+        dwi_metrics : list of strings, optional
+            List of diffusion metrics to extract from nodes csv.
+            e.g. ["dki_md", "dki_fa"]
+
+        target_cols : list of strings, optional
+            List of column names in subjects csv file to use as target variables
+
+        label_encode_cols : list of strings, subset of target_cols
+            Must be a subset of target_cols. These columns will be encoded using
+            :class:`sklearn:sklearn.preprocessing.LabelEncoder`.
+
+        index_col : str, default='subjectID'
+            The name of column in the subject csv file to use as the index. This
+            should contain subject IDs.
+
+        fn_nodes : str, default='nodes.csv'
+            Filename for the nodes csv file.
+
+        fn_subjects : str, default='subjects.csv'
+            Filename for the subjects csv file.
+
+        unsupervised : bool, default=False
+            If True, do not load target data from the ``fn_subjects`` file.
+
+        concat_subject_session : bool, default=False
+            If True, create new subject IDs by concatenating the existing subject
+            IDs with the session IDs. This is useful when subjects have multiple
+            sessions and you with to disambiguate between them.
+
+        return_sessions : bool, default=False
+            If True, return sessionID
+
+        return_bundle_means : bool, default=False
+            If True, return diffusion metrics averaged along the length of each
+            bundle.
+
+        bundles_as_channels=True,
+        n_nodes=None,
+        n_channels=None,
+        
+        Attributes
+        ----------
+        afq_data
+
+        X
+
+        y
+        X : torch.tensor
+            The feature samples of shape (n_samples, n_features) or (n_sample,
+            n_channels, n_nodes) if ``bundles_as_channels=True``.
+
+        y : torch.tensor
+            Target values of shape (n_samples,) or (n_samples, n_targets)
+            This will be None if ``unsupervised`` is True
+
+        unsupervised : bool
+            If True, the dataset does not contain target information
+        """
+        _check_pytorch()
+        self.afq_data = load_afq_data(
+            workdir=workdir,
+            dwi_metrics=dwi_metrics,
+            target_cols=target_cols,
+            label_encode_cols=label_encode_cols,
+            index_col=index_col,
+            fn_nodes=fn_nodes,
+            fn_subjects=fn_subjects,
+            unsupervised=unsupervised,
+            concat_subject_session=concat_subject_session,
+            return_sessions=return_sessions,
+            return_bundle_means=return_bundle_means,
+        )
+
+        if bundles_as_channels:
+            if n_nodes is None or n_channels is None:
+                raise ValueError(
+                    "If bundles_as_channels is True, you must "
+                    "provide n_nodes and n_channels."
+                )
+
+            if n_nodes * n_channels != self.afq_data.X.shape[1]:
+                raise ValueError(
+                    "The product n_nodes and n_channels does not match the "
+                    f"number of features in X. Got n_nodes={n_nodes}, "
+                    f"n_channels={n_channels}, "
+                    f"X.shape[1]={self.afq_data.X.shape[1]}."
+                )
+
+            n_subjects = self.afq_data.X.shape[0]
+            self.X = self.afq_data.X.reshape((n_subjects, n_channels, n_nodes))
+            if channels_last:
+                self.X = np.swapaxes(self.X, 1, 2)
+        else:
+            self.X = self.afq_data.X
+
+        self.X = torch.tensor(self.X)
+        self.unsupervised = unsupervised
+        if unsupervised:
+            self.y = torch.tensor([])
+        else:
+            self.y = torch.tensor(self.afq_data.y.astype(float))
+
+    def __len__(self):
+        return len(self.afq_data.X)
+
+    def __getitem__(self, idx):
+        if self.unsupervised:
+            return self.X[idx]
+        else:
+            return self.X[idx], self.y[idx]
