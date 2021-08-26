@@ -74,10 +74,12 @@ class AFQDataFrameMapper(DataFrameMapper):
         self,
         pd_interpolate_kwargs=None,
         bundle_agg_func=None,
+        concat_subject_session=False,
         **dataframe_mapper_kwargs,
     ):
         self.subjects_ = []
         self.groups_ = []
+        self.concat_subject_session = concat_subject_session
         self.pd_interpolate_kwargs = pd_interpolate_kwargs
         self.bundle_agg_func = bundle_agg_func
         kwargs = {"features": [], "default": None}
@@ -85,6 +87,12 @@ class AFQDataFrameMapper(DataFrameMapper):
         super().__init__(**kwargs)
 
     def _bundle_agg(self, X, agg_func, set_attributes=True):
+        X = X.copy()
+        if "sessionID" in X.columns and self.concat_subject_session:
+            X.subjectID = X.subjectID + X.sessionID
+
+        X = X.drop("sessionID", axis="columns", errors="ignore")
+
         features = (
             X.groupby(["subjectID", "tractID"])
             .agg(agg_func)
@@ -104,6 +112,12 @@ class AFQDataFrameMapper(DataFrameMapper):
         # subjects, tracts, or metrics. It should only interpolate from nearby
         # nodes. So we want the nodeID as the row index and all the other
         # stuff as columns . After that we can interpolate along each column.
+        X = X.copy()
+        if "sessionID" in X.columns and self.concat_subject_session:
+            X.subjectID = X.subjectID + X.sessionID
+
+        X = X.drop("sessionID", axis="columns", errors="ignore")
+
         by_node_idx = pd.pivot_table(
             data=X.melt(id_vars=["subjectID", "tractID", "nodeID"], var_name="metric"),
             index="nodeID",

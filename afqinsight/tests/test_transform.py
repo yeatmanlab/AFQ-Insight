@@ -2,6 +2,7 @@ import json
 import numpy as np
 import os.path as op
 import pandas as pd
+import pytest
 
 import afqinsight as afqi
 from afqinsight import AFQDataFrameMapper
@@ -12,10 +13,11 @@ data_path = op.join(afqi.__path__[0], "data")
 test_data_path = op.join(data_path, "test_data")
 
 
-def test_AFQDataFrameMapper():
+@pytest.mark.parametrize("concat_subject_session", [True, False])
+def test_AFQDataFrameMapper(concat_subject_session):
     nodes_path = op.join(test_data_path, "nodes.csv")
     nodes = pd.read_csv(nodes_path)
-    transformer = AFQDataFrameMapper()
+    transformer = AFQDataFrameMapper(concat_subject_session=concat_subject_session)
     X = transformer.fit_transform(nodes)
     groups = transformer.groups_
     cols = transformer.feature_names_
@@ -31,13 +33,29 @@ def test_AFQDataFrameMapper():
     assert np.allclose(X, X_ref, equal_nan=True)  # nosec
     assert np.allclose(groups, groups_ref)  # nosec
     assert cols == cols_ref  # nosec
-    assert set(subjects) == set(nodes.subjectID.unique())  # nosec
+    print("subjectID")
+    print(nodes.subjectID.unique())
+    print("sessionID")
+    print(nodes.sessionID.unique())
+    print("concat")
+    print((nodes.subjectID + nodes.sessionID).unique())
+    print("subjects")
+    print(set(subjects))
+    if concat_subject_session:
+        assert set(subjects) == set(
+            (nodes.subjectID + nodes.sessionID).unique()
+        )  # nosec
+    else:
+        assert set(subjects) == set(nodes.subjectID.unique())  # nosec
 
 
-def test_AFQDataFrameMapper_mean():
+@pytest.mark.parametrize("concat_subject_session", [True, False])
+def test_AFQDataFrameMapper_mean(concat_subject_session):
     nodes_path = op.join(test_data_path, "nodes.csv")
     nodes = pd.read_csv(nodes_path)
-    transformer = AFQDataFrameMapper(bundle_agg_func="mean")
+    transformer = AFQDataFrameMapper(
+        bundle_agg_func="mean", concat_subject_session=concat_subject_session
+    )
     X = transformer.fit_transform(nodes)
     groups = transformer.groups_
     cols = transformer.feature_names_
@@ -60,20 +78,30 @@ def test_AFQDataFrameMapper_mean():
 
     assert np.allclose(groups, groups_ref)  # nosec
     assert set(cols) == cols_ref  # nosec
-    assert set(subjects) == set(nodes.subjectID.unique())  # nosec
+    if concat_subject_session:
+        assert set(subjects) == set(
+            (nodes.subjectID + nodes.sessionID).unique()
+        )  # nosec
+    else:
+        assert set(subjects) == set(nodes.subjectID.unique())  # nosec
     assert np.allclose(X, X_ref, equal_nan=True)  # nosec
 
 
-def test_AFQDataFrameMapper_fit_transform():
+@pytest.mark.parametrize("bundle_agg_func", [None, "mean"])
+def test_AFQDataFrameMapper_fit_transform(bundle_agg_func):
     nodes_path = op.join(test_data_path, "nodes.csv")
     nodes = pd.read_csv(nodes_path)
-    transformer = AFQDataFrameMapper(pd_interpolate_kwargs={"method": "cubic"})
+    transformer = AFQDataFrameMapper(
+        bundle_agg_func=bundle_agg_func, pd_interpolate_kwargs={"method": "cubic"}
+    )
     X_ft = transformer.fit_transform(nodes)
     groups_ft = transformer.groups_
     cols_ft = transformer.feature_names_
     subjects_ft = transformer.subjects_
 
-    transformer = AFQDataFrameMapper(pd_interpolate_kwargs={"method": "cubic"})
+    transformer = AFQDataFrameMapper(
+        bundle_agg_func=bundle_agg_func, pd_interpolate_kwargs={"method": "cubic"}
+    )
     transformer.fit(nodes)
     X_t = transformer.transform(nodes)
     groups_t = transformer.groups_

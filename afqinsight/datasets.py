@@ -47,7 +47,7 @@ except TypeError:
 
 
 def _check_pytorch():
-    if not HAS_PYTORCH:
+    if not HAS_PYTORCH:  # pragma: no cover
         raise ImportError(
             "To use AFQ-Insight's pytorch classes, you will need to have pytorch "
             "installed. You can do this by installing afqinsight with `pip install "
@@ -57,7 +57,7 @@ def _check_pytorch():
 
 
 def _check_tf():
-    if not HAS_TF:
+    if not HAS_TF:  # pragma: no cover
         raise ImportError(
             "To use AFQ-Insight's tensorflow classes, you will need to have tensorflow "
             "installed. You can do this by installing afqinsight with `pip install "
@@ -219,18 +219,27 @@ def load_afq_data(
     nodes.drop(unnamed_cols, axis="columns", inplace=True)
 
     sessions = nodes["sessionID"] if "sessionID" in nodes.columns else None
-    if concat_subject_session:
-        nodes["subjectID"] = nodes["subjectID"] + nodes["sessionID"].astype(str)
-
-    nodes.drop("sessionID", axis="columns", inplace=True, errors="ignore")
+    if concat_subject_session and "sessionID" not in nodes.columns:
+        raise ValueError(
+            "Cannot concatenate subjectID and sessionID because 'sessionID' "
+            f"is not one of the columns in {fn_nodes}. Either choose a csv "
+            "file with 'sessionID' as one of the columns or set "
+            "concat_subject_session=False."
+        )
 
     if dwi_metrics is not None:
-        nodes = nodes[["tractID", "nodeID", "subjectID"] + dwi_metrics]
+        non_metric_cols = ["tractID", "nodeID", "subjectID"]
+        if "sessionID" in nodes.columns:
+            non_metric_cols += ["sessionID"]
+
+        nodes = nodes[non_metric_cols + dwi_metrics]
 
     if return_bundle_means:
-        mapper = AFQDataFrameMapper(bundle_agg_func="mean")
+        mapper = AFQDataFrameMapper(
+            bundle_agg_func="mean", concat_subject_session=concat_subject_session
+        )
     else:
-        mapper = AFQDataFrameMapper()
+        mapper = AFQDataFrameMapper(concat_subject_session=concat_subject_session)
 
     X = mapper.fit_transform(nodes)
     subjects = mapper.subjects_
@@ -468,7 +477,7 @@ class AFQDataset:
         means : np.ndarray
             The mean diffusion metric along the length of each bundle
         """
-        ga = GroupAggregator(groups=self.groups, group_names=self.group_names)
+        ga = GroupAggregator(groups=self.groups)
         return ga.fit_transform(self.X)
 
     def as_torch_dataset(self, bundles_as_channels=True, channels_last=False):
