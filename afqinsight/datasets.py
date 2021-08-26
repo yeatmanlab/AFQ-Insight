@@ -409,7 +409,7 @@ class AFQDataset:
             sessions and you with to disambiguate between them.
 
         Attributes
-        -------
+        ----------
         X : array-like of shape (n_samples, n_features)
             The feature samples.
 
@@ -472,7 +472,7 @@ class AFQDataset:
         return ga.fit_transform(self.X)
 
     def torch_dataset(self, bundles_as_channels=True, channels_last=False):
-        """Return features and labels packaged as a pytorch dataset
+        """Return features and labels packaged as a pytorch dataset.
 
         Parameters
         ----------
