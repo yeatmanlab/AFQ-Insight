@@ -471,7 +471,7 @@ class AFQDataset:
         ga = GroupAggregator(groups=self.groups, group_names=self.group_names)
         return ga.fit_transform(self.X)
 
-    def torch_dataset(self, bundles_as_channels=True, channels_last=False):
+    def as_torch_dataset(self, bundles_as_channels=True, channels_last=False):
         """Return features and labels packaged as a pytorch dataset.
 
         Parameters
@@ -504,7 +504,7 @@ class AFQDataset:
 
         return AFQTorchDataset(X, self.y)
 
-    def tf_dataset(self, bundles_as_channels=True, channels_last=True):
+    def as_tensorflow_dataset(self, bundles_as_channels=True, channels_last=True):
         _check_tf()
         if bundles_as_channels:
             n_channels = len(self.group_names)
