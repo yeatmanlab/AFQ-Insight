@@ -15,6 +15,50 @@ try:
     import torch
 
     HAS_PYTORCH = True
+
+    class AFQTorchDataset(torch.utils.data.Dataset):
+        def __init__(self, X, y=None):
+            """AFQ features and targets packages as a pytorch dataset.
+
+            Parameters
+            ----------
+            X : np.ndarray
+                The feature samples.
+
+            y : np.ndarray, optional
+                Target values.
+
+            Attributes
+            ----------
+            X : np.ndarray
+                The feature samples converted to torch.tensor
+
+            y : np.ndarray
+                Target values converted to torch tensor
+
+            unsupervised : bool
+                True if ``y`` was provided on init. False otherwise
+            """
+            _check_pytorch()
+
+            self.X = torch.tensor(X)
+            if y is None:
+                self.unsupervised = True
+                self.y = torch.tensor([])
+            else:
+                self.unsupervised = False
+                self.y = torch.tensor(y.astype(float))
+
+        def __len__(self):
+            return len(self.X)
+
+        def __getitem__(self, idx):
+            if self.unsupervised:
+                return self.X[idx]
+            else:
+                return self.X[idx], self.y[idx]
+
+
 except ImportError:  # pragma: no cover
     HAS_PYTORCH = False
 
@@ -309,49 +353,6 @@ def load_afq_data(
         sessions=sessions,
         classes=classes,
     )
-
-
-class AFQTorchDataset(torch.utils.data.Dataset):
-    def __init__(self, X, y=None):
-        """AFQ features and targets packages as a pytorch dataset.
-
-        Parameters
-        ----------
-        X : np.ndarray
-            The feature samples.
-
-        y : np.ndarray, optional
-            Target values.
-
-        Attributes
-        ----------
-        X : np.ndarray
-            The feature samples converted to torch.tensor
-
-        y : np.ndarray
-            Target values converted to torch tensor
-
-        unsupervised : bool
-            True if ``y`` was provided on init. False otherwise
-        """
-        _check_pytorch()
-
-        self.X = torch.tensor(X)
-        if y is None:
-            self.unsupervised = True
-            self.y = torch.tensor([])
-        else:
-            self.unsupervised = False
-            self.y = torch.tensor(y.astype(float))
-
-    def __len__(self):
-        return len(self.X)
-
-    def __getitem__(self, idx):
-        if self.unsupervised:
-            return self.X[idx]
-        else:
-            return self.X[idx], self.y[idx]
 
 
 class AFQDataset:
