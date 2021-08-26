@@ -25,8 +25,8 @@ def _check_keras():
     if not HAS_KERAS:  # pragma: no cover
         raise ImportError(
             "To use afqinsight's convolutional neural nets for tractometry data, you will need "
-            "to have tensorflow, keras, and kerastuner installed. You can do this by installing "
-            "afqinsight with `pip install afqinsight[cnn]`, or by separately installing these packages "
+            "to have tensorflow and kerastuner installed. You can do this by installing "
+            "afqinsight with `pip install afqinsight[tf]`, or by separately installing these packages "
             "with `pip install tensorflow kerastuner`."
         )
 
