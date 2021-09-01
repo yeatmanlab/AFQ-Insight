@@ -463,6 +463,9 @@ class AFQDataset:
 
         self.X = afq_data.X
         self.y = afq_data.y
+        if self.y is not None:
+            self.y = self.y.astype(float)
+
         self.groups = afq_data.groups
         self.feature_names = afq_data.feature_names
         self.group_names = afq_data.group_names
@@ -532,7 +535,7 @@ class AFQDataset:
         if self.y is None:
             return tf.data.Dataset.from_tensor_slices(X)
         else:
-            return tf.data.Dataset.from_tensor_slices((X, self.y))
+            return tf.data.Dataset.from_tensor_slices((X, self.y.astype(float)))
 
 
 def output_beta_to_afq(
