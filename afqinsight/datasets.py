@@ -486,7 +486,7 @@ class AFQDataset:
 
     def drop_target_na(self):
         """Drop subjects who have nan values as targets.
-        
+
         This method modifies the ``X``, ``y``, and ``subjects`` attributes in-place.
         """
         nan_mask = np.isnan(self.y).astype(int).sum(axis=1).astype(bool)
