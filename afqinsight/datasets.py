@@ -484,6 +484,16 @@ class AFQDataset:
         ga = GroupAggregator(groups=self.groups)
         return ga.fit_transform(self.X)
 
+    def drop_target_na(self):
+        """Drop subjects who have nan values as targets.
+        
+        This method modifies the ``X``, ``y``, and ``subjects`` attributes in-place.
+        """
+        nan_mask = np.isnan(self.y).astype(int).sum(axis=1).astype(bool)
+        self.X = self.X[~nan_mask]
+        self.y = self.y[~nan_mask]
+        self.subjects = [sub for mask, sub in zip(nan_mask, self.subjects) if mask]
+
     def as_torch_dataset(self, bundles_as_channels=True, channels_last=False):
         """Return features and labels packaged as a pytorch dataset.
 
