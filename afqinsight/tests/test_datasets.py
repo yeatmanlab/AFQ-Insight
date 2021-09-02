@@ -32,27 +32,32 @@ def test_bundles2channels():
         bundles2channels(X0, n_nodes=1000, n_channels=7)
 
 
-def test_AFQDataset():
+@pytest.mark.parametrize("target_cols", [["class"], ["age", "class"]])
+def test_AFQDataset(target_cols):
     sarica_dir = download_sarica()
     afq_data = AFQDataset(
         workdir=sarica_dir,
         dwi_metrics=["md", "fa"],
-        target_cols=["class"],
+        target_cols=target_cols,
         label_encode_cols=["class"],
     )
 
+    y_shape = (48, 2) if len(target_cols) == 2 else (48,)
+
     assert afq_data.X.shape == (48, 4000)  # nosec
-    assert afq_data.y.shape == (48,)  # nosec
+    assert afq_data.y.shape == y_shape  # nosec
     assert len(afq_data.groups) == 40  # nosec
     assert len(afq_data.feature_names) == 4000  # nosec
     assert len(afq_data.group_names) == 40  # nosec
     assert len(afq_data.subjects) == 48  # nosec
     assert afq_data.bundle_means().shape == (48, 40)  # nosec
 
+    # Test pytorch dataset method
+
     pt_dataset = afq_data.as_torch_dataset()
     assert len(pt_dataset) == 48
     assert pt_dataset.X.shape == (48, 40, 100)  # nosec
-    assert pt_dataset.y.shape == (48,)  # nosec
+    assert pt_dataset.y.shape == y_shape  # nosec
     assert np.allclose(
         pt_dataset[0][0][0], afq_data.X[0, :100], equal_nan=True
     )  # nosec
@@ -60,7 +65,7 @@ def test_AFQDataset():
     pt_dataset = afq_data.as_torch_dataset(channels_last=True)
     assert len(pt_dataset) == 48
     assert pt_dataset.X.shape == (48, 100, 40)  # nosec
-    assert pt_dataset.y.shape == (48,)  # nosec
+    assert pt_dataset.y.shape == y_shape  # nosec
     assert np.allclose(
         pt_dataset[0][0][:, 0], afq_data.X[0, :100], equal_nan=True
     )  # nosec
@@ -68,8 +73,10 @@ def test_AFQDataset():
     pt_dataset = afq_data.as_torch_dataset(bundles_as_channels=False)
     assert len(pt_dataset) == 48
     assert pt_dataset.X.shape == (48, 4000)  # nosec
-    assert pt_dataset.y.shape == (48,)  # nosec
+    assert pt_dataset.y.shape == y_shape  # nosec
     assert np.allclose(pt_dataset[0][0], afq_data.X[0], equal_nan=True)  # nosec
+
+    # Test tensorflow dataset method
 
     tf_dataset = list(afq_data.as_tensorflow_dataset().as_numpy_iterator())
     assert len(tf_dataset) == 48
@@ -90,6 +97,21 @@ def test_AFQDataset():
     )
     assert len(tf_dataset) == 48
     assert np.allclose(tf_dataset[0][0], afq_data.X[0], equal_nan=True)  # nosec
+
+    # Test the drop_target_na method
+    if len(target_cols) == 2:
+        afq_data.y[0, 0] = np.nan
+        y_shape = (47, 2)
+    else:
+        afq_data.y[0] = np.nan
+        y_shape = (47,)
+
+    afq_data.drop_target_na()
+    assert afq_data.X.shape == (47, 4000)  # nosec
+    assert afq_data.y.shape == y_shape  # nosec
+    assert len(afq_data.subjects) == 47  # nosec
+
+    # Do it all again for an unsupervised dataset
 
     afq_data = AFQDataset(
         workdir=sarica_dir, dwi_metrics=["md", "fa"], unsupervised=True
@@ -113,6 +135,12 @@ def test_AFQDataset():
     assert np.allclose(
         tf_dataset[0][:, 0], afq_data.X[0, :100], equal_nan=True
     )  # nosec
+
+    # Test the drop_target_na method does nothing in the unsupervised case
+    afq_data.drop_target_na()
+    assert afq_data.X.shape == (48, 4000)  # nosec
+    assert afq_data.y is None  # nosec
+    assert len(afq_data.subjects) == 48  # nosec
 
 
 def test_fetch():

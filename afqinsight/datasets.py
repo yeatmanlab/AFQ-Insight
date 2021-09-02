@@ -489,10 +489,15 @@ class AFQDataset:
 
         This method modifies the ``X``, ``y``, and ``subjects`` attributes in-place.
         """
-        nan_mask = np.isnan(self.y).astype(int).sum(axis=1).astype(bool)
-        self.X = self.X[~nan_mask]
-        self.y = self.y[~nan_mask]
-        self.subjects = [sub for mask, sub in zip(nan_mask, self.subjects) if mask]
+        if self.y is not None:
+            nan_mask = np.isnan(self.y)
+            if len(self.y.shape) > 1:
+                nan_mask = nan_mask.astype(int).sum(axis=1).astype(bool)
+
+            nan_mask = ~nan_mask
+            self.X = self.X[nan_mask]
+            self.y = self.y[nan_mask]
+            self.subjects = [sub for mask, sub in zip(nan_mask, self.subjects) if mask]
 
     def as_torch_dataset(self, bundles_as_channels=True, channels_last=False):
         """Return features and labels packaged as a pytorch dataset.
