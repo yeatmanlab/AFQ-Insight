@@ -38,14 +38,14 @@ POSITIONS = OrderedDict(
         "FP": (4, 2),
         "CC_ForcepsMinor": (4, 1),
         "CC_ForcepsMajor": (4, 2),
-        "AntFrontal": (4, 0),
-        "Motor": (4, 1),
-        "Occipital": (4, 2),
-        "Orbital": (4, 3),
-        "PostParietal": (5, 0),
-        "SupFrontal": (5, 1),
-        "SupParietal": (5, 2),
-        "Temporal": (5, 3),
+        "Orbital": (4, 0),
+        "AntFrontal": (4, 1),
+        "SupFrontal": (4, 2),
+        "Motor": (4, 3),
+        "SupParietal": (5, 0),
+        "Temporal": (5, 1),
+        "PostParietal": (5, 2),
+        "Occipital": (5, 3),
     }
 )
 
@@ -60,6 +60,9 @@ def plot_tract_profiles(
     quantiles=None,
     palette="colorblind",
     ci=95.0,
+    subplot_positions=None,
+    nrows=None,
+    ncols=None,
 ):
     """Plot profiles for each bundle and each metric.
 
@@ -110,12 +113,25 @@ def plot_tract_profiles(
     ci : float, default=95.0
         Confidence interval with which to shade the bundle profiles
 
+    subplot_positions : dict, optional
+        Dictionary with keys corresponding to bundle names and values
+        corresponding to the subplot positions. If not provided, this function
+        will use afqinsight.plot.POSITIONS.
+
+    nrows : int, optional
+        Number of subplot rows.
+
+    ncols : int, optional
+        Number of subplot columns.
+
     Returns
     -------
     figs : dict
         dictionary of matplotlib figures, with keys corresponding to the
         different diffusion metrics
     """
+    plt_positions = subplot_positions if subplot_positions is not None else POSITIONS
+
     if bins is not None and quantiles is not None:
         raise ValueError(
             "You specified both bins and quantiles. These parameters are mutually exclusive."
@@ -181,12 +197,15 @@ def plot_tract_profiles(
         bgcolor = "white"
 
         # Create the subplots
-        nrows = 5
-        cc_bundles = ["PostParietal", "SupFrontal", "SupParietal", "Temporal"]
-        if any([tid in tract_stats.keys() for tid in cc_bundles]):
-            nrows = 6
+        if nrows is None:
+            nrows = 5
+            cc_bundles = ["PostParietal", "SupFrontal", "SupParietal", "Temporal"]
+            if any([tid in tract_stats.keys() for tid in cc_bundles]):
+                nrows = 6
 
-        fig, axes = plt.subplots(nrows=nrows, ncols=4, sharex=True)
+        ncols = ncols if ncols is not None else 4
+
+        fig, axes = plt.subplots(nrows=nrows, ncols=ncols, sharex=True)
 
         for tid, df_stat in tqdm(tract_stats.items()):
             bundle_id = BUNDLE_MAT_2_PYTHON.get(tid, tid)
@@ -194,7 +213,7 @@ def plot_tract_profiles(
             if "HCC_" in bundle_id or "Cingulum Hippocampus" in tid:
                 continue
 
-            ax = axes[POSITIONS[bundle_id][0], POSITIONS[bundle_id][1]]
+            ax = axes[plt_positions[bundle_id][0], plt_positions[bundle_id][1]]
 
             if metric == "dki_md":
                 df_stat[metric] *= 1000.0
@@ -211,13 +230,14 @@ def plot_tract_profiles(
                 n_boot=500,
             )
 
-            if POSITIONS[bundle_id][0] == nrows - 1:
+            if plt_positions[bundle_id][0] == nrows - 1:
                 _ = ax.set_xlabel("% distance along fiber bundle")
 
-            if POSITIONS[bundle_id][1] == 0 or (
-                POSITIONS[bundle_id][1] == 1
-                and POSITIONS[bundle_id][0] == 4
+            if plt_positions[bundle_id][1] == 0 or (
+                plt_positions[bundle_id][1] == 1
+                and plt_positions[bundle_id][0] == 4
                 and nrows == 5
+                and subplot_positions is None
             ):
                 _ = ax.set_ylabel(metric.lower().replace("_", " "))
             else:
@@ -231,7 +251,7 @@ def plot_tract_profiles(
                 bundle_id.replace("_", "").replace("FA", "CFA").replace("FP", "CFP")
             )
 
-        if nrows == 5:
+        if subplot_positions is None and nrows == 5:
             _ = axes[4, 0].axis("off")
             _ = axes[4, 3].axis("off")
 
