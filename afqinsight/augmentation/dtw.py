@@ -18,6 +18,7 @@ RETURN_VALUE = 0
 RETURN_PATH = 1
 RETURN_ALL = -1
 
+
 # Core DTW
 def _traceback(DTW, slope_constraint):
     i, j = np.array(DTW.shape) - 1
@@ -161,8 +162,6 @@ def shape_dtw(
 
     prototype_pad = np.pad(prototype, ((p_pad_front, p_pad_back), (0, 0)), mode="edge")
     sample_pad = np.pad(sample, ((s_pad_front, s_pad_back), (0, 0)), mode="edge")
-    p_p = prototype_pad.shape[0]
-    s_p = sample_pad.shape[0]
 
     cost = np.full((p, s), np.inf)
     for i in range(p):
