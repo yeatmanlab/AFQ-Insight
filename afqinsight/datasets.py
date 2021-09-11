@@ -12,6 +12,8 @@ from groupyr.transform import GroupAggregator
 from shutil import copyfile
 from sklearn.preprocessing import LabelEncoder
 
+from .transform import AFQDataFrameMapper
+
 torch_msg = (
     "To use AFQ-Insight's pytorch classes, you will need to have pytorch "
     "installed. You can do this by installing afqinsight with `pip install "
@@ -28,9 +30,7 @@ tf_msg = (
 )
 tf, _, _ = optional_package("tensorflow", tf_msg)
 
-from .transform import AFQDataFrameMapper
-
-__all__ = ["load_afq_data", "output_beta_to_afq"]
+__all__ = ["AFQDataset", "load_afq_data", "output_beta_to_afq"]
 _DATA_DIR = op.join(op.expanduser("~"), ".cache", "afq-insight")
 _FIELDS = [
     "X",

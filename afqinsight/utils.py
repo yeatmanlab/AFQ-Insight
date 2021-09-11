@@ -1,8 +1,4 @@
 """Utility functions for AFQ-Insight."""
-import numpy as np
-
-__all__ = ["ecdf"]
-
 
 CANONICAL_TRACT_NAMES = [
     "Left Arcuate",
