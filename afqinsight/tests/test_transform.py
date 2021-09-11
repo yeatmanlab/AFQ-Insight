@@ -33,14 +33,6 @@ def test_AFQDataFrameMapper(concat_subject_session):
     assert np.allclose(X, X_ref, equal_nan=True)  # nosec
     assert np.allclose(groups, groups_ref)  # nosec
     assert cols == cols_ref  # nosec
-    print("subjectID")
-    print(nodes.subjectID.unique())
-    print("sessionID")
-    print(nodes.sessionID.unique())
-    print("concat")
-    print((nodes.subjectID + nodes.sessionID).unique())
-    print("subjects")
-    print(set(subjects))
     if concat_subject_session:
         assert set(subjects) == set(
             (nodes.subjectID + nodes.sessionID).unique()

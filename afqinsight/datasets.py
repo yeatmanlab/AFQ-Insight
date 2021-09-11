@@ -7,67 +7,26 @@ import pandas as pd
 import requests
 
 from collections import namedtuple
+from dipy.utils.optpkg import optional_package
 from groupyr.transform import GroupAggregator
 from shutil import copyfile
 from sklearn.preprocessing import LabelEncoder
 
-try:
-    import torch
+torch_msg = (
+    "To use AFQ-Insight's pytorch classes, you will need to have pytorch "
+    "installed. You can do this by installing afqinsight with `pip install "
+    "afqinsight[torch]`, or by separately installing these packages with "
+    "`pip install torch`."
+)
+torch, _, _ = optional_package("torch", torch_msg)
 
-    HAS_PYTORCH = True
-
-    class AFQTorchDataset(torch.utils.data.Dataset):
-        def __init__(self, X, y=None):
-            """AFQ features and targets packages as a pytorch dataset.
-
-            Parameters
-            ----------
-            X : np.ndarray
-                The feature samples.
-
-            y : np.ndarray, optional
-                Target values.
-
-            Attributes
-            ----------
-            X : np.ndarray
-                The feature samples converted to torch.tensor
-
-            y : np.ndarray
-                Target values converted to torch tensor
-
-            unsupervised : bool
-                True if ``y`` was provided on init. False otherwise
-            """
-            _check_pytorch()
-
-            self.X = torch.tensor(X)
-            if y is None:
-                self.unsupervised = True
-                self.y = torch.tensor([])
-            else:
-                self.unsupervised = False
-                self.y = torch.tensor(y.astype(float))
-
-        def __len__(self):
-            return len(self.X)
-
-        def __getitem__(self, idx):
-            if self.unsupervised:
-                return self.X[idx]
-            else:
-                return self.X[idx], self.y[idx]
-
-
-except ImportError:  # pragma: no cover
-    HAS_PYTORCH = False
-
-try:
-    import tensorflow as tf
-
-    HAS_TF = True
-except ImportError:  # pragma: no cover
-    HAS_TF = False
+tf_msg = (
+    "To use AFQ-Insight's tensorflow classes, you will need to have tensorflow "
+    "installed. You can do this by installing afqinsight with `pip install "
+    "afqinsight[tensorflow]`, or by separately installing these packages with "
+    "`pip install tensorflow`."
+)
+tf, _, _ = optional_package("tensorflow", tf_msg)
 
 from .transform import AFQDataFrameMapper
 
@@ -88,26 +47,6 @@ try:
 except TypeError:
     AFQData = namedtuple("AFQData", _FIELDS)
     AFQData.__new__.__defaults__ = (None,) * len(AFQData._fields)
-
-
-def _check_pytorch():
-    if not HAS_PYTORCH:  # pragma: no cover
-        raise ImportError(
-            "To use AFQ-Insight's pytorch classes, you will need to have pytorch "
-            "installed. You can do this by installing afqinsight with `pip install "
-            "afqinsight[torch]`, or by separately installing these packages with "
-            "`pip install torch`."
-        )
-
-
-def _check_tf():
-    if not HAS_TF:  # pragma: no cover
-        raise ImportError(
-            "To use AFQ-Insight's tensorflow classes, you will need to have tensorflow "
-            "installed. You can do this by installing afqinsight with `pip install "
-            "afqinsight[tensorflow]`, or by separately installing these packages with "
-            "`pip install tensorflow`."
-        )
 
 
 def bundles2channels(X, n_nodes, n_channels, channels_last=True):
@@ -355,6 +294,47 @@ def load_afq_data(
     )
 
 
+class AFQTorchDataset(torch.utils.data.Dataset):
+    def __init__(self, X, y=None):
+        """AFQ features and targets packages as a pytorch dataset.
+
+        Parameters
+        ----------
+        X : np.ndarray
+            The feature samples.
+
+        y : np.ndarray, optional
+            Target values.
+
+        Attributes
+        ----------
+        X : np.ndarray
+            The feature samples converted to torch.tensor
+
+        y : np.ndarray
+            Target values converted to torch tensor
+
+        unsupervised : bool
+            True if ``y`` was provided on init. False otherwise
+        """
+        self.X = torch.tensor(X)
+        if y is None:
+            self.unsupervised = True
+            self.y = torch.tensor([])
+        else:
+            self.unsupervised = False
+            self.y = torch.tensor(y.astype(float))
+
+    def __len__(self):
+        return len(self.X)
+
+    def __getitem__(self, idx):
+        if self.unsupervised:
+            return self.X[idx]
+        else:
+            return self.X[idx], self.y[idx]
+
+
 class AFQDataset:
     def __init__(
         self,
@@ -533,7 +513,6 @@ class AFQDataset:
         return AFQTorchDataset(X, self.y)
 
     def as_tensorflow_dataset(self, bundles_as_channels=True, channels_last=True):
-        _check_tf()
         if bundles_as_channels:
             n_channels = len(self.group_names)
             _, n_features = self.X.shape

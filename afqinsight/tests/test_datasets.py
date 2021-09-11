@@ -254,7 +254,6 @@ def test_load_afq_data():
     assert feature_names == cols_ref  # nosec
     assert group_names == [tup[0:2] for tup in cols_ref if tup[2] == 0]  # nosec
     assert set(subjects) == set(nodes.subjectID.unique())  # nosec
-    # assert set(subjects) == set((nodes.subjectID + nodes.sessionID).unique())  # nosec
     assert all(classes["test_class"] == np.array(["c0", "c1"]))  # nosec
 
     (X, y, groups, feature_names, group_names, subjects, _, classes) = load_afq_data(

@@ -69,36 +69,3 @@ BUNDLE_MAT_2_PYTHON = {
     "RightSLF": "SLF_R",
     "LeftSLF": "SLF_L",
 }
-
-
-def ecdf(data, reverse=False):
-    """Compute ECDF for a one-dimensional array of measurements.
-
-    Parameters
-    ----------
-    data : np.ndarray
-        one-dimensional array of measurements
-
-    reverse : bool, default=False
-        If True, reverse the sorted data so that ecdf runs from top-left
-        to bottom-right.
-
-    Returns
-    -------
-    x : numpy.ndarray
-        sorted data
-    y : numpy.ndarray
-        cumulative probability
-    """
-    # Number of data points: n
-    n = len(data)
-
-    # x-data for the ECDF: x
-    x = np.sort(data)
-    if reverse:
-        x = np.flip(x)
-
-    # y-data for the ECDF: y
-    y = np.arange(1, n + 1) / n
-
-    return x, y
