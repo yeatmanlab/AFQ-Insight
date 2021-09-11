@@ -336,6 +336,88 @@ class AFQTorchDataset(torch.utils.data.Dataset):
 
 
 class AFQDataset:
+    """Store and manipulate AFQ data loaded from CSV.
+
+    This class expects a directory with a diffusion metric csv file
+    (specified by ``fn_nodes``) and, optionally, a phenotypic data file
+    (specified by ``fn_subjects``). The nodes csv file must be a long format
+    dataframe with the following columns: "subjectID," "nodeID," "tractID,"
+    an optional "sessionID". All other columns are assumed to be diffusion
+    metric columns, which can be optionally subset using the ``dwi_metrics``
+    parameter.
+
+    For supervised learning problems (with parameter ``unsupervised=False``)
+    this function will also load phenotypic targets from a subjects csv/tsv
+    file. This function will load the subject data, drop subjects that are
+    not found in the dwi feature matrix, and optionally label encode
+    categorical values.
+
+    Parameters
+    ----------
+    workdir : str
+        Directory in which to find the AFQ csv files
+
+    dwi_metrics : list of strings, optional
+        List of diffusion metrics to extract from nodes csv.
+        e.g. ["dki_md", "dki_fa"]
+
+    target_cols : list of strings, optional
+        List of column names in subjects csv file to use as target variables
+
+    label_encode_cols : list of strings, subset of target_cols
+        Must be a subset of target_cols. These columns will be encoded using
+        :class:`sklearn:sklearn.preprocessing.LabelEncoder`.
+
+    index_col : str, default='subjectID'
+        The name of column in the subject csv file to use as the index. This
+        should contain subject IDs.
+
+    fn_nodes : str, default='nodes.csv'
+        Filename for the nodes csv file.
+
+    fn_subjects : str, default='subjects.csv'
+        Filename for the subjects csv file.
+
+    unsupervised : bool, default=False
+        If True, do not load target data from the ``fn_subjects`` file.
+
+    concat_subject_session : bool, default=False
+        If True, create new subject IDs by concatenating the existing subject
+        IDs with the session IDs. This is useful when subjects have multiple
+        sessions and you with to disambiguate between them.
+
+    Attributes
+    ----------
+    X : array-like of shape (n_samples, n_features)
+        The feature samples.
+
+    y : array-like of shape (n_samples,) or (n_samples, n_targets), optional
+        Target values. This will be None if ``unsupervised`` is True
+
+    groups : list of numpy.ndarray
+        feature indices for each feature group
+
+    feature_names : list of tuples
+        The multi-indexed columns of X
+
+    group_names : list of tuples
+        The multi-indexed groups of X
+
+    subjects : list
+        Subject IDs
+
+    sessions : list
+        Session IDs.
+
+    classes : dict
+        Class labels for each column specified in ``label_encode_cols``.
+        This will be None if ``unsupervised`` is True
+
+    See Also
+    --------
+    transform.AFQDataFrameMapper
+    """
+
     def __init__(
         self,
         workdir,
@@ -348,87 +430,6 @@ class AFQDataset:
         unsupervised=False,
         concat_subject_session=False,
     ):
-        """Load AFQ data from CSV.
-
-        This class expects a directory with a diffusion metric csv file
-        (specified by ``fn_nodes``) and, optionally, a phenotypic data file
-        (specified by ``fn_subjects``). The nodes csv file must be a long format
-        dataframe with the following columns: "subjectID," "nodeID," "tractID,"
-        an optional "sessionID". All other columns are assumed to be diffusion
-        metric columns, which can be optionally subset using the ``dwi_metrics``
-        parameter.
-
-        For supervised learning problems (with parameter ``unsupervised=False``)
-        this function will also load phenotypic targets from a subjects csv/tsv
-        file. This function will load the subject data, drop subjects that are
-        not found in the dwi feature matrix, and optionally label encode
-        categorical values.
-
-        Parameters
-        ----------
-        workdir : str
-            Directory in which to find the AFQ csv files
-
-        dwi_metrics : list of strings, optional
-            List of diffusion metrics to extract from nodes csv.
-            e.g. ["dki_md", "dki_fa"]
-
-        target_cols : list of strings, optional
-            List of column names in subjects csv file to use as target variables
-
-        label_encode_cols : list of strings, subset of target_cols
-            Must be a subset of target_cols. These columns will be encoded using
-            :class:`sklearn:sklearn.preprocessing.LabelEncoder`.
-
-        index_col : str, default='subjectID'
-            The name of column in the subject csv file to use as the index. This
-            should contain subject IDs.
-
-        fn_nodes : str, default='nodes.csv'
-            Filename for the nodes csv file.
-
-        fn_subjects : str, default='subjects.csv'
-            Filename for the subjects csv file.
-
-        unsupervised : bool, default=False
-            If True, do not load target data from the ``fn_subjects`` file.
-
-        concat_subject_session : bool, default=False
-            If True, create new subject IDs by concatenating the existing subject
-            IDs with the session IDs. This is useful when subjects have multiple
-            sessions and you with to disambiguate between them.
-
-        Attributes
-        ----------
-        X : array-like of shape (n_samples, n_features)
-            The feature samples.
-
-        y : array-like of shape (n_samples,) or (n_samples, n_targets), optional
-            Target values. This will be None if ``unsupervised`` is True
-
-        groups : list of numpy.ndarray
-            feature indices for each feature group
-
-        feature_names : list of tuples
-            The multi-indexed columns of X
-
-        group_names : list of tuples
-            The multi-indexed groups of X
-
-        subjects : list
-            Subject IDs
-
-        sessions : list
-            Session IDs.
-
-        classes : dict
-            Class labels for each column specified in ``label_encode_cols``.
-            This will be None if ``unsupervised`` is True
-
-        See Also
-        --------
-        transform.AFQDataFrameMapper
-        """
         afq_data = load_afq_data(
             workdir=workdir,
             dwi_metrics=dwi_metrics,
@@ -513,6 +514,23 @@ class AFQDataset:
         return AFQTorchDataset(X, self.y)
 
     def as_tensorflow_dataset(self, bundles_as_channels=True, channels_last=True):
+        """Return features and labels packaged as a tensorflow dataset.
+
+        Parameters
+        ----------
+        bundles_as_channels : bool, default=True
+            If True, reshape the feature matrix such that each bundle/metric
+            combination gets it's own channel.
+
+        channels_last : bool, default=False
+            If True, the channels will be the last dimension of the feature tensor.
+            Otherwise, the channels will be the penultimate dimension.
+
+        Returns
+        -------
+        tensorflow.data.Dataset.from_tensor_slices
+            The tensorflow dataset
+        """
         if bundles_as_channels:
             n_channels = len(self.group_names)
             _, n_features = self.X.shape
