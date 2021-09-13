@@ -26,6 +26,7 @@ more thorough search of the hyperparameter space. For more details, please see
 """
 import matplotlib.pyplot as plt
 import numpy as np
+import os.path as op
 
 from afqinsight.datasets import download_weston_havens, load_afq_data
 from afqinsight import make_afq_regressor_pipeline
@@ -55,7 +56,12 @@ workdir = download_weston_havens()
 # input that points to a directory that holds appropriately-shaped data and
 # returns variables that we will use below in our analysis of the data.
 
-afqdata = load_afq_data(workdir=workdir, dwi_metrics=["md", "fa"], target_cols=["Age"])
+afqdata = load_afq_data(
+    fn_nodes=op.join(workdir, "nodes.csv"),
+    fn_subjects=op.join(workdir, "subjects.csv"),
+    dwi_metrics=["md", "fa"],
+    target_cols=["Age"],
+)
 
 # afqdata is a namedtuple. You can access it's fields using dot notation or by
 # unpacking the tuple. To see all of the available fields use `afqdata._fields`
