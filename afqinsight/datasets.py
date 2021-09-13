@@ -8,6 +8,7 @@ import requests
 
 from collections import namedtuple
 from dipy.utils.optpkg import optional_package
+from dipy.utils.tripwire import TripWire
 from groupyr.transform import GroupAggregator
 from shutil import copyfile
 from sklearn.preprocessing import LabelEncoder
@@ -20,7 +21,7 @@ torch_msg = (
     "afqinsight[torch]`, or by separately installing these packages with "
     "`pip install torch`."
 )
-torch, _, _ = optional_package("torch", torch_msg)
+torch, HAS_TORCH, _ = optional_package("torch", torch_msg)
 
 tf_msg = (
     "To use AFQ-Insight's tensorflow classes, you will need to have tensorflow "
@@ -294,45 +295,51 @@ def load_afq_data(
     )
 
 
-class AFQTorchDataset(torch.utils.data.Dataset):
-    def __init__(self, X, y=None):
-        """AFQ features and targets packages as a pytorch dataset.
+if HAS_TORCH:
 
-        Parameters
-        ----------
-        X : np.ndarray
-            The feature samples.
+    class AFQTorchDataset(torch.utils.data.Dataset):
+        def __init__(self, X, y=None):
+            """AFQ features and targets packages as a pytorch dataset.
 
-        y : np.ndarray, optional
-            Target values.
+            Parameters
+            ----------
+            X : np.ndarray
+                The feature samples.
 
-        Attributes
-        ----------
-        X : np.ndarray
-            The feature samples converted to torch.tensor
+            y : np.ndarray, optional
+                Target values.
 
-        y : np.ndarray
-            Target values converted to torch tensor
+            Attributes
+            ----------
+            X : np.ndarray
+                The feature samples converted to torch.tensor
 
-        unsupervised : bool
-            True if ``y`` was provided on init. False otherwise
-        """
-        self.X = torch.tensor(X)
-        if y is None:
-            self.unsupervised = True
-            self.y = torch.tensor([])
-        else:
-            self.unsupervised = False
-            self.y = torch.tensor(y.astype(float))
+            y : np.ndarray
+                Target values converted to torch tensor
 
-    def __len__(self):
-        return len(self.X)
+            unsupervised : bool
+                True if ``y`` was provided on init. False otherwise
+            """
+            self.X = torch.tensor(X)
+            if y is None:
+                self.unsupervised = True
+                self.y = torch.tensor([])
+            else:
+                self.unsupervised = False
+                self.y = torch.tensor(y.astype(float))
 
-    def __getitem__(self, idx):
-        if self.unsupervised:
-            return self.X[idx]
-        else:
-            return self.X[idx], self.y[idx]
+        def __len__(self):
+            return len(self.X)
+
+        def __getitem__(self, idx):
+            if self.unsupervised:
+                return self.X[idx]
+            else:
+                return self.X[idx], self.y[idx]
+
+
+else:
+    AFQTorchDataset = TripWire(torch_msg)
 
 
 class AFQDataset:
