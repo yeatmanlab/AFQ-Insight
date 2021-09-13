@@ -95,26 +95,24 @@ def bundles2channels(X, n_nodes, n_channels, channels_last=True):
 
 
 def load_afq_data(
-    workdir,
+    fn_nodes="nodes.csv",
+    fn_subjects="subjects.csv",
     dwi_metrics=None,
     target_cols=None,
     label_encode_cols=None,
     index_col="subjectID",
-    fn_nodes="nodes.csv",
-    fn_subjects="subjects.csv",
     unsupervised=False,
     concat_subject_session=False,
     return_bundle_means=False,
 ):
     """Load AFQ data from CSV, transform it, return feature matrix and target.
 
-    This function expects a directory with a diffusion metric csv file
-    (specified by ``fn_nodes``) and, optionally, a phenotypic data file
-    (specified by ``fn_subjects``). The nodes csv file must be a long format
-    dataframe with the following columns: "subjectID," "nodeID," "tractID,"
-    an optional "sessionID". All other columns are assumed to be diffusion
-    metric columns, which can be optionally subset using the ``dwi_metrics``
-    parameter.
+    This function expects a diffusion metric csv file (specified by
+    ``fn_nodes``) and, optionally, a phenotypic data file (specified by
+    ``fn_subjects``). The nodes csv file must be a long format dataframe with
+    the following columns: "subjectID," "nodeID," "tractID," an optional
+    "sessionID". All other columns are assumed to be diffusion metric columns,
+    which can be optionally subset using the ``dwi_metrics`` parameter.
 
     For supervised learning problems (with parameter ``unsupervised=False``)
     this function will also load phenotypic targets from a subjects csv/tsv
@@ -124,8 +122,11 @@ def load_afq_data(
 
     Parameters
     ----------
-    workdir : str
-        Directory in which to find the AFQ csv files
+    fn_nodes : str, default='nodes.csv'
+        Filename for the nodes csv file.
+
+    fn_subjects : str, default='subjects.csv'
+        Filename for the subjects csv file.
 
     dwi_metrics : list of strings, optional
         List of diffusion metrics to extract from nodes csv.
@@ -141,12 +142,6 @@ def load_afq_data(
     index_col : str, default='subjectID'
         The name of column in the subject csv file to use as the index. This
         should contain subject IDs.
-
-    fn_nodes : str, default='nodes.csv'
-        Filename for the nodes csv file.
-
-    fn_subjects : str, default='subjects.csv'
-        Filename for the subjects csv file.
 
     unsupervised : bool, default=False
         If True, do not load target data from the ``fn_subjects`` file.
@@ -194,9 +189,8 @@ def load_afq_data(
     --------
     transform.AFQDataFrameMapper
     """
-    workdir = op.abspath(workdir)
-    fn_nodes = op.join(workdir, fn_nodes)
-    fn_subjects = op.join(workdir, fn_subjects)
+    fn_nodes = op.abspath(fn_nodes)
+    fn_subjects = op.abspath(fn_subjects)
 
     nodes = pd.read_csv(fn_nodes)
     unnamed_cols = [col for col in nodes.columns if "Unnamed:" in col]
@@ -345,13 +339,12 @@ else:
 class AFQDataset:
     """Store and manipulate AFQ data loaded from CSV.
 
-    This class expects a directory with a diffusion metric csv file
-    (specified by ``fn_nodes``) and, optionally, a phenotypic data file
-    (specified by ``fn_subjects``). The nodes csv file must be a long format
-    dataframe with the following columns: "subjectID," "nodeID," "tractID,"
-    an optional "sessionID". All other columns are assumed to be diffusion
-    metric columns, which can be optionally subset using the ``dwi_metrics``
-    parameter.
+    This class expects a diffusion metric csv file (specified by ``fn_nodes``)
+    and, optionally, a phenotypic data file (specified by ``fn_subjects``). The
+    nodes csv file must be a long format dataframe with the following columns:
+    "subjectID," "nodeID," "tractID," an optional "sessionID". All other columns
+    are assumed to be diffusion metric columns, which can be optionally subset
+    using the ``dwi_metrics`` parameter.
 
     For supervised learning problems (with parameter ``unsupervised=False``)
     this function will also load phenotypic targets from a subjects csv/tsv
@@ -361,8 +354,11 @@ class AFQDataset:
 
     Parameters
     ----------
-    workdir : str
-        Directory in which to find the AFQ csv files
+    fn_nodes : str, default='nodes.csv'
+        Filename for the nodes csv file.
+
+    fn_subjects : str, default='subjects.csv'
+        Filename for the subjects csv file.
 
     dwi_metrics : list of strings, optional
         List of diffusion metrics to extract from nodes csv.
@@ -378,12 +374,6 @@ class AFQDataset:
     index_col : str, default='subjectID'
         The name of column in the subject csv file to use as the index. This
         should contain subject IDs.
-
-    fn_nodes : str, default='nodes.csv'
-        Filename for the nodes csv file.
-
-    fn_subjects : str, default='subjects.csv'
-        Filename for the subjects csv file.
 
     unsupervised : bool, default=False
         If True, do not load target data from the ``fn_subjects`` file.
@@ -427,24 +417,22 @@ class AFQDataset:
 
     def __init__(
         self,
-        workdir,
+        fn_nodes="nodes.csv",
+        fn_subjects="subjects.csv",
         dwi_metrics=None,
         target_cols=None,
         label_encode_cols=None,
         index_col="subjectID",
-        fn_nodes="nodes.csv",
-        fn_subjects="subjects.csv",
         unsupervised=False,
         concat_subject_session=False,
     ):
         afq_data = load_afq_data(
-            workdir=workdir,
+            fn_nodes=fn_nodes,
+            fn_subjects=fn_subjects,
             dwi_metrics=dwi_metrics,
             target_cols=target_cols,
             label_encode_cols=label_encode_cols,
             index_col=index_col,
-            fn_nodes=fn_nodes,
-            fn_subjects=fn_subjects,
             unsupervised=unsupervised,
             concat_subject_session=concat_subject_session,
         )

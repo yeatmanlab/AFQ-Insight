@@ -36,7 +36,8 @@ def test_bundles2channels():
 def test_AFQDataset(target_cols):
     sarica_dir = download_sarica()
     afq_data = AFQDataset(
-        workdir=sarica_dir,
+        fn_nodes=op.join(sarica_dir, "nodes.csv"),
+        fn_subjects=op.join(sarica_dir, "subjects.csv"),
         dwi_metrics=["md", "fa"],
         target_cols=target_cols,
         label_encode_cols=["class"],
@@ -114,7 +115,10 @@ def test_AFQDataset(target_cols):
     # Do it all again for an unsupervised dataset
 
     afq_data = AFQDataset(
-        workdir=sarica_dir, dwi_metrics=["md", "fa"], unsupervised=True
+        fn_nodes=op.join(sarica_dir, "nodes.csv"),
+        fn_subjects=op.join(sarica_dir, "subjects.csv"),
+        dwi_metrics=["md", "fa"],
+        unsupervised=True,
     )
 
     assert afq_data.X.shape == (48, 4000)  # nosec
@@ -148,7 +152,8 @@ def test_fetch():
 
     with pytest.raises(ValueError):
         load_afq_data(
-            workdir=sarica_dir,
+            fn_nodes=op.join(sarica_dir, "nodes.csv"),
+            fn_subjects=op.join(sarica_dir, "subjects.csv"),
             dwi_metrics=["md", "fa"],
             target_cols=["class"],
             label_encode_cols=["class"],
@@ -156,7 +161,8 @@ def test_fetch():
         )
 
     X, y, groups, feature_names, group_names, subjects, _, _ = load_afq_data(
-        workdir=sarica_dir,
+        fn_nodes=op.join(sarica_dir, "nodes.csv"),
+        fn_subjects=op.join(sarica_dir, "subjects.csv"),
         dwi_metrics=["md", "fa"],
         target_cols=["class"],
         label_encode_cols=["class"],
@@ -177,7 +183,10 @@ def test_fetch():
 
     wh_dir = download_weston_havens()
     X, y, groups, feature_names, group_names, subjects, _, _ = load_afq_data(
-        workdir=wh_dir, dwi_metrics=["md", "fa"], target_cols=["Age"]
+        fn_nodes=op.join(wh_dir, "nodes.csv"),
+        fn_subjects=op.join(wh_dir, "subjects.csv"),
+        dwi_metrics=["md", "fa"],
+        target_cols=["Age"],
     )
 
     assert X.shape == (77, 4000)  # nosec
@@ -204,14 +213,16 @@ def test_fetch():
 
 def test_load_afq_data_smoke():
     output = load_afq_data(
-        workdir=test_data_path,
+        fn_nodes=op.join(test_data_path, "nodes.csv"),
+        fn_subjects=op.join(test_data_path, "subjects.csv"),
         target_cols=["test_class"],
         label_encode_cols=["test_class"],
     )
     assert len(output) == 8  # nosec
 
     output = load_afq_data(
-        workdir=test_data_path,
+        fn_nodes=op.join(test_data_path, "nodes.csv"),
+        fn_subjects=op.join(test_data_path, "subjects.csv"),
         target_cols=["test_class"],
         label_encode_cols=["test_class"],
         unsupervised=True,
@@ -221,7 +232,8 @@ def test_load_afq_data_smoke():
     assert output.classes is None  # nosec
 
     output = load_afq_data(
-        workdir=test_data_path,
+        fn_nodes=op.join(test_data_path, "nodes.csv"),
+        fn_subjects=op.join(test_data_path, "subjects.csv"),
         target_cols=["test_class"],
         label_encode_cols=["test_class"],
         unsupervised=True,
@@ -233,7 +245,8 @@ def test_load_afq_data_smoke():
 
 def test_load_afq_data():
     (X, y, groups, feature_names, group_names, subjects, _, classes) = load_afq_data(
-        workdir=test_data_path,
+        fn_nodes=op.join(test_data_path, "nodes.csv"),
+        fn_subjects=op.join(test_data_path, "subjects.csv"),
         target_cols=["test_class"],
         label_encode_cols=["test_class"],
         return_bundle_means=False,
@@ -257,7 +270,8 @@ def test_load_afq_data():
     assert all(classes["test_class"] == np.array(["c0", "c1"]))  # nosec
 
     (X, y, groups, feature_names, group_names, subjects, _, classes) = load_afq_data(
-        workdir=test_data_path,
+        fn_nodes=op.join(test_data_path, "nodes.csv"),
+        fn_subjects=op.join(test_data_path, "subjects.csv"),
         target_cols=["test_class"],
         label_encode_cols=["test_class"],
         return_bundle_means=True,
@@ -276,11 +290,15 @@ def test_load_afq_data():
 
     with pytest.raises(ValueError):
         load_afq_data(
-            workdir=test_data_path,
+            fn_nodes=op.join(test_data_path, "nodes.csv"),
+            fn_subjects=op.join(test_data_path, "subjects.csv"),
             target_cols=["test_class"],
             label_encode_cols=["test_class", "error"],
         )
     with pytest.raises(ValueError) as ee:
-        load_afq_data(test_data_path)
+        load_afq_data(
+            fn_nodes=op.join(test_data_path, "nodes.csv"),
+            fn_subjects=op.join(test_data_path, "subjects.csv"),
+        )
 
     assert "please set `unsupervised=True`" in str(ee.value)  # nosec
