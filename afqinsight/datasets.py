@@ -10,7 +10,6 @@ from collections import namedtuple
 from dipy.utils.optpkg import optional_package
 from dipy.utils.tripwire import TripWire
 from groupyr.transform import GroupAggregator
-from shutil import copyfile
 from sklearn.preprocessing import LabelEncoder
 
 from .transform import AFQDataFrameMapper
