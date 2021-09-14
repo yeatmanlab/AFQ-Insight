@@ -27,6 +27,7 @@ For more details on this approach in a research setting, please see [2]_.
 """
 import matplotlib.pyplot as plt
 import numpy as np
+import os.path as op
 
 from afqinsight.datasets import download_sarica, load_afq_data
 from afqinsight import make_afq_classifier_pipeline
@@ -39,7 +40,8 @@ from sklearn.model_selection import cross_validate
 workdir = download_sarica()
 
 afqdata = load_afq_data(
-    workdir=workdir,
+    fn_nodes=op.join(workdir, "nodes.csv"),
+    fn_subjects=op.join(workdir, "subjects.csv"),
     dwi_metrics=["md", "fa"],
     target_cols=["class"],
     label_encode_cols=["class"],

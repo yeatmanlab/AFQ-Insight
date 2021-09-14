@@ -74,10 +74,12 @@ class AFQDataFrameMapper(DataFrameMapper):
         self,
         pd_interpolate_kwargs=None,
         bundle_agg_func=None,
+        concat_subject_session=False,
         **dataframe_mapper_kwargs,
     ):
         self.subjects_ = []
         self.groups_ = []
+        self.concat_subject_session = concat_subject_session
         self.pd_interpolate_kwargs = pd_interpolate_kwargs
         self.bundle_agg_func = bundle_agg_func
         kwargs = {"features": [], "default": None}
@@ -85,6 +87,12 @@ class AFQDataFrameMapper(DataFrameMapper):
         super().__init__(**kwargs)
 
     def _bundle_agg(self, X, agg_func, set_attributes=True):
+        X = X.copy()
+        if "sessionID" in X.columns and self.concat_subject_session:
+            X.subjectID = X.subjectID + X.sessionID
+
+        X = X.drop("sessionID", axis="columns", errors="ignore")
+
         features = (
             X.groupby(["subjectID", "tractID"])
             .agg(agg_func)
@@ -104,6 +112,12 @@ class AFQDataFrameMapper(DataFrameMapper):
         # subjects, tracts, or metrics. It should only interpolate from nearby
         # nodes. So we want the nodeID as the row index and all the other
         # stuff as columns . After that we can interpolate along each column.
+        X = X.copy()
+        if "sessionID" in X.columns and self.concat_subject_session:
+            X.subjectID = X.subjectID + X.sessionID
+
+        X = X.drop("sessionID", axis="columns", errors="ignore")
+
         by_node_idx = pd.pivot_table(
             data=X.melt(id_vars=["subjectID", "tractID", "nodeID"], var_name="metric"),
             index="nodeID",
@@ -258,12 +272,13 @@ def multicol2sets(columns, tract_symmetry=True):
         tract_idx = columns.names.index("tractID")
 
         bilateral_symmetry = {
-            tract: tract.replace("Left ", "").replace("Right ", "")
+            tract: tract.replace("Left", "").replace("Right", "").strip(" ")
             for tract in columns.levels[tract_idx]
         }
 
         col_vals = np.array([x + (bilateral_symmetry[x[tract_idx]],) for x in col_vals])
 
+    col_vals = np.array([tuple([str(el) for el in tup]) for tup in col_vals])
     col_sets = np.array(list(map(lambda c: set(c), col_vals)))
 
     return col_sets
@@ -295,7 +310,7 @@ def multicol2dicts(columns, tract_symmetry=True):
         tract_idx = columns.names.index("tractID")
 
         bilateral_symmetry = {
-            tract: tract.replace("Left ", "").replace("Right ", "")
+            tract: tract.replace("Left", "").replace("Right", "").strip(" ")
             for tract in columns.levels[tract_idx]
         }
 
@@ -303,6 +318,7 @@ def multicol2dicts(columns, tract_symmetry=True):
 
         col_names = list(col_names) + ["symmetrized_tractID"]
 
+    col_vals = np.array([tuple([str(el) for el in tup]) for tup in col_vals])
     col_dicts = [dict(zip(col_names, vals)) for vals in col_vals]
 
     return col_dicts
@@ -414,11 +430,7 @@ def unfold_beta_hat_by_metrics(beta_hat, columns, tract_names=None):
     betas = OrderedDict()
 
     betas_by_groups = beta_hat_by_groups(beta_hat, columns, drop_zeros=False)
-
-    if tract_names is not None:
-        tracts = tract_names
-    else:
-        tracts = CANONICAL_TRACT_NAMES
+    tracts = CANONICAL_TRACT_NAMES if tract_names is None else tract_names
 
     for metric in columns.levels[columns.names.index("metric")]:
         betas[metric] = []

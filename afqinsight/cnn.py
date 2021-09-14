@@ -1,34 +1,30 @@
 """Build, fit, and predict with 1-D convolutional neural networks."""
 
-import numpy as np
-from sklearn.utils.validation import check_X_y, check_is_fitted
-from sklearn.metrics import r2_score
-from sklearn.impute import SimpleImputer
-from sklearn.model_selection import train_test_split
 import functools
-import tempfile
+import numpy as np
 import os.path as op
+import tempfile
 
-try:
-    import keras_tuner as kt
+from dipy.utils.optpkg import optional_package
+from sklearn.impute import SimpleImputer
+from sklearn.metrics import r2_score
+from sklearn.model_selection import train_test_split
+from sklearn.utils.validation import check_X_y, check_is_fitted
 
+keras_msg = (
+    "To use afqinsight's convolutional neural nets for tractometry data, you will need "
+    "to have tensorflow and kerastuner installed. You can do this by installing "
+    "afqinsight with `pip install afqinsight[tf]`, or by separately installing these packages "
+    "with `pip install tensorflow kerastuner`."
+)
+
+kt, _, _ = optional_package("keras_tuner", keras_msg)
+tf, has_tf, _ = optional_package("tensorflow", keras_msg)
+
+if has_tf:
     from tensorflow.keras.models import Sequential
     from tensorflow.keras.layers import Dense, Conv1D, Flatten, MaxPool1D, Dropout
     from tensorflow.keras.callbacks import ModelCheckpoint
-
-    HAS_KERAS = True
-except ImportError:  # pragma: no cover
-    HAS_KERAS = False
-
-
-def _check_keras():
-    if not HAS_KERAS:  # pragma: no cover
-        raise ImportError(
-            "To use afqinsight's convolutional neural nets for tractometry data, you will need "
-            "to have tensorflow, keras, and kerastuner installed. You can do this by installing "
-            "afqinsight with `pip install afqinsight[cnn]`, or by separately installing these packages "
-            "with `pip install tensorflow kerastuner`."
-        )
 
 
 def build_model(hp, conv_layers, input_shape):
@@ -54,7 +50,6 @@ def build_model(hp, conv_layers, input_shape):
             compiled model that uses hyperparameters defined inline to hypertune the model
 
     """
-    _check_keras()
     model = Sequential()
     model.add(
         Conv1D(
@@ -157,7 +152,6 @@ class ModelBuilder:
         self.directory = directory
         self.project_name = project_name
         self.tuner_kwargs = tuner_kwargs
-        _check_keras()
 
     def _get_tuner(self):
         """Call build_model and instantiate a Keras Tuner for the returned model depending on user choice of tuner.
@@ -411,8 +405,6 @@ class CNN:
         project_name=None,
         **tuner_kwargs,
     ):
-        _check_keras()
-
         # checking n_nodes is passed as int
         if not isinstance(n_nodes, int):
             raise TypeError("Parameter n_nodes must be an integer.")

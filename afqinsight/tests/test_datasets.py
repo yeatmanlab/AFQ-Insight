@@ -3,28 +3,180 @@ import os.path as op
 import pandas as pd
 import pytest
 import tempfile
+import torch
 
 import afqinsight as afqi
-from afqinsight.datasets import load_afq_data, download_sarica, download_weston_havens
+from afqinsight.datasets import (
+    bundles2channels,
+    load_afq_data,
+    download_sarica,
+    download_weston_havens,
+    AFQDataset,
+)
 
 data_path = op.join(afqi.__path__[0], "data")
 test_data_path = op.join(data_path, "test_data")
 
 
-def test_fetch():
+def test_bundles2channels():
+    X0 = np.random.rand(50, 4000)
+    X1 = bundles2channels(X0, n_nodes=100, n_channels=40, channels_last=True)
+    assert X1.shape == (50, 100, 40)
+    assert np.allclose(X0[:, :100], X1[:, :, 0])
+
+    X1 = bundles2channels(X0, n_nodes=100, n_channels=40, channels_last=False)
+    assert X1.shape == (50, 40, 100)
+    assert np.allclose(X0[:, :100], X1[:, 0, :])
+
+    with pytest.raises(ValueError):
+        bundles2channels(X0, n_nodes=1000, n_channels=7)
+
+
+@pytest.mark.parametrize("target_cols", [["class"], ["age", "class"]])
+def test_AFQDataset(target_cols):
     sarica_dir = download_sarica()
-    X, y, groups, feature_names, group_names, subjects, _, _ = load_afq_data(
-        workdir=sarica_dir,
+    afq_data = AFQDataset(
+        fn_nodes=op.join(sarica_dir, "nodes.csv"),
+        fn_subjects=op.join(sarica_dir, "subjects.csv"),
         dwi_metrics=["md", "fa"],
+        target_cols=target_cols,
+        label_encode_cols=["class"],
+    )
+
+    y_shape = (48, 2) if len(target_cols) == 2 else (48,)
+
+    assert afq_data.X.shape == (48, 4000)  # nosec
+    assert afq_data.y.shape == y_shape  # nosec
+    assert len(afq_data.groups) == 40  # nosec
+    assert len(afq_data.feature_names) == 4000  # nosec
+    assert len(afq_data.group_names) == 40  # nosec
+    assert len(afq_data.subjects) == 48  # nosec
+    assert afq_data.bundle_means().shape == (48, 40)  # nosec
+
+    # Test pytorch dataset method
+
+    pt_dataset = afq_data.as_torch_dataset()
+    assert len(pt_dataset) == 48
+    assert pt_dataset.X.shape == (48, 40, 100)  # nosec
+    assert pt_dataset.y.shape == y_shape  # nosec
+    assert np.allclose(
+        pt_dataset[0][0][0], afq_data.X[0, :100], equal_nan=True
+    )  # nosec
+
+    pt_dataset = afq_data.as_torch_dataset(channels_last=True)
+    assert len(pt_dataset) == 48
+    assert pt_dataset.X.shape == (48, 100, 40)  # nosec
+    assert pt_dataset.y.shape == y_shape  # nosec
+    assert np.allclose(
+        pt_dataset[0][0][:, 0], afq_data.X[0, :100], equal_nan=True
+    )  # nosec
+
+    pt_dataset = afq_data.as_torch_dataset(bundles_as_channels=False)
+    assert len(pt_dataset) == 48
+    assert pt_dataset.X.shape == (48, 4000)  # nosec
+    assert pt_dataset.y.shape == y_shape  # nosec
+    assert np.allclose(pt_dataset[0][0], afq_data.X[0], equal_nan=True)  # nosec
+
+    # Test tensorflow dataset method
+
+    tf_dataset = list(afq_data.as_tensorflow_dataset().as_numpy_iterator())
+    assert len(tf_dataset) == 48
+    assert np.allclose(
+        tf_dataset[0][0][:, 0], afq_data.X[0, :100], equal_nan=True
+    )  # nosec
+
+    tf_dataset = list(
+        afq_data.as_tensorflow_dataset(channels_last=False).as_numpy_iterator()
+    )
+    assert len(tf_dataset) == 48
+    assert np.allclose(
+        tf_dataset[0][0][0], afq_data.X[0, :100], equal_nan=True
+    )  # nosec
+
+    tf_dataset = list(
+        afq_data.as_tensorflow_dataset(bundles_as_channels=False).as_numpy_iterator()
+    )
+    assert len(tf_dataset) == 48
+    assert np.allclose(tf_dataset[0][0], afq_data.X[0], equal_nan=True)  # nosec
+
+    # Test the drop_target_na method
+    if len(target_cols) == 2:
+        afq_data.y[0, 0] = np.nan
+        y_shape = (47, 2)
+    else:
+        afq_data.y[0] = np.nan
+        y_shape = (47,)
+
+    afq_data.drop_target_na()
+    assert afq_data.X.shape == (47, 4000)  # nosec
+    assert afq_data.y.shape == y_shape  # nosec
+    assert len(afq_data.subjects) == 47  # nosec
+
+    # Do it all again for an unsupervised dataset
+
+    afq_data = AFQDataset(
+        fn_nodes=op.join(sarica_dir, "nodes.csv"),
+        fn_subjects=op.join(sarica_dir, "subjects.csv"),
+        dwi_metrics=["md", "fa"],
+        unsupervised=True,
+    )
+
+    assert afq_data.X.shape == (48, 4000)  # nosec
+    assert afq_data.y is None  # nosec
+    assert len(afq_data.groups) == 40  # nosec
+    assert len(afq_data.feature_names) == 4000  # nosec
+    assert len(afq_data.group_names) == 40  # nosec
+    assert len(afq_data.subjects) == 48  # nosec
+
+    pt_dataset = afq_data.as_torch_dataset()
+    assert len(pt_dataset) == 48
+    assert pt_dataset.X.shape == (48, 40, 100)  # nosec
+    assert torch.all(torch.eq(pt_dataset.y, torch.tensor([])))  # nosec
+    assert np.allclose(pt_dataset[0][0], afq_data.X[0, :100], equal_nan=True)  # nosec
+
+    tf_dataset = list(afq_data.as_tensorflow_dataset().as_numpy_iterator())
+    assert len(tf_dataset) == 48
+    assert np.allclose(
+        tf_dataset[0][:, 0], afq_data.X[0, :100], equal_nan=True
+    )  # nosec
+
+    # Test the drop_target_na method does nothing in the unsupervised case
+    afq_data.drop_target_na()
+    assert afq_data.X.shape == (48, 4000)  # nosec
+    assert afq_data.y is None  # nosec
+    assert len(afq_data.subjects) == 48  # nosec
+
+
+@pytest.mark.parametrize("dwi_metrics", [["md", "fa"], None])
+def test_fetch(dwi_metrics):
+    sarica_dir = download_sarica()
+
+    with pytest.raises(ValueError):
+        load_afq_data(
+            fn_nodes=op.join(sarica_dir, "nodes.csv"),
+            fn_subjects=op.join(sarica_dir, "subjects.csv"),
+            dwi_metrics=dwi_metrics,
+            target_cols=["class"],
+            label_encode_cols=["class"],
+            concat_subject_session=True,
+        )
+
+    X, y, groups, feature_names, group_names, subjects, _, _ = load_afq_data(
+        fn_nodes=op.join(sarica_dir, "nodes.csv"),
+        fn_subjects=op.join(sarica_dir, "subjects.csv"),
+        dwi_metrics=dwi_metrics,
         target_cols=["class"],
         label_encode_cols=["class"],
     )
 
-    assert X.shape == (48, 4000)  # nosec
+    n_features = 16000 if dwi_metrics is None else 4000
+    n_groups = 160 if dwi_metrics is None else 40
+
+    assert X.shape == (48, n_features)  # nosec
     assert y.shape == (48,)  # nosec
-    assert len(groups) == 40  # nosec
-    assert len(feature_names) == 4000  # nosec
-    assert len(group_names) == 40  # nosec
+    assert len(groups) == n_groups  # nosec
+    assert len(feature_names) == n_features  # nosec
+    assert len(group_names) == n_groups  # nosec
     assert len(subjects) == 48  # nosec
     assert op.isfile(
         op.join(afqi.datasets._DATA_DIR, "sarica_data", "nodes.csv")
@@ -35,14 +187,20 @@ def test_fetch():
 
     wh_dir = download_weston_havens()
     X, y, groups, feature_names, group_names, subjects, _, _ = load_afq_data(
-        workdir=wh_dir, dwi_metrics=["md", "fa"], target_cols=["Age"]
+        fn_nodes=op.join(wh_dir, "nodes.csv"),
+        fn_subjects=op.join(wh_dir, "subjects.csv"),
+        dwi_metrics=dwi_metrics,
+        target_cols=["Age"],
     )
 
-    assert X.shape == (77, 4000)  # nosec
+    n_features = 10000 if dwi_metrics is None else 4000
+    n_groups = 100 if dwi_metrics is None else 40
+
+    assert X.shape == (77, n_features)  # nosec
     assert y.shape == (77,)  # nosec
-    assert len(groups) == 40  # nosec
-    assert len(feature_names) == 4000  # nosec
-    assert len(group_names) == 40  # nosec
+    assert len(groups) == n_groups  # nosec
+    assert len(feature_names) == n_features  # nosec
+    assert len(group_names) == n_groups  # nosec
     assert len(subjects) == 77  # nosec
     assert op.isfile(
         op.join(afqi.datasets._DATA_DIR, "weston_havens_data", "nodes.csv")
@@ -62,23 +220,16 @@ def test_fetch():
 
 def test_load_afq_data_smoke():
     output = load_afq_data(
-        workdir=test_data_path,
+        fn_nodes=op.join(test_data_path, "nodes.csv"),
+        fn_subjects=op.join(test_data_path, "subjects.csv"),
         target_cols=["test_class"],
         label_encode_cols=["test_class"],
     )
     assert len(output) == 8  # nosec
-    assert output.sessions is None  # nosec
 
     output = load_afq_data(
-        workdir=test_data_path,
-        target_cols=["test_class"],
-        label_encode_cols=["test_class"],
-        return_sessions=True,
-    )
-    assert len(output) == 8  # nosec
-
-    output = load_afq_data(
-        workdir=test_data_path,
+        fn_nodes=op.join(test_data_path, "nodes.csv"),
+        fn_subjects=op.join(test_data_path, "subjects.csv"),
         target_cols=["test_class"],
         label_encode_cols=["test_class"],
         unsupervised=True,
@@ -86,23 +237,25 @@ def test_load_afq_data_smoke():
     assert len(output) == 8  # nosec
     assert output.y is None  # nosec
     assert output.classes is None  # nosec
-    assert output.sessions is None  # nosec
 
     output = load_afq_data(
-        workdir=test_data_path,
+        fn_nodes=op.join(test_data_path, "nodes.csv"),
+        fn_subjects=op.join(test_data_path, "subjects.csv"),
         target_cols=["test_class"],
         label_encode_cols=["test_class"],
         unsupervised=True,
-        return_sessions=True,
     )
     assert len(output) == 8  # nosec
     assert output.y is None  # nosec
     assert output.classes is None  # nosec
 
 
-def test_load_afq_data():
+@pytest.mark.parametrize("dwi_metrics", [["volume", "md"], None])
+def test_load_afq_data(dwi_metrics):
     (X, y, groups, feature_names, group_names, subjects, _, classes) = load_afq_data(
-        workdir=test_data_path,
+        fn_nodes=op.join(test_data_path, "nodes.csv"),
+        fn_subjects=op.join(test_data_path, "subjects.csv"),
+        dwi_metrics=dwi_metrics,
         target_cols=["test_class"],
         label_encode_cols=["test_class"],
         return_bundle_means=False,
@@ -126,7 +279,9 @@ def test_load_afq_data():
     assert all(classes["test_class"] == np.array(["c0", "c1"]))  # nosec
 
     (X, y, groups, feature_names, group_names, subjects, _, classes) = load_afq_data(
-        workdir=test_data_path,
+        fn_nodes=op.join(test_data_path, "nodes.csv"),
+        fn_subjects=op.join(test_data_path, "subjects.csv"),
+        dwi_metrics=dwi_metrics,
         target_cols=["test_class"],
         label_encode_cols=["test_class"],
         return_bundle_means=True,
@@ -141,14 +296,19 @@ def test_load_afq_data():
     assert np.allclose(X, means_ref.to_numpy(), equal_nan=True)  # nosec
     assert group_names == means_ref.columns.to_list()  # nosec
     assert feature_names == means_ref.columns.to_list()  # nosec
+    assert set(subjects) == set(nodes.subjectID.unique())  # nosec
 
     with pytest.raises(ValueError):
         load_afq_data(
-            workdir=test_data_path,
+            fn_nodes=op.join(test_data_path, "nodes.csv"),
+            fn_subjects=op.join(test_data_path, "subjects.csv"),
             target_cols=["test_class"],
             label_encode_cols=["test_class", "error"],
         )
     with pytest.raises(ValueError) as ee:
-        load_afq_data(test_data_path)
+        load_afq_data(
+            fn_nodes=op.join(test_data_path, "nodes.csv"),
+            fn_subjects=op.join(test_data_path, "subjects.csv"),
+        )
 
     assert "please set `unsupervised=True`" in str(ee.value)  # nosec

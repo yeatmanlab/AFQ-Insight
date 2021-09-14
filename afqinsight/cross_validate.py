@@ -296,8 +296,8 @@ def cross_validate_checkpoint(
         does not affect the refit step, which will always raise the error.
 
     workdir : path-like object, default=None
-        A string or :term:`python:path-like-object` indicating the directory
-        in which to store checkpoint files
+        A string or path-like object indicating the directory in which to store
+        checkpoint files.
 
     checkpoint : bool, default=True
         If True, checkpoint the parameters, estimators, and scores.

@@ -3,6 +3,7 @@ branch = True
 source = afqinsight
 omit = 
     tests/*.py
+    afqinsight/tests/*.py
     */setup.py
 
 [report]
