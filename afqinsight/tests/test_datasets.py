@@ -147,14 +147,15 @@ def test_AFQDataset(target_cols):
     assert len(afq_data.subjects) == 48  # nosec
 
 
-def test_fetch():
+@pytest.mark.parametrize("dwi_metrics", [["md", "fa"], None])
+def test_fetch(dwi_metrics):
     sarica_dir = download_sarica()
 
     with pytest.raises(ValueError):
         load_afq_data(
             fn_nodes=op.join(sarica_dir, "nodes.csv"),
             fn_subjects=op.join(sarica_dir, "subjects.csv"),
-            dwi_metrics=["md", "fa"],
+            dwi_metrics=dwi_metrics,
             target_cols=["class"],
             label_encode_cols=["class"],
             concat_subject_session=True,
@@ -163,16 +164,19 @@ def test_fetch():
     X, y, groups, feature_names, group_names, subjects, _, _ = load_afq_data(
         fn_nodes=op.join(sarica_dir, "nodes.csv"),
         fn_subjects=op.join(sarica_dir, "subjects.csv"),
-        dwi_metrics=["md", "fa"],
+        dwi_metrics=dwi_metrics,
         target_cols=["class"],
         label_encode_cols=["class"],
     )
 
-    assert X.shape == (48, 4000)  # nosec
+    n_features = 16000 if dwi_metrics is None else 4000
+    n_groups = 160 if dwi_metrics is None else 40
+
+    assert X.shape == (48, n_features)  # nosec
     assert y.shape == (48,)  # nosec
-    assert len(groups) == 40  # nosec
-    assert len(feature_names) == 4000  # nosec
-    assert len(group_names) == 40  # nosec
+    assert len(groups) == n_groups  # nosec
+    assert len(feature_names) == n_features  # nosec
+    assert len(group_names) == n_groups  # nosec
     assert len(subjects) == 48  # nosec
     assert op.isfile(
         op.join(afqi.datasets._DATA_DIR, "sarica_data", "nodes.csv")
@@ -185,15 +189,18 @@ def test_fetch():
     X, y, groups, feature_names, group_names, subjects, _, _ = load_afq_data(
         fn_nodes=op.join(wh_dir, "nodes.csv"),
         fn_subjects=op.join(wh_dir, "subjects.csv"),
-        dwi_metrics=["md", "fa"],
+        dwi_metrics=dwi_metrics,
         target_cols=["Age"],
     )
 
-    assert X.shape == (77, 4000)  # nosec
+    n_features = 10000 if dwi_metrics is None else 4000
+    n_groups = 100 if dwi_metrics is None else 40
+
+    assert X.shape == (77, n_features)  # nosec
     assert y.shape == (77,)  # nosec
-    assert len(groups) == 40  # nosec
-    assert len(feature_names) == 4000  # nosec
-    assert len(group_names) == 40  # nosec
+    assert len(groups) == n_groups  # nosec
+    assert len(feature_names) == n_features  # nosec
+    assert len(group_names) == n_groups  # nosec
     assert len(subjects) == 77  # nosec
     assert op.isfile(
         op.join(afqi.datasets._DATA_DIR, "weston_havens_data", "nodes.csv")
@@ -243,10 +250,12 @@ def test_load_afq_data_smoke():
     assert output.classes is None  # nosec
 
 
-def test_load_afq_data():
+@pytest.mark.parametrize("dwi_metrics", [["volume", "md"], None])
+def test_load_afq_data(dwi_metrics):
     (X, y, groups, feature_names, group_names, subjects, _, classes) = load_afq_data(
         fn_nodes=op.join(test_data_path, "nodes.csv"),
         fn_subjects=op.join(test_data_path, "subjects.csv"),
+        dwi_metrics=dwi_metrics,
         target_cols=["test_class"],
         label_encode_cols=["test_class"],
         return_bundle_means=False,
@@ -272,6 +281,7 @@ def test_load_afq_data():
     (X, y, groups, feature_names, group_names, subjects, _, classes) = load_afq_data(
         fn_nodes=op.join(test_data_path, "nodes.csv"),
         fn_subjects=op.join(test_data_path, "subjects.csv"),
+        dwi_metrics=dwi_metrics,
         target_cols=["test_class"],
         label_encode_cols=["test_class"],
         return_bundle_means=True,
