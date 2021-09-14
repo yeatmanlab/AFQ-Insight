@@ -272,12 +272,13 @@ def multicol2sets(columns, tract_symmetry=True):
         tract_idx = columns.names.index("tractID")
 
         bilateral_symmetry = {
-            tract: tract.replace("Left ", "").replace("Right ", "")
+            tract: tract.replace("Left", "").replace("Right", "").strip(" ")
             for tract in columns.levels[tract_idx]
         }
 
         col_vals = np.array([x + (bilateral_symmetry[x[tract_idx]],) for x in col_vals])
 
+    col_vals = np.array([tuple([str(el) for el in tup]) for tup in col_vals])
     col_sets = np.array(list(map(lambda c: set(c), col_vals)))
 
     return col_sets
@@ -309,7 +310,7 @@ def multicol2dicts(columns, tract_symmetry=True):
         tract_idx = columns.names.index("tractID")
 
         bilateral_symmetry = {
-            tract: tract.replace("Left ", "").replace("Right ", "")
+            tract: tract.replace("Left", "").replace("Right", "").strip(" ")
             for tract in columns.levels[tract_idx]
         }
 
@@ -317,6 +318,7 @@ def multicol2dicts(columns, tract_symmetry=True):
 
         col_names = list(col_names) + ["symmetrized_tractID"]
 
+    col_vals = np.array([tuple([str(el) for el in tup]) for tup in col_vals])
     col_dicts = [dict(zip(col_names, vals)) for vals in col_vals]
 
     return col_dicts
@@ -428,11 +430,7 @@ def unfold_beta_hat_by_metrics(beta_hat, columns, tract_names=None):
     betas = OrderedDict()
 
     betas_by_groups = beta_hat_by_groups(beta_hat, columns, drop_zeros=False)
-
-    if tract_names is not None:
-        tracts = tract_names
-    else:
-        tracts = CANONICAL_TRACT_NAMES
+    tracts = CANONICAL_TRACT_NAMES if tract_names is None else tract_names
 
     for metric in columns.levels[columns.names.index("metric")]:
         betas[metric] = []
