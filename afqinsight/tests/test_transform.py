@@ -20,9 +20,12 @@ test_data_path = op.join(data_path, "test_data")
 
 
 @pytest.mark.parametrize("concat_subject_session", [True, False])
-def test_AFQDataFrameMapper(concat_subject_session):
+@pytest.mark.parametrize("set_ses_to_int", [True, False])
+def test_AFQDataFrameMapper(concat_subject_session, set_ses_to_int):
     nodes_path = op.join(test_data_path, "nodes.csv")
     nodes = pd.read_csv(nodes_path)
+    if set_ses_to_int:
+        nodes["sessionID"] = 1
     transformer = AFQDataFrameMapper(concat_subject_session=concat_subject_session)
     X = transformer.fit_transform(nodes)
     groups = transformer.groups_
@@ -41,7 +44,7 @@ def test_AFQDataFrameMapper(concat_subject_session):
     assert cols == cols_ref  # nosec
     if concat_subject_session:
         assert set(subjects) == set(
-            (nodes.subjectID + nodes.sessionID).unique()
+            (nodes.subjectID + nodes.sessionID.astype(str)).unique()
         )  # nosec
     else:
         assert set(subjects) == set(nodes.subjectID.unique())  # nosec
