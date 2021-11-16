@@ -114,7 +114,7 @@ class AFQDataFrameMapper(DataFrameMapper):
         # stuff as columns . After that we can interpolate along each column.
         X = X.copy()
         if "sessionID" in X.columns and self.concat_subject_session:
-            X.subjectID = X.subjectID + X.sessionID.astype(str)
+            X.subjectID = X.subjectID.astype(str) + X.sessionID.astype(str)
 
         X = X.drop("sessionID", axis="columns", errors="ignore")
 
