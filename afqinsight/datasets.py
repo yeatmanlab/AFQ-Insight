@@ -516,7 +516,7 @@ class AFQDataset:
             If True, reshape the feature matrix such that each bundle/metric
             combination gets it's own channel.
 
-        channels_last : bool, default=False
+        channels_last : bool, default=True
             If True, the channels will be the last dimension of the feature tensor.
             Otherwise, the channels will be the penultimate dimension.
 
