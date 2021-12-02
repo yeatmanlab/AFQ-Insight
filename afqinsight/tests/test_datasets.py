@@ -12,6 +12,7 @@ from afqinsight.datasets import (
     download_sarica,
     download_weston_havens,
     AFQDataset,
+    standardize_subject_id,
 )
 
 data_path = op.join(afqi.__path__[0], "data")
@@ -30,6 +31,11 @@ def test_bundles2channels():
 
     with pytest.raises(ValueError):
         bundles2channels(X0, n_nodes=1000, n_channels=7)
+
+
+def test_standardize_subject_id():
+    assert standardize_subject_id("sub-01") == "sub-01"
+    assert standardize_subject_id("01") == "sub-01"
 
 
 @pytest.mark.parametrize("target_cols", [["class"], ["age", "class"]])
@@ -148,7 +154,8 @@ def test_AFQDataset(target_cols):
 
 
 @pytest.mark.parametrize("dwi_metrics", [["md", "fa"], None])
-def test_fetch(dwi_metrics):
+@pytest.mark.parametrize("enforce_sub_prefix", [True, False])
+def test_fetch(dwi_metrics, enforce_sub_prefix):
     sarica_dir = download_sarica()
 
     with pytest.raises(ValueError):
@@ -167,6 +174,7 @@ def test_fetch(dwi_metrics):
         dwi_metrics=dwi_metrics,
         target_cols=["class"],
         label_encode_cols=["class"],
+        enforce_sub_prefix=enforce_sub_prefix,
     )
 
     n_features = 16000 if dwi_metrics is None else 4000
@@ -259,6 +267,7 @@ def test_load_afq_data(dwi_metrics):
         target_cols=["test_class"],
         label_encode_cols=["test_class"],
         return_bundle_means=False,
+        enforce_sub_prefix=False,
     )
 
     nodes = pd.read_csv(op.join(test_data_path, "nodes.csv"))
@@ -285,6 +294,7 @@ def test_load_afq_data(dwi_metrics):
         target_cols=["test_class"],
         label_encode_cols=["test_class"],
         return_bundle_means=True,
+        enforce_sub_prefix=False,
     )
 
     means_ref = (
