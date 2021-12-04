@@ -54,7 +54,7 @@ def plot_tract_profiles(
     X,
     groups,
     group_names,
-    group_by,
+    group_by=None,
     group_by_name=None,
     bins=None,
     quantiles=None,
@@ -84,7 +84,7 @@ def plot_tract_profiles(
         produce a mean bundle profile for each category and color them
         differently. If ``group_by`` is numerical, please also provide the
         ``bins`` or ``quantiles`` parameter to convert this variable into a
-        categorical variable.
+        categorical variable. Default: no grouping.
 
     group_by_name : str
         The name of the group_by variable to be used in the plot legend.
@@ -146,6 +146,9 @@ def plot_tract_profiles(
 
     metrics = np.unique([grp[0] for grp in group_names])
     tract_names = np.unique([grp[1] for grp in group_names])
+
+    if group_by is None:
+        group_by = np.ones(X.shape[0])
 
     if len(group_by.shape) == 1:
         group_by = np.copy(group_by)[:, np.newaxis]
