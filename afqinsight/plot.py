@@ -54,7 +54,7 @@ def plot_tract_profiles(
     X,
     groups,
     group_names,
-    group_by,
+    group_by=None,
     group_by_name=None,
     bins=None,
     quantiles=None,
@@ -84,7 +84,7 @@ def plot_tract_profiles(
         produce a mean bundle profile for each category and color them
         differently. If ``group_by`` is numerical, please also provide the
         ``bins`` or ``quantiles`` parameter to convert this variable into a
-        categorical variable.
+        categorical variable. Default: no grouping.
 
     group_by_name : str
         The name of the group_by variable to be used in the plot legend.
@@ -141,6 +141,14 @@ def plot_tract_profiles(
         raise ValueError(
             "You must supply a group_by_name when binning using either the bins or quantiles parameter."
         )
+
+    if group_by is None:
+        if group_by_name is not None:
+            raise ValueError(
+                "You must supply a `group_by` value if a `group_by_name` is provided."
+            )
+        group_by = np.ones(X.shape[0])
+        group_by_name = None
 
     figs = {}
 
@@ -262,19 +270,19 @@ def plot_tract_profiles(
                 f"{group_by_name} {b[0]:.2f}-{b[1]:.2f}"
                 for b in zip(_bins[:-1], _bins[1:])
             ]
+        if group_by_name is not None:
+            leg = plt.figlegend(
+                handles,
+                labels,
+                facecolor="whitesmoke",
+                bbox_to_anchor=(0.5, 0.02),
+                loc="upper center",
+                ncol=6,
+            )
 
-        leg = plt.figlegend(
-            handles,
-            labels,
-            facecolor="whitesmoke",
-            bbox_to_anchor=(0.5, 0.02),
-            loc="upper center",
-            ncol=6,
-        )
-
-        # set the linewidth of each legend object
-        for legobj in leg.legendHandles:
-            _ = legobj.set_linewidth(3.0)
+            # set the linewidth of each legend object
+            for legobj in leg.legendHandles:
+                _ = legobj.set_linewidth(3.0)
 
         fig.tight_layout(h_pad=0.5, w_pad=-0.5)
 
