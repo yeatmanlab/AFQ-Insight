@@ -280,9 +280,9 @@ def plot_tract_profiles(
                 ncol=6,
             )
 
-        # set the linewidth of each legend object
-        for legobj in leg.legendHandles:
-            _ = legobj.set_linewidth(3.0)
+            # set the linewidth of each legend object
+            for legobj in leg.legendHandles:
+                _ = legobj.set_linewidth(3.0)
 
         fig.tight_layout(h_pad=0.5, w_pad=-0.5)
 
