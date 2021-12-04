@@ -142,13 +142,18 @@ def plot_tract_profiles(
             "You must supply a group_by_name when binning using either the bins or quantiles parameter."
         )
 
+    if group_by is None:
+        if group_by_name is not None:
+            raise ValueError(
+                "You must supply a `group_by` value if a `group_by_name` is provided."
+            )
+        group_by = np.ones(X.shape[0])
+        group_by_name = None
+
     figs = {}
 
     metrics = np.unique([grp[0] for grp in group_names])
     tract_names = np.unique([grp[1] for grp in group_names])
-
-    if group_by is None:
-        group_by = np.ones(X.shape[0])
 
     if len(group_by.shape) == 1:
         group_by = np.copy(group_by)[:, np.newaxis]
@@ -265,15 +270,15 @@ def plot_tract_profiles(
                 f"{group_by_name} {b[0]:.2f}-{b[1]:.2f}"
                 for b in zip(_bins[:-1], _bins[1:])
             ]
-
-        leg = plt.figlegend(
-            handles,
-            labels,
-            facecolor="whitesmoke",
-            bbox_to_anchor=(0.5, 0.02),
-            loc="upper center",
-            ncol=6,
-        )
+        if group_by_name is not None:
+            leg = plt.figlegend(
+                handles,
+                labels,
+                facecolor="whitesmoke",
+                bbox_to_anchor=(0.5, 0.02),
+                loc="upper center",
+                ncol=6,
+            )
 
         # set the linewidth of each legend object
         for legobj in leg.legendHandles:
