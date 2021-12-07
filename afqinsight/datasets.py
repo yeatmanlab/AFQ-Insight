@@ -106,7 +106,7 @@ def standardize_subject_id(sub_id):
     str
         Standardized subject IDs.
     """
-    return sub_id if sub_id.startswith("sub-") else "sub-" + sub_id
+    return sub_id if str(sub_id).startswith("sub-") else "sub-" + str(sub_id)
 
 
 def load_afq_data(
@@ -211,7 +211,9 @@ def load_afq_data(
     --------
     transform.AFQDataFrameMapper
     """
-    nodes = pd.read_csv(fn_nodes)
+    nodes = pd.read_csv(
+        fn_nodes, converters={"subjectID": str, "nodeID": int, "tractID": str}
+    )
     unnamed_cols = [col for col in nodes.columns if "Unnamed:" in col]
     nodes.drop(unnamed_cols, axis="columns", inplace=True)
 
@@ -249,7 +251,9 @@ def load_afq_data(
     if return_bundle_means:
         group_names = feature_names
     else:
-        group_names = [tup[0:2] for tup in feature_names if tup[2] == 0]
+        group_names = [tup[0:2] for tup in feature_names]
+        # Now remove duplicates from group_names while preserving order
+        group_names = list(dict.fromkeys(group_names))
 
     if unsupervised:
         y = None
@@ -266,7 +270,11 @@ def load_afq_data(
 
         # Read using sep=None, engine="python" to allow for both csv and tsv
         targets = pd.read_csv(
-            fn_subjects, sep=None, engine="python", index_col=index_col
+            fn_subjects,
+            sep=None,
+            engine="python",
+            index_col=index_col,
+            converters={index_col: str},
         )
 
         # Drop unnamed columns
