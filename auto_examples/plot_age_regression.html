@@ -1,82 +1,42 @@
-
-
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" />
-  
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
-  <title>Predict age from white matter features &mdash; AFQ-Insight 0.3.0 documentation</title>
-  
-
-  
-  <link rel="stylesheet" href="../_static/css/afqinsight.css" type="text/css" />
-  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="../_static/css/afqinsight.css" type="text/css" />
-  <link rel="stylesheet" href="../_static/gallery.css" type="text/css" />
-  <link rel="stylesheet" href="../_static/gallery-binder.css" type="text/css" />
-  <link rel="stylesheet" href="../_static/gallery-dataframe.css" type="text/css" />
-  <link rel="stylesheet" href="../_static/gallery-rendered-html.css" type="text/css" />
-
-  
-  
-
-  
-  
-
-  
-
-  
+  <title>Predict age from white matter features &mdash; AFQ-Insight 0.3.1 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/afqinsight.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/sg_gallery.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/sg_gallery-binder.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/sg_gallery-dataframe.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/sg_gallery-rendered-html.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
         <script src="../_static/underscore.js"></script>
         <script src="../_static/doctools.js"></script>
         <script src="../_static/js/copybutton.js"></script>
-    
-    <script type="text/javascript" src="../_static/js/theme.js"></script>
-
-    
+    <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Classify ALS diagnosis from white matter features" href="plot_als_classification.html" />
     <link rel="prev" title="General examples" href="index.html" /> 
 </head>
 
-<body class="wy-body-for-nav">
-
-   
+<body class="wy-body-for-nav"> 
   <div class="wy-grid-for-nav">
-    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-          
-
-          
             <a href="../index.html" class="icon icon-home"> AFQ-Insight
-          
-
-          
           </a>
-
-          
-            
-            
               <div class="version">
-                0.3.0
+                0.3.1
               </div>
-            
-          
-
-          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -84,23 +44,17 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-
-          
-        </div>
-
-        
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-              
-            
-            
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../user_guide.html">User guide</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">General examples</a><ul class="current">
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Predict age from white matter features</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Predict age from white matter features</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#fetch-example-data">Fetch example data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#read-in-the-data">Read in the data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#create-an-analysis-pipeline">Create an analysis pipeline</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="plot_als_classification.html">Classify ALS diagnosis from white matter features</a></li>
 </ul>
 </li>
@@ -110,127 +64,115 @@
 <li class="toctree-l1"><a class="reference external" href="https://github.com/richford/AFQ-Insight">AFQ-Insight on GitHub</a></li>
 </ul>
 
-            
-          
         </div>
-        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" aria-label="top navigation">
-        
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../index.html">AFQ-Insight</a>
-        
       </nav>
 
-
       <div class="wy-nav-content">
-        
         <div class="rst-content">
-        
-          
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
-
+          <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-    
       <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
-        
           <li><a href="index.html">General examples</a> &raquo;</li>
-        
       <li>Predict age from white matter features</li>
-    
-    
       <li class="wy-breadcrumbs-aside">
-        
-          
             <a href="../_sources/auto_examples/plot_age_regression.rst.txt" rel="nofollow"> View page source</a>
-          
-        
       </li>
-    
   </ul>
-
-  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-            
+             
   <div class="sphx-glr-download-link-note admonition note">
 <p class="admonition-title">Note</p>
 <p>Click <a class="reference internal" href="#sphx-glr-download-auto-examples-plot-age-regression-py"><span class="std std-ref">here</span></a>
 to download the full example code</p>
 </div>
-<div class="sphx-glr-example-title section" id="predict-age-from-white-matter-features">
-<span id="sphx-glr-auto-examples-plot-age-regression-py"></span><h1>Predict age from white matter features<a class="headerlink" href="#predict-age-from-white-matter-features" title="Permalink to this headline">¶</a></h1>
-<p>Predict subject age from white matter features. This example fetches the Weston-Havens
-dataset described in Yeatman et al <a class="footnote-reference brackets" href="#id3" id="id1">1</a>. This dataset contains tractometry
-features from 77 subjects ages 6-50. The plots display the absolute value of the
-mean regression coefficients (averaged across cross-validation splits) for the
-mean diffusivity (MD) features.</p>
+<section class="sphx-glr-example-title" id="predict-age-from-white-matter-features">
+<span id="sphx-glr-auto-examples-plot-age-regression-py"></span><h1>Predict age from white matter features<a class="headerlink" href="#predict-age-from-white-matter-features" title="Permalink to this headline"></a></h1>
+<p>Predict subject age from white matter features. This example fetches the
+Weston-Havens dataset described in Yeatman et al <a class="footnote-reference brackets" href="#id3" id="id1">1</a>. This dataset contains
+tractometry features from 77 subjects ages 6-50. The plots display the absolute
+value of the mean regression coefficients (averaged across cross-validation
+splits) for the mean diffusivity (MD) features.</p>
 <p>Predictive performance for this example is quite poor. In a research setting,
 one might have to ensemble a number of SGL estimators together and conduct a
-more thorough search of the hyperparameter space.
-For more details, please see <a class="footnote-reference brackets" href="#id4" id="id2">2</a>.</p>
+more thorough search of the hyperparameter space. For more details, please see
+<a class="footnote-reference brackets" href="#id4" id="id2">2</a>.</p>
 <dl class="footnote brackets">
 <dt class="label" id="id3"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
-<dd><p>Jason D. Yeatman, Brian A. Wandell, &amp; Aviv A. Mezer,
-“Lifespan maturation and degeneration of human brain white matter”
-Nature Communications, vol. 5:1, pp. 4932, 2014
-DOI: 10.1038/ncomms5932</p>
+<dd><p>Jason D. Yeatman, Brian A. Wandell, &amp; Aviv A. Mezer, “Lifespan
+maturation and degeneration of human brain white matter” Nature
+Communications, vol. 5:1, pp. 4932, 2014 DOI: 10.1038/ncomms5932</p>
 </dd>
 <dt class="label" id="id4"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
 <dd><p>Adam Richie-Halford, Jason Yeatman, Noah Simon, and Ariel Rokem
-“Multidimensional analysis and detection of informative features in human brain white matter”
-PLOS Computational Biology, 2021
-DOI: 10.1371/journal.pcbi.1009136</p>
+“Multidimensional analysis and detection of informative features in human
+brain white matter” PLOS Computational Biology, 2021 DOI:
+10.1371/journal.pcbi.1009136</p>
 </dd>
 </dl>
-<img alt="Group Principal Regression Coefficients (MD only)" class="sphx-glr-single-img" src="../_images/sphx_glr_plot_age_regression_001.png" />
-<p class="sphx-glr-script-out">Out:</p>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Downloading https://yeatmanlab.github.io/AFQBrowser-demo/data/nodes.csv to ../../../../.afq-insight/weston_havens_data/nodes.csv.
-Downloading https://yeatmanlab.github.io/AFQBrowser-demo/data/subjects.csv to ../../../../.afq-insight/weston_havens_data/subjects.csv.
-Mean train score: 0.834
-Mean test score:  -0.378
-Mean fit time:    13.42s
-Mean score time:   0.00s
-</pre></div>
-</div>
-<div class="line-block">
-<div class="line"><br /></div>
-</div>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">os.path</span> <span class="k">as</span> <span class="nn">op</span>
 
-<span class="kn">from</span> <span class="nn">afqinsight.datasets</span> <span class="kn">import</span> <span class="n">fetch_weston_havens</span>
+<span class="kn">from</span> <span class="nn">afqinsight.datasets</span> <span class="kn">import</span> <span class="n">download_weston_havens</span><span class="p">,</span> <a href="../api.html#afqinsight.load_afq_data" title="afqinsight.load_afq_data" class="sphx-glr-backref-module-afqinsight sphx-glr-backref-type-py-function"><span class="n">load_afq_data</span></a>
 <span class="kn">from</span> <span class="nn">afqinsight</span> <span class="kn">import</span> <a href="../api.html#afqinsight.make_afq_regressor_pipeline" title="afqinsight.make_afq_regressor_pipeline" class="sphx-glr-backref-module-afqinsight sphx-glr-backref-type-py-function"><span class="n">make_afq_regressor_pipeline</span></a>
 
 <span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="sklearn.model_selection.cross_validate" class="sphx-glr-backref-module-sklearn-model_selection sphx-glr-backref-type-py-function"><span class="n">cross_validate</span></a>
+</pre></div>
+</div>
+<section id="fetch-example-data">
+<h2>Fetch example data<a class="headerlink" href="#fetch-example-data" title="Permalink to this headline"></a></h2>
+<p>The <code class="xref py py-func docutils literal notranslate"><span class="pre">download_weston_havens()</span></code> function download the data used in this
+example and places it in the <cite>~/.cache/afq-insight/weston_havens</cite> directory.
+If the directory does not exist, it is created. The data follows the format
+expected by the <code class="xref py py-func docutils literal notranslate"><span class="pre">load_afq_data()</span></code> function: a file called <cite>nodes.csv</cite> that
+contains AFQ tract profiles and a file called <cite>subjects.csv</cite> that contains
+information about the subjects. The two files are linked through the
+<cite>subjectID</cite> column that should exist in both of them. For more information
+about this format, see also the <a class="reference external" href="https://yeatmanlab.github.io/AFQ-Browser/dataformat.html">AFQ-Browser documentation</a> (items 2 and 3).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">workdir</span></a> <span class="o">=</span> <span class="n">download_weston_havens</span><span class="p">()</span>
+</pre></div>
+</div>
+<p class="sphx-glr-script-out">Out:</p>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Downloading https://yeatmanlab.github.io/AFQBrowser-demo/data/nodes.csv to ../../../../.cache/afq-insight/weston_havens_data/nodes.csv.
+Downloading https://yeatmanlab.github.io/AFQBrowser-demo/data/subjects.csv to ../../../../.cache/afq-insight/weston_havens_data/subjects.csv.
+</pre></div>
+</div>
+</section>
+<section id="read-in-the-data">
+<h2>Read in the data<a class="headerlink" href="#read-in-the-data" title="Permalink to this headline"></a></h2>
+<p>Next, we read in the data. The <code class="xref py py-func docutils literal notranslate"><span class="pre">load_afq_data()</span></code> function expects a string
+input that points to a directory that holds appropriately-shaped data and
+returns variables that we will use below in our analysis of the data.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">afqdata</span> <span class="o">=</span> <a href="../api.html#afqinsight.load_afq_data" title="afqinsight.load_afq_data" class="sphx-glr-backref-module-afqinsight sphx-glr-backref-type-py-function"><span class="n">load_afq_data</span></a><span class="p">(</span>
+    <span class="n">fn_nodes</span><span class="o">=</span><a href="https://docs.python.org/3/library/os.path.html#os.path.join" title="os.path.join" class="sphx-glr-backref-module-os-path sphx-glr-backref-type-py-function"><span class="n">op</span><span class="o">.</span><span class="n">join</span></a><span class="p">(</span><a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">workdir</span></a><span class="p">,</span> <span class="s2">&quot;nodes.csv&quot;</span><span class="p">),</span>
+    <span class="n">fn_subjects</span><span class="o">=</span><a href="https://docs.python.org/3/library/os.path.html#os.path.join" title="os.path.join" class="sphx-glr-backref-module-os-path sphx-glr-backref-type-py-function"><span class="n">op</span><span class="o">.</span><span class="n">join</span></a><span class="p">(</span><a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">workdir</span></a><span class="p">,</span> <span class="s2">&quot;subjects.csv&quot;</span><span class="p">),</span>
+    <span class="n">dwi_metrics</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;md&quot;</span><span class="p">,</span> <span class="s2">&quot;fa&quot;</span><span class="p">],</span>
+    <span class="n">target_cols</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Age&quot;</span><span class="p">],</span>
+<span class="p">)</span>
 
-<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">X</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">y</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">groups</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">feature_names</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">group_names</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">subjects</span></a> <span class="o">=</span> <span class="n">fetch_weston_havens</span><span class="p">()</span>
-
-<a href="https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html#sklearn.pipeline.Pipeline" title="sklearn.pipeline.Pipeline" class="sphx-glr-backref-module-sklearn-pipeline sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">pipe</span></a> <span class="o">=</span> <a href="../api.html#afqinsight.make_afq_regressor_pipeline" title="afqinsight.make_afq_regressor_pipeline" class="sphx-glr-backref-module-afqinsight sphx-glr-backref-type-py-function"><span class="n">make_afq_regressor_pipeline</span></a><span class="p">(</span>
+<span class="c1"># afqdata is a namedtuple. You can access it&#39;s fields using dot notation or by</span>
+<span class="c1"># unpacking the tuple. To see all of the available fields use `afqdata._fields`</span>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">X</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">afqdata</span><span class="o">.</span><span class="n">X</span></a>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">y</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">afqdata</span><span class="o">.</span><span class="n">y</span></a>
+<a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">groups</span></a> <span class="o">=</span> <a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">afqdata</span><span class="o">.</span><span class="n">groups</span></a>
+<a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">feature_names</span></a> <span class="o">=</span> <a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">afqdata</span><span class="o">.</span><span class="n">feature_names</span></a>
+<a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">group_names</span></a> <span class="o">=</span> <a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">afqdata</span><span class="o">.</span><span class="n">group_names</span></a>
+<a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">subjects</span></a> <span class="o">=</span> <a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">afqdata</span><span class="o">.</span><span class="n">subjects</span></a>
+</pre></div>
+</div>
+</section>
+<section id="create-an-analysis-pipeline">
+<h2>Create an analysis pipeline<a class="headerlink" href="#create-an-analysis-pipeline" title="Permalink to this headline"></a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><a href="https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html#sklearn.pipeline.Pipeline" title="sklearn.pipeline.Pipeline" class="sphx-glr-backref-module-sklearn-pipeline sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">pipe</span></a> <span class="o">=</span> <a href="../api.html#afqinsight.make_afq_regressor_pipeline" title="afqinsight.make_afq_regressor_pipeline" class="sphx-glr-backref-module-afqinsight sphx-glr-backref-type-py-function"><span class="n">make_afq_regressor_pipeline</span></a><span class="p">(</span>
     <span class="n">imputer_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;strategy&quot;</span><span class="p">:</span> <span class="s2">&quot;median&quot;</span><span class="p">},</span>  <span class="c1"># Use median imputation</span>
     <span class="n">use_cv_estimator</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Automatically determine the best hyperparameters</span>
     <span class="n">scaler</span><span class="o">=</span><span class="s2">&quot;standard&quot;</span><span class="p">,</span>  <span class="c1"># Standard scale the features before regression</span>
@@ -245,7 +187,10 @@ Mean score time:   0.00s
     <span class="n">tol</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">,</span>  <span class="c1"># Set a lenient convergence tolerance just for this example</span>
 <span class="p">)</span>
 
-<span class="c1"># ``pipe`` is a scikit-learn pipeline and can be used in other scikit-learn functions</span>
+<span class="c1"># ``pipe`` is a scikit-learn pipeline and can be used in other scikit-learn</span>
+<span class="c1"># functions. For example, here we are doing 5-fold cross-validation using scikit</span>
+<span class="c1"># learn&#39;s :func:`cross_validate` function.</span>
+
 <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">scores</span></a> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="sklearn.model_selection.cross_validate" class="sphx-glr-backref-module-sklearn-model_selection sphx-glr-backref-type-py-function"><span class="n">cross_validate</span></a><span class="p">(</span>
     <a href="https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html#sklearn.pipeline.Pipeline" title="sklearn.pipeline.Pipeline" class="sphx-glr-backref-module-sklearn-pipeline sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">pipe</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">X</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">y</span></a><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">return_train_score</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">return_estimator</span><span class="o">=</span><span class="kc">True</span>
 <span class="p">)</span>
@@ -268,7 +213,7 @@ Mean score time:   0.00s
     <a href="https://matplotlib.org/api/text_api.html#matplotlib.text.Text" title="matplotlib.text.Text" class="sphx-glr-backref-module-matplotlib-text sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">_</span></a> <span class="o">=</span> <a href="https://matplotlib.org/api/_as_gen/matplotlib.axes.Axes.axvspan.html#matplotlib.axes.Axes.axvspan" title="matplotlib.axes.Axes.axvspan" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">ax</span><span class="o">.</span><span class="n">axvspan</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">grp</span></a><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">grp</span></a><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">color</span></a><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">color</span></a><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#tuple" title="builtins.tuple" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">grp_name</span></a><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
 
 <a href="https://matplotlib.org/api/transformations.html#matplotlib.transforms.Bbox" title="matplotlib.transforms.Bbox" class="sphx-glr-backref-module-matplotlib-transforms sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">box</span></a> <span class="o">=</span> <a href="https://matplotlib.org/api/_as_gen/matplotlib.axes.Axes.get_position.html#matplotlib.axes.Axes.get_position" title="matplotlib.axes.Axes.get_position" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">ax</span><span class="o">.</span><span class="n">get_position</span></a><span class="p">()</span>
-<a href="https://matplotlib.org/api/_as_gen/matplotlib.axes.Axes.set_position.html#matplotlib.axes.Axes.set_position" title="matplotlib.axes.Axes.set_position" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">ax</span><span class="o">.</span><span class="n">set_position</span></a><span class="p">([</span><a href="https://matplotlib.org/api/transformations.html#matplotlib.transforms.Bbox.x0" title="matplotlib.transforms.Bbox.x0" class="sphx-glr-backref-module-matplotlib-transforms sphx-glr-backref-type-py-method"><span class="n">box</span><span class="o">.</span><span class="n">x0</span></a><span class="p">,</span> <a href="https://matplotlib.org/api/transformations.html#matplotlib.transforms.Bbox.y0" title="matplotlib.transforms.Bbox.y0" class="sphx-glr-backref-module-matplotlib-transforms sphx-glr-backref-type-py-method"><span class="n">box</span><span class="o">.</span><span class="n">y0</span></a> <span class="o">+</span> <a href="https://matplotlib.org/api/transformations.html#matplotlib.transforms.BboxBase.height" title="matplotlib.transforms.BboxBase.height" class="sphx-glr-backref-module-matplotlib-transforms sphx-glr-backref-type-py-method"><span class="n">box</span><span class="o">.</span><span class="n">height</span></a> <span class="o">*</span> <span class="mf">0.375</span><span class="p">,</span> <a href="https://matplotlib.org/api/transformations.html#matplotlib.transforms.BboxBase.width" title="matplotlib.transforms.BboxBase.width" class="sphx-glr-backref-module-matplotlib-transforms sphx-glr-backref-type-py-method"><span class="n">box</span><span class="o">.</span><span class="n">width</span></a><span class="p">,</span> <a href="https://matplotlib.org/api/transformations.html#matplotlib.transforms.BboxBase.height" title="matplotlib.transforms.BboxBase.height" class="sphx-glr-backref-module-matplotlib-transforms sphx-glr-backref-type-py-method"><span class="n">box</span><span class="o">.</span><span class="n">height</span></a> <span class="o">*</span> <span class="mf">0.625</span><span class="p">])</span>
+<a href="https://matplotlib.org/api/_as_gen/matplotlib.axes.Axes.set_position.html#matplotlib.axes.Axes.set_position" title="matplotlib.axes.Axes.set_position" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">ax</span><span class="o">.</span><span class="n">set_position</span></a><span class="p">([</span><a href="https://matplotlib.org/api/transformations.html#matplotlib.transforms.Bbox.x0" title="matplotlib.transforms.Bbox.x0" class="sphx-glr-backref-module-matplotlib-transforms sphx-glr-backref-type-py-property"><span class="n">box</span><span class="o">.</span><span class="n">x0</span></a><span class="p">,</span> <a href="https://matplotlib.org/api/transformations.html#matplotlib.transforms.Bbox.y0" title="matplotlib.transforms.Bbox.y0" class="sphx-glr-backref-module-matplotlib-transforms sphx-glr-backref-type-py-property"><span class="n">box</span><span class="o">.</span><span class="n">y0</span></a> <span class="o">+</span> <a href="https://matplotlib.org/api/transformations.html#matplotlib.transforms.BboxBase.height" title="matplotlib.transforms.BboxBase.height" class="sphx-glr-backref-module-matplotlib-transforms sphx-glr-backref-type-py-property"><span class="n">box</span><span class="o">.</span><span class="n">height</span></a> <span class="o">*</span> <span class="mf">0.375</span><span class="p">,</span> <a href="https://matplotlib.org/api/transformations.html#matplotlib.transforms.BboxBase.width" title="matplotlib.transforms.BboxBase.width" class="sphx-glr-backref-module-matplotlib-transforms sphx-glr-backref-type-py-property"><span class="n">box</span><span class="o">.</span><span class="n">width</span></a><span class="p">,</span> <a href="https://matplotlib.org/api/transformations.html#matplotlib.transforms.BboxBase.height" title="matplotlib.transforms.BboxBase.height" class="sphx-glr-backref-module-matplotlib-transforms sphx-glr-backref-type-py-property"><span class="n">box</span><span class="o">.</span><span class="n">height</span></a> <span class="o">*</span> <span class="mf">0.625</span><span class="p">])</span>
 
 <a href="https://matplotlib.org/api/text_api.html#matplotlib.text.Text" title="matplotlib.text.Text" class="sphx-glr-backref-module-matplotlib-text sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">_</span></a> <span class="o">=</span> <a href="https://matplotlib.org/api/_as_gen/matplotlib.axes.Axes.legend.html#matplotlib.axes.Axes.legend" title="matplotlib.axes.Axes.legend" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">ax</span><span class="o">.</span><span class="n">legend</span></a><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">&quot;upper center&quot;</span><span class="p">,</span> <span class="n">bbox_to_anchor</span><span class="o">=</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.125</span><span class="p">),</span> <span class="n">ncol</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
 <a href="https://matplotlib.org/api/text_api.html#matplotlib.text.Text" title="matplotlib.text.Text" class="sphx-glr-backref-module-matplotlib-text sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">_</span></a> <span class="o">=</span> <a href="https://matplotlib.org/api/_as_gen/matplotlib.axes.Axes.set_ylabel.html#matplotlib.axes.Axes.set_ylabel" title="matplotlib.axes.Axes.set_ylabel" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span></a><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;$\hat{\beta}$&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
@@ -276,7 +221,69 @@ Mean score time:   0.00s
 <a href="https://matplotlib.org/api/text_api.html#matplotlib.text.Text" title="matplotlib.text.Text" class="sphx-glr-backref-module-matplotlib-text sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">_</span></a> <span class="o">=</span> <a href="https://matplotlib.org/api/_as_gen/matplotlib.axes.Axes.set_title.html#matplotlib.axes.Axes.set_title" title="matplotlib.axes.Axes.set_title" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">ax</span><span class="o">.</span><span class="n">set_title</span></a><span class="p">(</span><span class="s2">&quot;Group Principal Regression Coefficients (MD only)&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">18</span><span class="p">)</span>
 </pre></div>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> ( 1 minutes  8.469 seconds)</p>
+<img src="../_images/sphx_glr_plot_age_regression_001.png" srcset="../_images/sphx_glr_plot_age_regression_001.png" alt="Group Principal Regression Coefficients (MD only)" class = "sphx-glr-single-img"/><p class="sphx-glr-script-out">Out:</p>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>/opt/hostedtoolcache/Python/3.8.12/x64/lib/python3.8/site-packages/sklearn/model_selection/_validation.py:548: FitFailedWarning: Estimator fit failed. The score on this train-test partition for these parameters will be set to nan. Details:
+Traceback (most recent call last):
+  File &quot;/opt/hostedtoolcache/Python/3.8.12/x64/lib/python3.8/site-packages/sklearn/model_selection/_validation.py&quot;, line 531, in _fit_and_score
+    estimator.fit(X_train, y_train, **fit_params)
+  File &quot;/opt/hostedtoolcache/Python/3.8.12/x64/lib/python3.8/site-packages/sklearn/pipeline.py&quot;, line 335, in fit
+    self._final_estimator.fit(Xt, y, **fit_params_last_step)
+  File &quot;/opt/hostedtoolcache/Python/3.8.12/x64/lib/python3.8/site-packages/groupyr/sgl.py&quot;, line 1200, in fit
+    param_alpha = self.bayes_optimizer_.cv_results_[&quot;param__alpha&quot;]
+KeyError: &#39;param__alpha&#39;
+
+  warnings.warn(&quot;Estimator fit failed. The score on this train-test&quot;
+/opt/hostedtoolcache/Python/3.8.12/x64/lib/python3.8/site-packages/sklearn/model_selection/_validation.py:548: FitFailedWarning: Estimator fit failed. The score on this train-test partition for these parameters will be set to nan. Details:
+Traceback (most recent call last):
+  File &quot;/opt/hostedtoolcache/Python/3.8.12/x64/lib/python3.8/site-packages/sklearn/model_selection/_validation.py&quot;, line 531, in _fit_and_score
+    estimator.fit(X_train, y_train, **fit_params)
+  File &quot;/opt/hostedtoolcache/Python/3.8.12/x64/lib/python3.8/site-packages/sklearn/pipeline.py&quot;, line 335, in fit
+    self._final_estimator.fit(Xt, y, **fit_params_last_step)
+  File &quot;/opt/hostedtoolcache/Python/3.8.12/x64/lib/python3.8/site-packages/groupyr/sgl.py&quot;, line 1200, in fit
+    param_alpha = self.bayes_optimizer_.cv_results_[&quot;param__alpha&quot;]
+KeyError: &#39;param__alpha&#39;
+
+  warnings.warn(&quot;Estimator fit failed. The score on this train-test&quot;
+/opt/hostedtoolcache/Python/3.8.12/x64/lib/python3.8/site-packages/sklearn/model_selection/_validation.py:548: FitFailedWarning: Estimator fit failed. The score on this train-test partition for these parameters will be set to nan. Details:
+Traceback (most recent call last):
+  File &quot;/opt/hostedtoolcache/Python/3.8.12/x64/lib/python3.8/site-packages/sklearn/model_selection/_validation.py&quot;, line 531, in _fit_and_score
+    estimator.fit(X_train, y_train, **fit_params)
+  File &quot;/opt/hostedtoolcache/Python/3.8.12/x64/lib/python3.8/site-packages/sklearn/pipeline.py&quot;, line 335, in fit
+    self._final_estimator.fit(Xt, y, **fit_params_last_step)
+  File &quot;/opt/hostedtoolcache/Python/3.8.12/x64/lib/python3.8/site-packages/groupyr/sgl.py&quot;, line 1200, in fit
+    param_alpha = self.bayes_optimizer_.cv_results_[&quot;param__alpha&quot;]
+KeyError: &#39;param__alpha&#39;
+
+  warnings.warn(&quot;Estimator fit failed. The score on this train-test&quot;
+/opt/hostedtoolcache/Python/3.8.12/x64/lib/python3.8/site-packages/sklearn/model_selection/_validation.py:548: FitFailedWarning: Estimator fit failed. The score on this train-test partition for these parameters will be set to nan. Details:
+Traceback (most recent call last):
+  File &quot;/opt/hostedtoolcache/Python/3.8.12/x64/lib/python3.8/site-packages/sklearn/model_selection/_validation.py&quot;, line 531, in _fit_and_score
+    estimator.fit(X_train, y_train, **fit_params)
+  File &quot;/opt/hostedtoolcache/Python/3.8.12/x64/lib/python3.8/site-packages/sklearn/pipeline.py&quot;, line 335, in fit
+    self._final_estimator.fit(Xt, y, **fit_params_last_step)
+  File &quot;/opt/hostedtoolcache/Python/3.8.12/x64/lib/python3.8/site-packages/groupyr/sgl.py&quot;, line 1200, in fit
+    param_alpha = self.bayes_optimizer_.cv_results_[&quot;param__alpha&quot;]
+KeyError: &#39;param__alpha&#39;
+
+  warnings.warn(&quot;Estimator fit failed. The score on this train-test&quot;
+/opt/hostedtoolcache/Python/3.8.12/x64/lib/python3.8/site-packages/sklearn/model_selection/_validation.py:548: FitFailedWarning: Estimator fit failed. The score on this train-test partition for these parameters will be set to nan. Details:
+Traceback (most recent call last):
+  File &quot;/opt/hostedtoolcache/Python/3.8.12/x64/lib/python3.8/site-packages/sklearn/model_selection/_validation.py&quot;, line 531, in _fit_and_score
+    estimator.fit(X_train, y_train, **fit_params)
+  File &quot;/opt/hostedtoolcache/Python/3.8.12/x64/lib/python3.8/site-packages/sklearn/pipeline.py&quot;, line 335, in fit
+    self._final_estimator.fit(Xt, y, **fit_params_last_step)
+  File &quot;/opt/hostedtoolcache/Python/3.8.12/x64/lib/python3.8/site-packages/groupyr/sgl.py&quot;, line 1200, in fit
+    param_alpha = self.bayes_optimizer_.cv_results_[&quot;param__alpha&quot;]
+KeyError: &#39;param__alpha&#39;
+
+  warnings.warn(&quot;Estimator fit failed. The score on this train-test&quot;
+Mean train score:   nan
+Mean test score:    nan
+Mean fit time:    14.23s
+Mean score time:   0.00s
+</pre></div>
+</div>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> ( 1 minutes  12.435 seconds)</p>
 <div class="sphx-glr-footer class sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-age-regression-py">
 <div class="sphx-glr-download sphx-glr-download-python docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/85ca7ddf2812ce2eb4eb341a2045be18/plot_age_regression.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_age_regression.py</span></code></a></p>
@@ -286,54 +293,38 @@ Mean score time:   0.00s
 </div>
 </div>
 <p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
-</div>
+</section>
+</section>
 
 
            </div>
-           
           </div>
-          <footer>
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-        <a href="plot_als_classification.html" class="btn btn-neutral float-right" title="Classify ALS diagnosis from white matter features" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="index.html" class="btn btn-neutral float-left" title="General examples" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="plot_als_classification.html" class="btn btn-neutral float-right" title="Classify ALS diagnosis from white matter features" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>
-        &#169; Copyright 2020, Adam Richie-Halford.
-
-    </p>
+    <p>&#169; Copyright 2020, Adam Richie-Halford.</p>
   </div>
-    
-    
-    
-    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
 
 </footer>
         </div>
       </div>
-
     </section>
-
   </div>
-  
-
-  <script type="text/javascript">
+  <script>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-
-  
-  
-    
-   
+  </script> 
 
 </body>
 </html>

@@ -1,80 +1,39 @@
-
-
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
-  
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
-  <title>afqinsight.transform &mdash; AFQ-Insight 0.3.0 documentation</title>
-  
-
-  
-  <link rel="stylesheet" href="../../_static/css/afqinsight.css" type="text/css" />
-  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="../../_static/css/afqinsight.css" type="text/css" />
-  <link rel="stylesheet" href="../../_static/gallery.css" type="text/css" />
-  <link rel="stylesheet" href="../../_static/gallery-binder.css" type="text/css" />
-  <link rel="stylesheet" href="../../_static/gallery-dataframe.css" type="text/css" />
-  <link rel="stylesheet" href="../../_static/gallery-rendered-html.css" type="text/css" />
-
-  
-  
-
-  
-  
-
-  
-
-  
+  <title>afqinsight.transform &mdash; AFQ-Insight 0.3.1 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/afqinsight.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/sg_gallery.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/sg_gallery-binder.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/sg_gallery-dataframe.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/sg_gallery-rendered-html.css" type="text/css" />
   <!--[if lt IE 9]>
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
         <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
         <script src="../../_static/jquery.js"></script>
         <script src="../../_static/underscore.js"></script>
         <script src="../../_static/doctools.js"></script>
         <script src="../../_static/js/copybutton.js"></script>
-    
-    <script type="text/javascript" src="../../_static/js/theme.js"></script>
-
-    
+    <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
 </head>
 
-<body class="wy-body-for-nav">
-
-   
+<body class="wy-body-for-nav"> 
   <div class="wy-grid-for-nav">
-    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-          
-
-          
             <a href="../../index.html" class="icon icon-home"> AFQ-Insight
-          
-
-          
           </a>
-
-          
-            
-            
               <div class="version">
-                0.3.0
+                0.3.1
               </div>
-            
-          
-
-          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -82,18 +41,7 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-
-          
-        </div>
-
-        
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
-              
-            
-            
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../user_guide.html">User guide</a></li>
@@ -104,69 +52,30 @@
 <li class="toctree-l1"><a class="reference external" href="https://github.com/richford/AFQ-Insight">AFQ-Insight on GitHub</a></li>
 </ul>
 
-            
-          
         </div>
-        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" aria-label="top navigation">
-        
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../../index.html">AFQ-Insight</a>
-        
       </nav>
 
-
       <div class="wy-nav-content">
-        
         <div class="rst-content">
-        
-          
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
-
+          <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-    
       <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
-        
           <li><a href="../index.html">Module code</a> &raquo;</li>
-        
       <li>afqinsight.transform</li>
-    
-    
       <li class="wy-breadcrumbs-aside">
-        
       </li>
-    
   </ul>
-
-  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-            
+             
   <h1>Source code for afqinsight.transform</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;Transform AFQ data.&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -209,6 +118,22 @@
 <span class="sd">        of train/test leakage. You will probably not need to change these</span>
 <span class="sd">        defaults.</span>
 
+<span class="sd">    bundle_agg_func : function, str, list or dict, optional</span>
+<span class="sd">        If provided, a function to use for aggregating the nodes in each tract.</span>
+<span class="sd">        If a function, must either work when passed a DataFrame or when passed</span>
+<span class="sd">        to DataFrame.apply.</span>
+
+<span class="sd">        Accepted combinations are:</span>
+
+<span class="sd">        - function</span>
+
+<span class="sd">        - string function name</span>
+
+<span class="sd">        - list of functions and/or function names, e.g. [np.sum, &#39;mean&#39;]</span>
+
+<span class="sd">        By default, this mapper will not aggregate but will return values at</span>
+<span class="sd">        each node.</span>
+
 <span class="sd">    Attributes</span>
 <span class="sd">    ----------</span>
 <span class="sd">    subjects_ : list</span>
@@ -224,13 +149,41 @@
 <span class="sd">        List of feature column names.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pd_interpolate_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">dataframe_mapper_kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">pd_interpolate_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">bundle_agg_func</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">concat_subject_session</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">dataframe_mapper_kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">subjects_</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">groups_</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">concat_subject_session</span> <span class="o">=</span> <span class="n">concat_subject_session</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pd_interpolate_kwargs</span> <span class="o">=</span> <span class="n">pd_interpolate_kwargs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bundle_agg_func</span> <span class="o">=</span> <span class="n">bundle_agg_func</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;features&quot;</span><span class="p">:</span> <span class="p">[],</span> <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">}</span>
         <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">dataframe_mapper_kwargs</span><span class="p">)</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_bundle_agg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">agg_func</span><span class="p">,</span> <span class="n">set_attributes</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">if</span> <span class="s2">&quot;sessionID&quot;</span> <span class="ow">in</span> <span class="n">X</span><span class="o">.</span><span class="n">columns</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">concat_subject_session</span><span class="p">:</span>
+            <span class="n">X</span><span class="o">.</span><span class="n">subjectID</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">subjectID</span> <span class="o">+</span> <span class="n">X</span><span class="o">.</span><span class="n">sessionID</span>
+
+        <span class="n">X</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="s2">&quot;sessionID&quot;</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="s2">&quot;columns&quot;</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
+
+        <span class="n">features</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">X</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s2">&quot;subjectID&quot;</span><span class="p">,</span> <span class="s2">&quot;tractID&quot;</span><span class="p">])</span>
+            <span class="o">.</span><span class="n">agg</span><span class="p">(</span><span class="n">agg_func</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="s2">&quot;nodeID&quot;</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="s2">&quot;columns&quot;</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">unstack</span><span class="p">(</span><span class="s2">&quot;tractID&quot;</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">set_attributes</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">subjects_</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">groups_</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">idx</span><span class="p">])</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">features</span><span class="o">.</span><span class="n">columns</span><span class="p">))]</span>
+
+        <span class="k">return</span> <span class="n">features</span>
 
     <span class="k">def</span> <span class="nf">_preprocess</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">set_attributes</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="c1"># We&#39;d like to interpolate the missing values, but first we need to</span>
@@ -238,6 +191,12 @@
         <span class="c1"># subjects, tracts, or metrics. It should only interpolate from nearby</span>
         <span class="c1"># nodes. So we want the nodeID as the row index and all the other</span>
         <span class="c1"># stuff as columns . After that we can interpolate along each column.</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">if</span> <span class="s2">&quot;sessionID&quot;</span> <span class="ow">in</span> <span class="n">X</span><span class="o">.</span><span class="n">columns</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">concat_subject_session</span><span class="p">:</span>
+            <span class="n">X</span><span class="o">.</span><span class="n">subjectID</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">subjectID</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span> <span class="o">+</span> <span class="n">X</span><span class="o">.</span><span class="n">sessionID</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+
+        <span class="n">X</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="s2">&quot;sessionID&quot;</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="s2">&quot;columns&quot;</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
+
         <span class="n">by_node_idx</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">pivot_table</span><span class="p">(</span>
             <span class="n">data</span><span class="o">=</span><span class="n">X</span><span class="o">.</span><span class="n">melt</span><span class="p">(</span><span class="n">id_vars</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;subjectID&quot;</span><span class="p">,</span> <span class="s2">&quot;tractID&quot;</span><span class="p">,</span> <span class="s2">&quot;nodeID&quot;</span><span class="p">],</span> <span class="n">var_name</span><span class="o">=</span><span class="s2">&quot;metric&quot;</span><span class="p">),</span>
             <span class="n">index</span><span class="o">=</span><span class="s2">&quot;nodeID&quot;</span><span class="p">,</span>
@@ -274,7 +233,7 @@
         <span class="c1"># above, the only NaN values left should be the ones created after</span>
         <span class="c1"># stacking and unstacking due to a subject missing an entire tract. In</span>
         <span class="c1"># this case, we do not fill these values and instead recommend that</span>
-        <span class="c1"># users use the sklearn.impute.SimpleImputer</span>
+        <span class="c1"># users use an imputer from sklearn.impute</span>
 
         <span class="k">if</span> <span class="n">set_attributes</span><span class="p">:</span>
             <span class="c1"># Construct bundle group membership</span>
@@ -308,7 +267,10 @@
 <span class="sd">        y : array-like of shape (n_samples,) or (n_samples, n_targets), optional</span>
 <span class="sd">            Target values. Unused in this transformer</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">features</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_preprocess</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">set_attributes</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bundle_agg_func</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">features</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_preprocess</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">set_attributes</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">features</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bundle_agg</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bundle_agg_func</span><span class="p">,</span> <span class="n">set_attributes</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">features</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
@@ -321,7 +283,12 @@
 <span class="sd">        X : pandas.DataFrame</span>
 <span class="sd">            The data to transform</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">features</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_preprocess</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">set_attributes</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bundle_agg_func</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">features</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_preprocess</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">set_attributes</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">features</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bundle_agg</span><span class="p">(</span>
+                <span class="n">X</span><span class="p">,</span> <span class="n">agg_func</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bundle_agg_func</span><span class="p">,</span> <span class="n">set_attributes</span><span class="o">=</span><span class="kc">False</span>
+            <span class="p">)</span>
         <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">fit_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -335,7 +302,12 @@
 <span class="sd">        y : array-like of shape (n_samples,) or (n_samples, n_targets), optional</span>
 <span class="sd">            Target values. Unused in this transformer</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">features</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_preprocess</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">set_attributes</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bundle_agg_func</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">features</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_preprocess</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">set_attributes</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">features</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bundle_agg</span><span class="p">(</span>
+                <span class="n">X</span><span class="p">,</span> <span class="n">agg_func</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bundle_agg_func</span><span class="p">,</span> <span class="n">set_attributes</span><span class="o">=</span><span class="kc">True</span>
+            <span class="p">)</span>
         <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">features</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
 
     <span class="nd">@property</span>
@@ -379,12 +351,13 @@
         <span class="n">tract_idx</span> <span class="o">=</span> <span class="n">columns</span><span class="o">.</span><span class="n">names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s2">&quot;tractID&quot;</span><span class="p">)</span>
 
         <span class="n">bilateral_symmetry</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="n">tract</span><span class="p">:</span> <span class="n">tract</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;Left &quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;Right &quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">tract</span><span class="p">:</span> <span class="n">tract</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;Left&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;Right&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">tract</span> <span class="ow">in</span> <span class="n">columns</span><span class="o">.</span><span class="n">levels</span><span class="p">[</span><span class="n">tract_idx</span><span class="p">]</span>
         <span class="p">}</span>
 
         <span class="n">col_vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x</span> <span class="o">+</span> <span class="p">(</span><span class="n">bilateral_symmetry</span><span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="n">tract_idx</span><span class="p">]],)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">col_vals</span><span class="p">])</span>
 
+    <span class="n">col_vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">tuple</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">el</span><span class="p">)</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">tup</span><span class="p">])</span> <span class="k">for</span> <span class="n">tup</span> <span class="ow">in</span> <span class="n">col_vals</span><span class="p">])</span>
     <span class="n">col_sets</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">c</span><span class="p">:</span> <span class="nb">set</span><span class="p">(</span><span class="n">c</span><span class="p">),</span> <span class="n">col_vals</span><span class="p">)))</span>
 
     <span class="k">return</span> <span class="n">col_sets</span>
@@ -416,7 +389,7 @@
         <span class="n">tract_idx</span> <span class="o">=</span> <span class="n">columns</span><span class="o">.</span><span class="n">names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s2">&quot;tractID&quot;</span><span class="p">)</span>
 
         <span class="n">bilateral_symmetry</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="n">tract</span><span class="p">:</span> <span class="n">tract</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;Left &quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;Right &quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">tract</span><span class="p">:</span> <span class="n">tract</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;Left&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;Right&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">tract</span> <span class="ow">in</span> <span class="n">columns</span><span class="o">.</span><span class="n">levels</span><span class="p">[</span><span class="n">tract_idx</span><span class="p">]</span>
         <span class="p">}</span>
 
@@ -424,6 +397,7 @@
 
         <span class="n">col_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">col_names</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;symmetrized_tractID&quot;</span><span class="p">]</span>
 
+    <span class="n">col_vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">tuple</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">el</span><span class="p">)</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">tup</span><span class="p">])</span> <span class="k">for</span> <span class="n">tup</span> <span class="ow">in</span> <span class="n">col_vals</span><span class="p">])</span>
     <span class="n">col_dicts</span> <span class="o">=</span> <span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">col_names</span><span class="p">,</span> <span class="n">vals</span><span class="p">))</span> <span class="k">for</span> <span class="n">vals</span> <span class="ow">in</span> <span class="n">col_vals</span><span class="p">]</span>
 
     <span class="k">return</span> <span class="n">col_dicts</span>
@@ -535,11 +509,7 @@
     <span class="n">betas</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
 
     <span class="n">betas_by_groups</span> <span class="o">=</span> <span class="n">beta_hat_by_groups</span><span class="p">(</span><span class="n">beta_hat</span><span class="p">,</span> <span class="n">columns</span><span class="p">,</span> <span class="n">drop_zeros</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">tract_names</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">tracts</span> <span class="o">=</span> <span class="n">tract_names</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">tracts</span> <span class="o">=</span> <span class="n">CANONICAL_TRACT_NAMES</span>
+    <span class="n">tracts</span> <span class="o">=</span> <span class="n">CANONICAL_TRACT_NAMES</span> <span class="k">if</span> <span class="n">tract_names</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">tract_names</span>
 
     <span class="k">for</span> <span class="n">metric</span> <span class="ow">in</span> <span class="n">columns</span><span class="o">.</span><span class="n">levels</span><span class="p">[</span><span class="n">columns</span><span class="o">.</span><span class="n">names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s2">&quot;metric&quot;</span><span class="p">)]:</span>
         <span class="n">betas</span><span class="p">[</span><span class="n">metric</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
@@ -552,46 +522,30 @@
 </pre></div>
 
            </div>
-           
           </div>
           <footer>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>
-        &#169; Copyright 2020, Adam Richie-Halford.
-
-    </p>
+    <p>&#169; Copyright 2020, Adam Richie-Halford.</p>
   </div>
-    
-    
-    
-    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
 
 </footer>
         </div>
       </div>
-
     </section>
-
   </div>
-  
-
-  <script type="text/javascript">
+  <script>
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-
-  
-  
-    
-   
+  </script> 
 
 </body>
 </html>
