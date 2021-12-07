@@ -1,3 +1,19 @@
+v0.3.1 (December 07, 2021)
+==========================
+  * BF: Fix label encoding in the presence of NaN labels (#101)
+  * Add enforce_sub_prefix option to AFQDataset and load_afq_data (#96)
+  * RF: For plotting, sometimes you don't want to group by any other variable (#99)
+  * BF: Cast integer session identifiers to strings. (#91)
+  * Add an AFQDataset class (#89)
+  * Add callosal bundles to plot_tract_profiles (#82)
+  * ENH: Add Convolutional Neural Network Models (#83)
+  * TST: Improve coverage. (#86)
+  * Fixes tests broken by previous commits. (#85)
+  * DOC + RF: Adds docstrings to class definitions. (#84)
+  * ENH: Allow bundle aggregation and put load_afq_data output into a named_tuple (#80)
+  * ENH: Allow bundle aggregation and put load_afq_data output into a named_tuple (#80)
+  * DOC: Make examples a bit more explicit (#79)
+
 v0.3.0 (June 28, 2021)
 ======================
   * Add research examples to documentation (#77)
