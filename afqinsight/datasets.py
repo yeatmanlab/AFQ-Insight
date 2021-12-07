@@ -303,7 +303,7 @@ def load_afq_data(
 
             le = LabelEncoder()
             for col in label_encode_cols:
-                y.loc[:, col] = le.fit_transform(y[col])
+                y.loc[:, col] = le.fit_transform(y[col].fillna("NaN"))
                 classes[col] = le.classes_
         else:
             classes = None
@@ -484,6 +484,7 @@ class AFQDataset:
 
         self.groups = afq_data.groups
         self.feature_names = afq_data.feature_names
+        self.target_cols = target_cols
         self.group_names = afq_data.group_names
         self.subjects = afq_data.subjects
         self.sessions = afq_data.sessions
@@ -511,6 +512,24 @@ class AFQDataset:
                 nan_mask = nan_mask.astype(int).sum(axis=1).astype(bool)
 
             nan_mask = ~nan_mask
+
+            # This nan_mask contains booleans for float NaN values
+            # But we also potentially label encoded NaNs above so we need to
+            # check for the string "NaN" in the encoded labels
+            nan_encoding = {
+                label: "NaN" in vals for label, vals in self.classes.items()
+            }
+            for label, nan_encoded in nan_encoding.items():
+                if nan_encoded:
+                    encoded_value = np.where(self.classes[label] == "NaN")[0][0]
+                    encoded_col = self.target_cols.index(label)
+                    if len(self.y.shape) > 1:
+                        nan_mask = np.logical_and(
+                            nan_mask, self.y[:, encoded_col] != encoded_value
+                        )
+                    else:
+                        nan_mask = np.logical_and(nan_mask, self.y != encoded_value)
+
             self.X = self.X[nan_mask]
             self.y = self.y[nan_mask]
             self.subjects = [sub for mask, sub in zip(nan_mask, self.subjects) if mask]
