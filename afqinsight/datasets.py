@@ -211,9 +211,6 @@ def load_afq_data(
     --------
     transform.AFQDataFrameMapper
     """
-    fn_nodes = op.abspath(fn_nodes)
-    fn_subjects = op.abspath(fn_subjects)
-
     nodes = pd.read_csv(fn_nodes)
     unnamed_cols = [col for col in nodes.columns if "Unnamed:" in col]
     nodes.drop(unnamed_cols, axis="columns", inplace=True)
