@@ -26,6 +26,7 @@ jobs:
       - name: Lint
         run: |
           flake8
+          black --diff . --exclude afqinsight/_version.py
           black --check . --exclude afqinsight/_version.py
           pydocstyle
       - name: Test
