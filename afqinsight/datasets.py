@@ -364,7 +364,6 @@ if HAS_TORCH:
             else:
                 return self.X[idx], self.y[idx]
 
-
 else:  # pragma: no cover
     AFQTorchDataset = TripWire(torch_msg)
 
