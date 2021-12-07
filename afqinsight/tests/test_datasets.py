@@ -38,6 +38,60 @@ def test_standardize_subject_id():
     assert standardize_subject_id("01") == "sub-01"
 
 
+def test_afqdataset_label_encode():
+    sub_dicts = [
+        {"subject_id": "1", "age": 0, "site": "A"},
+        {"subject_id": "2", "age": 1, "site": "B"},
+        {"subject_id": "3", "age": 2},
+    ]
+    node_dicts = [
+        {"subjectID": "sub-1", "tractID": "A", "nodeID": 0, "fa": 0.1},
+        {"subjectID": "sub-1", "tractID": "A", "nodeID": 1, "fa": 0.2},
+        {"subjectID": "sub-1", "tractID": "B", "nodeID": 0, "fa": 0.3},
+        {"subjectID": "sub-1", "tractID": "B", "nodeID": 1, "fa": 0.3},
+        {"subjectID": "sub-2", "tractID": "A", "nodeID": 0, "fa": 0.4},
+        {"subjectID": "sub-2", "tractID": "A", "nodeID": 1, "fa": 0.5},
+        {"subjectID": "sub-2", "tractID": "B", "nodeID": 0, "fa": 0.6},
+        {"subjectID": "sub-2", "tractID": "B", "nodeID": 1, "fa": 0.6},
+        {"subjectID": "3", "tractID": "A", "nodeID": 0, "fa": 0.7},
+        {"subjectID": "3", "tractID": "A", "nodeID": 1, "fa": 0.8},
+        {"subjectID": "3", "tractID": "B", "nodeID": 0, "fa": 0.9},
+        {"subjectID": "3", "tractID": "B", "nodeID": 1, "fa": 0.9},
+    ]
+    subs = pd.DataFrame(sub_dicts)
+    nodes = pd.DataFrame(node_dicts)
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        subs.to_csv(op.join(temp_dir, "subjects.csv"), index=False)
+        nodes.to_csv(op.join(temp_dir, "nodes.csv"), index=False)
+
+        tmp_dataset = afqi.AFQDataset(
+            fn_nodes=op.join(temp_dir, "nodes.csv"),
+            fn_subjects=op.join(temp_dir, "subjects.csv"),
+            target_cols=["site"],
+            dwi_metrics=["fa"],
+            index_col="subject_id",
+            label_encode_cols=["site"],
+        )
+
+        assert tmp_dataset.y.shape == (3,)
+        tmp_dataset.drop_target_na()
+        assert tmp_dataset.y.shape == (2,)
+
+        tmp_dataset = afqi.AFQDataset(
+            fn_nodes=op.join(temp_dir, "nodes.csv"),
+            fn_subjects=op.join(temp_dir, "subjects.csv"),
+            target_cols=["age", "site"],
+            dwi_metrics=["fa"],
+            index_col="subject_id",
+            label_encode_cols=["site"],
+        )
+
+        assert tmp_dataset.y.shape == (3, 2)
+        tmp_dataset.drop_target_na()
+        assert tmp_dataset.y.shape == (2, 2)
+
+
 def test_afqdataset_sub_prefix():
     sub_dicts = [
         {"subject_id": "1", "age": 0},
@@ -60,9 +114,6 @@ def test_afqdataset_sub_prefix():
     ]
     subs = pd.DataFrame(sub_dicts)
     nodes = pd.DataFrame(node_dicts)
-
-    import os.path as op
-    import tempfile
 
     with tempfile.TemporaryDirectory() as temp_dir:
         subs.to_csv(op.join(temp_dir, "subjects.csv"), index=False)
