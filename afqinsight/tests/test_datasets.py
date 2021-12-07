@@ -12,6 +12,7 @@ from afqinsight.datasets import (
     download_sarica,
     download_weston_havens,
     AFQDataset,
+    standardize_subject_id,
 )
 
 data_path = op.join(afqi.__path__[0], "data")
@@ -30,6 +31,55 @@ def test_bundles2channels():
 
     with pytest.raises(ValueError):
         bundles2channels(X0, n_nodes=1000, n_channels=7)
+
+
+def test_standardize_subject_id():
+    assert standardize_subject_id("sub-01") == "sub-01"
+    assert standardize_subject_id("01") == "sub-01"
+
+
+def test_afqdataset_sub_prefix():
+    sub_dicts = [
+        {"subject_id": "1", "age": 0},
+        {"subject_id": "2", "age": 1},
+        {"subject_id": "3", "age": 2},
+    ]
+    node_dicts = [
+        {"subjectID": "sub-1", "tractID": "A", "nodeID": 0, "fa": 0.1},
+        {"subjectID": "sub-1", "tractID": "A", "nodeID": 1, "fa": 0.2},
+        {"subjectID": "sub-1", "tractID": "B", "nodeID": 0, "fa": 0.3},
+        {"subjectID": "sub-1", "tractID": "B", "nodeID": 1, "fa": 0.3},
+        {"subjectID": "sub-2", "tractID": "A", "nodeID": 0, "fa": 0.4},
+        {"subjectID": "sub-2", "tractID": "A", "nodeID": 1, "fa": 0.5},
+        {"subjectID": "sub-2", "tractID": "B", "nodeID": 0, "fa": 0.6},
+        {"subjectID": "sub-2", "tractID": "B", "nodeID": 1, "fa": 0.6},
+        {"subjectID": "3", "tractID": "A", "nodeID": 0, "fa": 0.7},
+        {"subjectID": "3", "tractID": "A", "nodeID": 1, "fa": 0.8},
+        {"subjectID": "3", "tractID": "B", "nodeID": 0, "fa": 0.9},
+        {"subjectID": "3", "tractID": "B", "nodeID": 1, "fa": 0.9},
+    ]
+    subs = pd.DataFrame(sub_dicts)
+    nodes = pd.DataFrame(node_dicts)
+
+    import os.path as op
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        subs.to_csv(op.join(temp_dir, "subjects.csv"), index=False)
+        nodes.to_csv(op.join(temp_dir, "nodes.csv"), index=False)
+
+        tmp_dataset = afqi.AFQDataset(
+            fn_nodes=op.join(temp_dir, "nodes.csv"),
+            fn_subjects=op.join(temp_dir, "subjects.csv"),
+            target_cols=["age"],
+            dwi_metrics=["fa"],
+            index_col="subject_id",
+        )
+
+    assert set(tmp_dataset.subjects) == set([f"sub-{i}" for i in range(1, 4)])
+    assert tmp_dataset.X.shape == (3, 4)
+    assert tmp_dataset.y.shape == (3,)
+    assert np.isnan(tmp_dataset.y).sum() == 0
 
 
 @pytest.mark.parametrize("target_cols", [["class"], ["age", "class"]])
@@ -148,7 +198,8 @@ def test_AFQDataset(target_cols):
 
 
 @pytest.mark.parametrize("dwi_metrics", [["md", "fa"], None])
-def test_fetch(dwi_metrics):
+@pytest.mark.parametrize("enforce_sub_prefix", [True, False])
+def test_fetch(dwi_metrics, enforce_sub_prefix):
     sarica_dir = download_sarica()
 
     with pytest.raises(ValueError):
@@ -167,6 +218,7 @@ def test_fetch(dwi_metrics):
         dwi_metrics=dwi_metrics,
         target_cols=["class"],
         label_encode_cols=["class"],
+        enforce_sub_prefix=enforce_sub_prefix,
     )
 
     n_features = 16000 if dwi_metrics is None else 4000
@@ -259,6 +311,7 @@ def test_load_afq_data(dwi_metrics):
         target_cols=["test_class"],
         label_encode_cols=["test_class"],
         return_bundle_means=False,
+        enforce_sub_prefix=False,
     )
 
     nodes = pd.read_csv(op.join(test_data_path, "nodes.csv"))
@@ -285,6 +338,7 @@ def test_load_afq_data(dwi_metrics):
         target_cols=["test_class"],
         label_encode_cols=["test_class"],
         return_bundle_means=True,
+        enforce_sub_prefix=False,
     )
 
     means_ref = (

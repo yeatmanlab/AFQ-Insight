@@ -93,6 +93,22 @@ def bundles2channels(X, n_nodes, n_channels, channels_last=True):
     return output
 
 
+def standardize_subject_id(sub_id):
+    """Standardize subject ID to start with the prefix 'sub-'.
+
+    Parameters
+    ----------
+    sub_id : str
+        subject ID.
+
+    Returns
+    -------
+    str
+        Standardized subject IDs.
+    """
+    return sub_id if str(sub_id).startswith("sub-") else "sub-" + str(sub_id)
+
+
 def load_afq_data(
     fn_nodes="nodes.csv",
     fn_subjects="subjects.csv",
@@ -103,6 +119,7 @@ def load_afq_data(
     unsupervised=False,
     concat_subject_session=False,
     return_bundle_means=False,
+    enforce_sub_prefix=True,
 ):
     """Load AFQ data from CSV, transform it, return feature matrix and target.
 
@@ -154,6 +171,12 @@ def load_afq_data(
         If True, return diffusion metrics averaged along the length of each
         bundle.
 
+    enforce_sub_prefix : bool, default=True
+        If True, standardize subject IDs to start with the prefix "sub-".
+        This is useful, for example, if the subject IDs in the nodes.csv file
+        have the sub prefix but the subject IDs in the subjects.csv file do
+        not. Default is True in order to comform to the BIDS standard.
+
     Returns
     -------
     AFQData : namedtuple
@@ -188,10 +211,9 @@ def load_afq_data(
     --------
     transform.AFQDataFrameMapper
     """
-    fn_nodes = op.abspath(fn_nodes)
-    fn_subjects = op.abspath(fn_subjects)
-
-    nodes = pd.read_csv(fn_nodes)
+    nodes = pd.read_csv(
+        fn_nodes, converters={"subjectID": str, "nodeID": int, "tractID": str}
+    )
     unnamed_cols = [col for col in nodes.columns if "Unnamed:" in col]
     nodes.drop(unnamed_cols, axis="columns", inplace=True)
 
@@ -219,14 +241,19 @@ def load_afq_data(
         mapper = AFQDataFrameMapper(concat_subject_session=concat_subject_session)
 
     X = mapper.fit_transform(nodes)
-    subjects = mapper.subjects_
+    subjects = [
+        standardize_subject_id(sub_id) if enforce_sub_prefix else sub_id
+        for sub_id in mapper.subjects_
+    ]
     groups = mapper.groups_
     feature_names = mapper.feature_names_
 
     if return_bundle_means:
         group_names = feature_names
     else:
-        group_names = [tup[0:2] for tup in feature_names if tup[2] == 0]
+        group_names = [tup[0:2] for tup in feature_names]
+        # Now remove duplicates from group_names while preserving order
+        group_names = list(dict.fromkeys(group_names))
 
     if unsupervised:
         y = None
@@ -243,12 +270,19 @@ def load_afq_data(
 
         # Read using sep=None, engine="python" to allow for both csv and tsv
         targets = pd.read_csv(
-            fn_subjects, sep=None, engine="python", index_col=index_col
+            fn_subjects,
+            sep=None,
+            engine="python",
+            index_col=index_col,
+            converters={index_col: str},
         )
 
         # Drop unnamed columns
         unnamed_cols = [col for col in targets.columns if "Unnamed:" in col]
         targets.drop(unnamed_cols, axis="columns", inplace=True)
+
+        if enforce_sub_prefix:
+            targets.index = targets.index.map(standardize_subject_id)
 
         # Drop subjects that are not in the dwi feature matrix
         targets = pd.DataFrame(index=subjects).merge(
@@ -330,7 +364,6 @@ if HAS_TORCH:
             else:
                 return self.X[idx], self.y[idx]
 
-
 else:  # pragma: no cover
     AFQTorchDataset = TripWire(torch_msg)
 
@@ -382,6 +415,12 @@ class AFQDataset:
         IDs with the session IDs. This is useful when subjects have multiple
         sessions and you with to disambiguate between them.
 
+    enforce_sub_prefix : bool, default=True
+        If True, standardize subject IDs to start with the prefix "sub-".
+        This is useful, for example, if the subject IDs in the nodes.csv file
+        have the sub prefix but the subject IDs in the subjects.csv file do
+        not. Default is True in order to comform to the BIDS standard.
+
     Attributes
     ----------
     X : array-like of shape (n_samples, n_features)
@@ -424,6 +463,7 @@ class AFQDataset:
         index_col="subjectID",
         unsupervised=False,
         concat_subject_session=False,
+        enforce_sub_prefix=True,
     ):
         afq_data = load_afq_data(
             fn_nodes=fn_nodes,
@@ -434,6 +474,7 @@ class AFQDataset:
             index_col=index_col,
             unsupervised=unsupervised,
             concat_subject_session=concat_subject_session,
+            enforce_sub_prefix=enforce_sub_prefix,
         )
 
         self.X = afq_data.X
