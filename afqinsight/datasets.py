@@ -173,7 +173,7 @@ def load_afq_data(
 
     enforce_sub_prefix : bool, default=True
         If True, standardize subject IDs to start with the prefix "sub-".
-        This is useful, for example, if the subject IDs in the nodex.csv file
+        This is useful, for example, if the subject IDs in the nodes.csv file
         have the sub prefix but the subject IDs in the subjects.csv file do
         not. Default is True in order to comform to the BIDS standard.
 
@@ -418,7 +418,7 @@ class AFQDataset:
 
     enforce_sub_prefix : bool, default=True
         If True, standardize subject IDs to start with the prefix "sub-".
-        This is useful, for example, if the subject IDs in the nodex.csv file
+        This is useful, for example, if the subject IDs in the nodes.csv file
         have the sub prefix but the subject IDs in the subjects.csv file do
         not. Default is True in order to comform to the BIDS standard.
 
