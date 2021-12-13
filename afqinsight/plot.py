@@ -63,6 +63,7 @@ def plot_tract_profiles(
     subplot_positions=None,
     nrows=None,
     ncols=None,
+    legend_kwargs=None,
 ):
     """Plot profiles for each bundle and each metric.
 
@@ -123,6 +124,9 @@ def plot_tract_profiles(
 
     ncols : int, optional
         Number of subplot columns.
+
+    legend_kwargs : dict, optional
+        Keyword arguments to pass to the legend.
 
     Returns
     -------
@@ -271,13 +275,20 @@ def plot_tract_profiles(
                 for b in zip(_bins[:-1], _bins[1:])
             ]
         if group_by_name is not None:
-            leg = plt.figlegend(
-                handles,
-                labels,
+            figlegend_kwargs = dict(
                 facecolor="whitesmoke",
                 bbox_to_anchor=(0.5, 0.02),
                 loc="upper center",
                 ncol=6,
+            )
+
+            if legend_kwargs is not None:
+                figlegend_kwargs.update(legend_kwargs)
+
+            leg = plt.figlegend(
+                handles,
+                labels,
+                **figlegend_kwargs,
             )
 
             # set the linewidth of each legend object
