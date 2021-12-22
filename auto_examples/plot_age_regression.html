@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Predict age from white matter features &mdash; AFQ-Insight 0.3.1 documentation</title>
+  <title>Predict age from white matter features &mdash; AFQ-Insight 0.3.2 documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/afqinsight.css" type="text/css" />
       <link rel="stylesheet" href="../_static/sg_gallery.css" type="text/css" />
@@ -35,7 +35,7 @@
             <a href="../index.html" class="icon icon-home"> AFQ-Insight
           </a>
               <div class="version">
-                0.3.1
+                0.3.2
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
@@ -161,12 +161,12 @@ returns variables that we will use below in our analysis of the data.</p>
 
 <span class="c1"># afqdata is a namedtuple. You can access it&#39;s fields using dot notation or by</span>
 <span class="c1"># unpacking the tuple. To see all of the available fields use `afqdata._fields`</span>
-<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">X</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">afqdata</span><span class="o">.</span><span class="n">X</span></a>
-<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">y</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">afqdata</span><span class="o">.</span><span class="n">y</span></a>
-<a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">groups</span></a> <span class="o">=</span> <a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">afqdata</span><span class="o">.</span><span class="n">groups</span></a>
-<a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">feature_names</span></a> <span class="o">=</span> <a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">afqdata</span><span class="o">.</span><span class="n">feature_names</span></a>
-<a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">group_names</span></a> <span class="o">=</span> <a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">afqdata</span><span class="o">.</span><span class="n">group_names</span></a>
-<a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">subjects</span></a> <span class="o">=</span> <a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">afqdata</span><span class="o">.</span><span class="n">subjects</span></a>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">X</span></a> <span class="o">=</span> <span class="n">afqdata</span><span class="o">.</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">X</span></a>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">y</span></a> <span class="o">=</span> <span class="n">afqdata</span><span class="o">.</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">y</span></a>
+<a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">groups</span></a> <span class="o">=</span> <span class="n">afqdata</span><span class="o">.</span><a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">groups</span></a>
+<a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">feature_names</span></a> <span class="o">=</span> <span class="n">afqdata</span><span class="o">.</span><a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">feature_names</span></a>
+<a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">group_names</span></a> <span class="o">=</span> <span class="n">afqdata</span><span class="o">.</span><a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">group_names</span></a>
+<a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">subjects</span></a> <span class="o">=</span> <span class="n">afqdata</span><span class="o">.</span><a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">subjects</span></a>
 </pre></div>
 </div>
 </section>
@@ -222,68 +222,68 @@ returns variables that we will use below in our analysis of the data.</p>
 </pre></div>
 </div>
 <img src="../_images/sphx_glr_plot_age_regression_001.png" srcset="../_images/sphx_glr_plot_age_regression_001.png" alt="Group Principal Regression Coefficients (MD only)" class = "sphx-glr-single-img"/><p class="sphx-glr-script-out">Out:</p>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>/opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/sklearn/model_selection/_validation.py:548: FitFailedWarning: Estimator fit failed. The score on this train-test partition for these parameters will be set to nan. Details:
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>/opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/sklearn/model_selection/_validation.py:552: FitFailedWarning: Estimator fit failed. The score on this train-test partition for these parameters will be set to nan. Details:
 Traceback (most recent call last):
-  File &quot;/opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/sklearn/model_selection/_validation.py&quot;, line 531, in _fit_and_score
+  File &quot;/opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/sklearn/model_selection/_validation.py&quot;, line 531, in _fit_and_score
     estimator.fit(X_train, y_train, **fit_params)
-  File &quot;/opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/sklearn/pipeline.py&quot;, line 335, in fit
+  File &quot;/opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/sklearn/pipeline.py&quot;, line 335, in fit
     self._final_estimator.fit(Xt, y, **fit_params_last_step)
-  File &quot;/opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/groupyr/sgl.py&quot;, line 1200, in fit
+  File &quot;/opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/groupyr/sgl.py&quot;, line 1200, in fit
     param_alpha = self.bayes_optimizer_.cv_results_[&quot;param__alpha&quot;]
 KeyError: &#39;param__alpha&#39;
 
-  warnings.warn(&quot;Estimator fit failed. The score on this train-test&quot;
-/opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/sklearn/model_selection/_validation.py:548: FitFailedWarning: Estimator fit failed. The score on this train-test partition for these parameters will be set to nan. Details:
+  FitFailedWarning)
+/opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/sklearn/model_selection/_validation.py:552: FitFailedWarning: Estimator fit failed. The score on this train-test partition for these parameters will be set to nan. Details:
 Traceback (most recent call last):
-  File &quot;/opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/sklearn/model_selection/_validation.py&quot;, line 531, in _fit_and_score
+  File &quot;/opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/sklearn/model_selection/_validation.py&quot;, line 531, in _fit_and_score
     estimator.fit(X_train, y_train, **fit_params)
-  File &quot;/opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/sklearn/pipeline.py&quot;, line 335, in fit
+  File &quot;/opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/sklearn/pipeline.py&quot;, line 335, in fit
     self._final_estimator.fit(Xt, y, **fit_params_last_step)
-  File &quot;/opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/groupyr/sgl.py&quot;, line 1200, in fit
+  File &quot;/opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/groupyr/sgl.py&quot;, line 1200, in fit
     param_alpha = self.bayes_optimizer_.cv_results_[&quot;param__alpha&quot;]
 KeyError: &#39;param__alpha&#39;
 
-  warnings.warn(&quot;Estimator fit failed. The score on this train-test&quot;
-/opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/sklearn/model_selection/_validation.py:548: FitFailedWarning: Estimator fit failed. The score on this train-test partition for these parameters will be set to nan. Details:
+  FitFailedWarning)
+/opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/sklearn/model_selection/_validation.py:552: FitFailedWarning: Estimator fit failed. The score on this train-test partition for these parameters will be set to nan. Details:
 Traceback (most recent call last):
-  File &quot;/opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/sklearn/model_selection/_validation.py&quot;, line 531, in _fit_and_score
+  File &quot;/opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/sklearn/model_selection/_validation.py&quot;, line 531, in _fit_and_score
     estimator.fit(X_train, y_train, **fit_params)
-  File &quot;/opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/sklearn/pipeline.py&quot;, line 335, in fit
+  File &quot;/opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/sklearn/pipeline.py&quot;, line 335, in fit
     self._final_estimator.fit(Xt, y, **fit_params_last_step)
-  File &quot;/opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/groupyr/sgl.py&quot;, line 1200, in fit
+  File &quot;/opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/groupyr/sgl.py&quot;, line 1200, in fit
     param_alpha = self.bayes_optimizer_.cv_results_[&quot;param__alpha&quot;]
 KeyError: &#39;param__alpha&#39;
 
-  warnings.warn(&quot;Estimator fit failed. The score on this train-test&quot;
-/opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/sklearn/model_selection/_validation.py:548: FitFailedWarning: Estimator fit failed. The score on this train-test partition for these parameters will be set to nan. Details:
+  FitFailedWarning)
+/opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/sklearn/model_selection/_validation.py:552: FitFailedWarning: Estimator fit failed. The score on this train-test partition for these parameters will be set to nan. Details:
 Traceback (most recent call last):
-  File &quot;/opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/sklearn/model_selection/_validation.py&quot;, line 531, in _fit_and_score
+  File &quot;/opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/sklearn/model_selection/_validation.py&quot;, line 531, in _fit_and_score
     estimator.fit(X_train, y_train, **fit_params)
-  File &quot;/opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/sklearn/pipeline.py&quot;, line 335, in fit
+  File &quot;/opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/sklearn/pipeline.py&quot;, line 335, in fit
     self._final_estimator.fit(Xt, y, **fit_params_last_step)
-  File &quot;/opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/groupyr/sgl.py&quot;, line 1200, in fit
+  File &quot;/opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/groupyr/sgl.py&quot;, line 1200, in fit
     param_alpha = self.bayes_optimizer_.cv_results_[&quot;param__alpha&quot;]
 KeyError: &#39;param__alpha&#39;
 
-  warnings.warn(&quot;Estimator fit failed. The score on this train-test&quot;
-/opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/sklearn/model_selection/_validation.py:548: FitFailedWarning: Estimator fit failed. The score on this train-test partition for these parameters will be set to nan. Details:
+  FitFailedWarning)
+/opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/sklearn/model_selection/_validation.py:552: FitFailedWarning: Estimator fit failed. The score on this train-test partition for these parameters will be set to nan. Details:
 Traceback (most recent call last):
-  File &quot;/opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/sklearn/model_selection/_validation.py&quot;, line 531, in _fit_and_score
+  File &quot;/opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/sklearn/model_selection/_validation.py&quot;, line 531, in _fit_and_score
     estimator.fit(X_train, y_train, **fit_params)
-  File &quot;/opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/sklearn/pipeline.py&quot;, line 335, in fit
+  File &quot;/opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/sklearn/pipeline.py&quot;, line 335, in fit
     self._final_estimator.fit(Xt, y, **fit_params_last_step)
-  File &quot;/opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/groupyr/sgl.py&quot;, line 1200, in fit
+  File &quot;/opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/groupyr/sgl.py&quot;, line 1200, in fit
     param_alpha = self.bayes_optimizer_.cv_results_[&quot;param__alpha&quot;]
 KeyError: &#39;param__alpha&#39;
 
-  warnings.warn(&quot;Estimator fit failed. The score on this train-test&quot;
+  FitFailedWarning)
 Mean train score:   nan
 Mean test score:    nan
-Mean fit time:    18.66s
+Mean fit time:    15.86s
 Mean score time:   0.00s
 </pre></div>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> ( 1 minutes  34.902 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> ( 1 minutes  20.883 seconds)</p>
 <div class="sphx-glr-footer class sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-age-regression-py">
 <div class="sphx-glr-download sphx-glr-download-python docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/85ca7ddf2812ce2eb4eb341a2045be18/plot_age_regression.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_age_regression.py</span></code></a></p>

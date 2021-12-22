@@ -209,64 +209,64 @@ Create an analysis pipeline
 
  .. code-block:: none
 
-    /opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/sklearn/model_selection/_validation.py:548: FitFailedWarning: Estimator fit failed. The score on this train-test partition for these parameters will be set to nan. Details: 
+    /opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/sklearn/model_selection/_validation.py:552: FitFailedWarning: Estimator fit failed. The score on this train-test partition for these parameters will be set to nan. Details: 
     Traceback (most recent call last):
-      File "/opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/sklearn/model_selection/_validation.py", line 531, in _fit_and_score
+      File "/opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/sklearn/model_selection/_validation.py", line 531, in _fit_and_score
         estimator.fit(X_train, y_train, **fit_params)
-      File "/opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/sklearn/pipeline.py", line 335, in fit
+      File "/opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/sklearn/pipeline.py", line 335, in fit
         self._final_estimator.fit(Xt, y, **fit_params_last_step)
-      File "/opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/groupyr/sgl.py", line 1200, in fit
+      File "/opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/groupyr/sgl.py", line 1200, in fit
         param_alpha = self.bayes_optimizer_.cv_results_["param__alpha"]
     KeyError: 'param__alpha'
 
-      warnings.warn("Estimator fit failed. The score on this train-test"
-    /opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/sklearn/model_selection/_validation.py:548: FitFailedWarning: Estimator fit failed. The score on this train-test partition for these parameters will be set to nan. Details: 
+      FitFailedWarning)
+    /opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/sklearn/model_selection/_validation.py:552: FitFailedWarning: Estimator fit failed. The score on this train-test partition for these parameters will be set to nan. Details: 
     Traceback (most recent call last):
-      File "/opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/sklearn/model_selection/_validation.py", line 531, in _fit_and_score
+      File "/opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/sklearn/model_selection/_validation.py", line 531, in _fit_and_score
         estimator.fit(X_train, y_train, **fit_params)
-      File "/opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/sklearn/pipeline.py", line 335, in fit
+      File "/opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/sklearn/pipeline.py", line 335, in fit
         self._final_estimator.fit(Xt, y, **fit_params_last_step)
-      File "/opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/groupyr/sgl.py", line 1200, in fit
+      File "/opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/groupyr/sgl.py", line 1200, in fit
         param_alpha = self.bayes_optimizer_.cv_results_["param__alpha"]
     KeyError: 'param__alpha'
 
-      warnings.warn("Estimator fit failed. The score on this train-test"
-    /opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/sklearn/model_selection/_validation.py:548: FitFailedWarning: Estimator fit failed. The score on this train-test partition for these parameters will be set to nan. Details: 
+      FitFailedWarning)
+    /opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/sklearn/model_selection/_validation.py:552: FitFailedWarning: Estimator fit failed. The score on this train-test partition for these parameters will be set to nan. Details: 
     Traceback (most recent call last):
-      File "/opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/sklearn/model_selection/_validation.py", line 531, in _fit_and_score
+      File "/opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/sklearn/model_selection/_validation.py", line 531, in _fit_and_score
         estimator.fit(X_train, y_train, **fit_params)
-      File "/opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/sklearn/pipeline.py", line 335, in fit
+      File "/opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/sklearn/pipeline.py", line 335, in fit
         self._final_estimator.fit(Xt, y, **fit_params_last_step)
-      File "/opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/groupyr/sgl.py", line 1200, in fit
+      File "/opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/groupyr/sgl.py", line 1200, in fit
         param_alpha = self.bayes_optimizer_.cv_results_["param__alpha"]
     KeyError: 'param__alpha'
 
-      warnings.warn("Estimator fit failed. The score on this train-test"
-    /opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/sklearn/model_selection/_validation.py:548: FitFailedWarning: Estimator fit failed. The score on this train-test partition for these parameters will be set to nan. Details: 
+      FitFailedWarning)
+    /opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/sklearn/model_selection/_validation.py:552: FitFailedWarning: Estimator fit failed. The score on this train-test partition for these parameters will be set to nan. Details: 
     Traceback (most recent call last):
-      File "/opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/sklearn/model_selection/_validation.py", line 531, in _fit_and_score
+      File "/opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/sklearn/model_selection/_validation.py", line 531, in _fit_and_score
         estimator.fit(X_train, y_train, **fit_params)
-      File "/opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/sklearn/pipeline.py", line 335, in fit
+      File "/opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/sklearn/pipeline.py", line 335, in fit
         self._final_estimator.fit(Xt, y, **fit_params_last_step)
-      File "/opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/groupyr/sgl.py", line 1200, in fit
+      File "/opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/groupyr/sgl.py", line 1200, in fit
         param_alpha = self.bayes_optimizer_.cv_results_["param__alpha"]
     KeyError: 'param__alpha'
 
-      warnings.warn("Estimator fit failed. The score on this train-test"
-    /opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/sklearn/model_selection/_validation.py:548: FitFailedWarning: Estimator fit failed. The score on this train-test partition for these parameters will be set to nan. Details: 
+      FitFailedWarning)
+    /opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/sklearn/model_selection/_validation.py:552: FitFailedWarning: Estimator fit failed. The score on this train-test partition for these parameters will be set to nan. Details: 
     Traceback (most recent call last):
-      File "/opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/sklearn/model_selection/_validation.py", line 531, in _fit_and_score
+      File "/opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/sklearn/model_selection/_validation.py", line 531, in _fit_and_score
         estimator.fit(X_train, y_train, **fit_params)
-      File "/opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/sklearn/pipeline.py", line 335, in fit
+      File "/opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/sklearn/pipeline.py", line 335, in fit
         self._final_estimator.fit(Xt, y, **fit_params_last_step)
-      File "/opt/hostedtoolcache/Python/3.9.9/x64/lib/python3.9/site-packages/groupyr/sgl.py", line 1200, in fit
+      File "/opt/hostedtoolcache/Python/3.7.12/x64/lib/python3.7/site-packages/groupyr/sgl.py", line 1200, in fit
         param_alpha = self.bayes_optimizer_.cv_results_["param__alpha"]
     KeyError: 'param__alpha'
 
-      warnings.warn("Estimator fit failed. The score on this train-test"
+      FitFailedWarning)
     Mean train score:   nan
     Mean test score:    nan
-    Mean fit time:    18.66s
+    Mean fit time:    15.86s
     Mean score time:   0.00s
 
 
@@ -275,7 +275,7 @@ Create an analysis pipeline
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 1 minutes  34.902 seconds)
+   **Total running time of the script:** ( 1 minutes  20.883 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_age_regression.py:
