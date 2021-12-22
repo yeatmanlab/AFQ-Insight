@@ -360,9 +360,9 @@ if HAS_TORCH:
 
         def __getitem__(self, idx):
             if self.unsupervised:
-                return self.X[idx]
+                return self.X[idx].float()
             else:
-                return self.X[idx], self.y[idx]
+                return self.X[idx].float(), self.y[idx].float()
 
 else:  # pragma: no cover
     AFQTorchDataset = TripWire(torch_msg)
