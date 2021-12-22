@@ -64,6 +64,8 @@ def plot_tract_profiles(
     nrows=None,
     ncols=None,
     legend_kwargs=None,
+    figsize=None,
+    fig_tight_layout_kws=None,
 ):
     """Plot profiles for each bundle and each metric.
 
@@ -127,6 +129,12 @@ def plot_tract_profiles(
 
     legend_kwargs : dict, optional
         Keyword arguments to pass to the legend.
+
+    figsize : tuple, optional
+        Figure size for each figure.
+
+    fig_tight_layout_kws : dict, optional
+        Keyword arguments to pass to fig.tight_layout.
 
     Returns
     -------
@@ -217,7 +225,7 @@ def plot_tract_profiles(
 
         ncols = ncols if ncols is not None else 4
 
-        fig, axes = plt.subplots(nrows=nrows, ncols=ncols, sharex=True)
+        fig, axes = plt.subplots(nrows=nrows, ncols=ncols, sharex=True, figsize=figsize)
 
         for tid, df_stat in tqdm(tract_stats.items()):
             bundle_id = BUNDLE_MAT_2_PYTHON.get(tid, tid)
@@ -295,7 +303,10 @@ def plot_tract_profiles(
             for legobj in leg.legendHandles:
                 _ = legobj.set_linewidth(3.0)
 
-        fig.tight_layout(h_pad=0.5, w_pad=-0.5)
+        if fig_tight_layout_kws is None:
+            fig_tight_layout_kws = dict(h_pad=0.5, w_pad=-0.5)
+
+        fig.tight_layout(**fig_tight_layout_kws)
 
         figs[metric] = fig
 
