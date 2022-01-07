@@ -610,7 +610,9 @@ class AFQDataset:
             feature_names=self.feature_names,
             target_cols=self.target_cols,
             group_names=self.group_names,
-            subjects=np.array(self.subjects)[indices].tolist(),
+            subjects=np.array(self.subjects)[indices].tolist()
+            if self.subjects is not None
+            else None,
             sessions=np.array(self.sessions)[indices].tolist()
             if self.sessions is not None
             else None,
