@@ -440,32 +440,32 @@ class AFQDataset:
     y : array-like of shape (n_samples,) or (n_samples, n_targets), optional
         Target values. This will be None if ``unsupervised`` is True
 
-    groups : list of numpy.ndarray
+    groups : list of numpy.ndarray, optional
         The feature indices for each feature group. These are typically used
         to keep group collections of "nodes" into white matter bundles.
 
-    feature_names : list of tuples
+    feature_names : list of tuples, optional
         The multi-indexed columns of X. i.e. the names of the features.
 
-    group_names : list of tuples
+    group_names : list of tuples, optional
         The multi-indexed groups of X. i.e. the names of the feature groups.
 
-    target_cols : list of strings
+    target_cols : list of strings, optional
         List of column names for the target variables in `y`.
 
-    subjects : list
+    subjects : list, optional
         Subject IDs
 
-    sessions : list
+    sessions : list, optional
         Session IDs.
 
-    classes : dict
+    classes : dict, optional
         Class labels for each label encoded column specified in ``y``.
     """
 
     def __init__(
         self,
-        X=None,
+        X,
         y=None,
         groups=None,
         feature_names=None,
@@ -481,6 +481,8 @@ class AFQDataset:
         self.feature_names = feature_names
         self.group_names = group_names
         self.target_cols = target_cols
+        if subjects is None:
+            subjects = [f"sub-{i}" for i in range(len(X))]
         self.subjects = subjects
         self.sessions = sessions
         self.classes = classes
@@ -610,9 +612,7 @@ class AFQDataset:
             feature_names=self.feature_names,
             target_cols=self.target_cols,
             group_names=self.group_names,
-            subjects=np.array(self.subjects)[indices].tolist()
-            if self.subjects is not None
-            else None,
+            subjects=np.array(self.subjects)[indices].tolist(),
             sessions=np.array(self.sessions)[indices].tolist()
             if self.sessions is not None
             else None,
