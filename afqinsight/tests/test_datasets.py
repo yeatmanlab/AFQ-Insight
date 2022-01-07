@@ -65,7 +65,7 @@ def test_afqdataset_label_encode():
         subs.to_csv(op.join(temp_dir, "subjects.csv"), index=False)
         nodes.to_csv(op.join(temp_dir, "nodes.csv"), index=False)
 
-        tmp_dataset = afqi.AFQDataset(
+        tmp_dataset = afqi.AFQDataset.from_files(
             fn_nodes=op.join(temp_dir, "nodes.csv"),
             fn_subjects=op.join(temp_dir, "subjects.csv"),
             target_cols=["site"],
@@ -78,7 +78,7 @@ def test_afqdataset_label_encode():
         tmp_dataset.drop_target_na()
         assert tmp_dataset.y.shape == (2,)
 
-        tmp_dataset = afqi.AFQDataset(
+        tmp_dataset = afqi.AFQDataset.from_files(
             fn_nodes=op.join(temp_dir, "nodes.csv"),
             fn_subjects=op.join(temp_dir, "subjects.csv"),
             target_cols=["age", "site"],
@@ -119,7 +119,7 @@ def test_afqdataset_sub_prefix():
         subs.to_csv(op.join(temp_dir, "subjects.csv"), index=False)
         nodes.to_csv(op.join(temp_dir, "nodes.csv"), index=False)
 
-        tmp_dataset = afqi.AFQDataset(
+        tmp_dataset = afqi.AFQDataset.from_files(
             fn_nodes=op.join(temp_dir, "nodes.csv"),
             fn_subjects=op.join(temp_dir, "subjects.csv"),
             target_cols=["age"],
@@ -136,7 +136,7 @@ def test_afqdataset_sub_prefix():
 @pytest.mark.parametrize("target_cols", [["class"], ["age", "class"]])
 def test_AFQDataset(target_cols):
     sarica_dir = download_sarica()
-    afq_data = AFQDataset(
+    afq_data = AFQDataset.from_files(
         fn_nodes=op.join(sarica_dir, "nodes.csv"),
         fn_subjects=op.join(sarica_dir, "subjects.csv"),
         dwi_metrics=["md", "fa"],
@@ -215,7 +215,7 @@ def test_AFQDataset(target_cols):
 
     # Do it all again for an unsupervised dataset
 
-    afq_data = AFQDataset(
+    afq_data = AFQDataset.from_files(
         fn_nodes=op.join(sarica_dir, "nodes.csv"),
         fn_subjects=op.join(sarica_dir, "subjects.csv"),
         dwi_metrics=["md", "fa"],
