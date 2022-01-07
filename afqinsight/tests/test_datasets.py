@@ -133,6 +133,15 @@ def test_afqdataset_sub_prefix():
     assert np.isnan(tmp_dataset.y).sum() == 0
 
 
+def test_AFQDataset_shape_len_index():
+    dataset = AFQDataset(X=np.random.rand(10, 4), y=np.random.rand(10))
+    assert len(dataset) == 10
+    assert dataset.shape == ((10, 4), (10,))
+    assert len(dataset[:2]) == 2
+    assert isinstance(dataset[:2], AFQDataset)
+    assert repr(dataset) == "AFQDataset(n_samples=10, n_features=4, targets=None)"
+
+
 @pytest.mark.parametrize("target_cols", [["class"], ["age", "class"]])
 def test_AFQDataset(target_cols):
     sarica_dir = download_sarica()
