@@ -141,6 +141,29 @@ def test_AFQDataset_shape_len_index():
     assert isinstance(dataset[:2], AFQDataset)
     assert repr(dataset) == "AFQDataset(n_samples=10, n_features=4, targets=None)"
 
+    dataset = AFQDataset(X=np.random.rand(10, 4))
+    assert len(dataset) == 10
+    assert dataset.shape == (10, 4)
+    assert len(dataset[:2]) == 2
+    assert isinstance(dataset[:2], AFQDataset)
+    assert repr(dataset) == "AFQDataset(n_samples=10, n_features=4, targets=None)"
+
+
+def test_drop_target_na():
+    dataset = AFQDataset(X=np.random.rand(10, 4), y=np.random.rand(10))
+    dataset.y[:5] = np.nan
+    dataset.drop_target_na()
+    assert len(dataset) == 5
+
+    dataset = AFQDataset(
+        X=np.random.rand(10, 4),
+        y=np.array([0, 0, 0, 1, 1, 1, 2, 2, 2, 3]),
+        target_cols=["class"],
+        classes={"class": np.array(["A", "B", "NaN", "C"], dtype=object)},
+    )
+    dataset.drop_target_na()
+    assert len(dataset) == 7
+
 
 @pytest.mark.parametrize("target_cols", [["class"], ["age", "class"]])
 def test_AFQDataset(target_cols):
