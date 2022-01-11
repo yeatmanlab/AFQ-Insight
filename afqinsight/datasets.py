@@ -594,8 +594,7 @@ class AFQDataset:
         if self.target_cols is not None:
             repr_params += [f"targets={self.target_cols}"]
 
-        repr = ", ".join(repr_params)
-        return f"AFQDataset({repr})"
+        return f"AFQDataset({', '.join(repr_params)})"
 
     def __len__(self):
         """Return the number of samples in the dataset."""
