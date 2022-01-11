@@ -379,11 +379,11 @@ class AFQDataset:
 
     >>> import numpy as np
     >>> AFQDataset(X=np.random.rand(50, 1000), y=np.random.rand(50))
-    AFQDataset(n_samples=50, n_features=1000, targets=None)
+    AFQDataset(n_samples=50, n_features=1000, n_targets=1)
 
     You can keep track of the names of the target variables with the `target_cols` parameter.
     >>> AFQDataset(X=np.random.rand(50, 1000), y=np.random.rand(50), target_cols=["age"])
-    AFQDataset(n_samples=50, n_features=1000, targets=['age'])
+    AFQDataset(n_samples=50, n_features=1000, n_targets=1, targets=['age'])
 
     Source Datasets:
 
@@ -400,12 +400,12 @@ class AFQDataset:
     ...     label_encode_cols=["class"],
     ... )
     >>> dataset
-    AFQDataset(n_samples=48, n_features=4000, targets=['class'])
+    AFQDataset(n_samples=48, n_features=4000, n_targets=1, targets=['class'])
 
     AFQDatasets are indexable and can be sliced.
 
     >>> dataset[0:10]
-    AFQDataset(n_samples=10, n_features=4000, targets=['class'])
+    AFQDataset(n_samples=10, n_features=4000, n_targets=1, targets=['class'])
 
     You can query the length of the dataset as well as the feature and target
     shapes.
@@ -421,16 +421,16 @@ class AFQDataset:
     >>> from sklearn.model_selection import train_test_split
     >>> train_data, test_data = train_test_split(dataset, test_size=0.3, stratify=dataset.y)
     >>> train_data
-    AFQDataset(n_samples=33, n_features=4000, targets=['class'])
+    AFQDataset(n_samples=33, n_features=4000, n_targets=1, targets=['class'])
     >>> test_data
-    AFQDataset(n_samples=15, n_features=4000, targets=['class'])
+    AFQDataset(n_samples=15, n_features=4000, n_targets=1, targets=['class'])
 
     You can drop samples from the dataset that have null target values using the
     `drop_target_na` method.
     >>> dataset.y[:5] = np.nan
     >>> dataset.drop_target_na()
     >>> dataset
-    AFQDataset(n_samples=43, n_features=4000, targets=['class'])
+    AFQDataset(n_samples=43, n_features=4000, n_targets=1, targets=['class'])
 
     Parameters
     ----------
@@ -571,13 +571,9 @@ class AFQDataset:
             enforce_sub_prefix=enforce_sub_prefix,
         )
 
-        y = afq_data.y
-        if afq_data.y is not None:
-            y = afq_data.y.astype(float)
-
         return AFQDataset(
             X=afq_data.X,
-            y=y,
+            y=afq_data.y,
             groups=afq_data.groups,
             feature_names=afq_data.feature_names,
             target_cols=target_cols,
@@ -590,13 +586,15 @@ class AFQDataset:
     def __repr__(self):
         """Return a string representation of the dataset."""
         n_samples, n_features = self.X.shape
-        repr = ", ".join(
-            [
-                f"n_samples={n_samples}",
-                f"n_features={n_features}",
-                f"targets={self.target_cols}",
-            ]
-        )
+        repr_params = [f"n_samples={n_samples}", f"n_features={n_features}"]
+
+        if self.y is not None:
+            n_targets = self.y.shape[1] or 1
+            repr_params += [f"n_targets={n_targets}"]
+        if self.target_cols is not None:
+            repr_params += [f"targets={self.target_cols}"]
+
+        repr = ", ".join(repr_params)
         return f"AFQDataset({repr})"
 
     def __len__(self):

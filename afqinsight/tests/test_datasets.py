@@ -134,19 +134,31 @@ def test_afqdataset_sub_prefix():
 
 
 def test_AFQDataset_shape_len_index():
+    dataset = AFQDataset(
+        X=np.random.rand(10, 4), y=np.random.rand(10), target_cols=["class"]
+    )
+    assert len(dataset) == 10
+    assert dataset.shape == ((10, 4), (10,))
+    assert len(dataset[:2]) == 2
+    assert isinstance(dataset[:2], AFQDataset)
+    assert (
+        repr(dataset)
+        == "AFQDataset(n_samples=10, n_features=4, n_targets=1, targets=['class'])"
+    )
+
     dataset = AFQDataset(X=np.random.rand(10, 4), y=np.random.rand(10))
     assert len(dataset) == 10
     assert dataset.shape == ((10, 4), (10,))
     assert len(dataset[:2]) == 2
     assert isinstance(dataset[:2], AFQDataset)
-    assert repr(dataset) == "AFQDataset(n_samples=10, n_features=4, targets=None)"
+    assert repr(dataset) == "AFQDataset(n_samples=10, n_features=4, n_targets=1)"
 
     dataset = AFQDataset(X=np.random.rand(10, 4))
     assert len(dataset) == 10
     assert dataset.shape == (10, 4)
     assert len(dataset[:2]) == 2
     assert isinstance(dataset[:2], AFQDataset)
-    assert repr(dataset) == "AFQDataset(n_samples=10, n_features=4, targets=None)"
+    assert repr(dataset) == "AFQDataset(n_samples=10, n_features=4)"
 
 
 def test_drop_target_na():
