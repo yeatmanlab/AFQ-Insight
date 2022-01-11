@@ -427,6 +427,7 @@ class AFQDataset:
 
     You can drop samples from the dataset that have null target values using the
     `drop_target_na` method.
+    >>> dataset.y = dataset.y.astype(float)
     >>> dataset.y[:5] = np.nan
     >>> dataset.drop_target_na()
     >>> dataset

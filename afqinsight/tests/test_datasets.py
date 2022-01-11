@@ -247,6 +247,7 @@ def test_AFQDataset(target_cols):
     assert np.allclose(tf_dataset[0][0], afq_data.X[0], equal_nan=True)  # nosec
 
     # Test the drop_target_na method
+    afq_data.y = afq_data.y.astype(float)
     if len(target_cols) == 2:
         afq_data.y[0, 0] = np.nan
         y_shape = (47, 2)
