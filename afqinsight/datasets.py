@@ -589,7 +589,10 @@ class AFQDataset:
         repr_params = [f"n_samples={n_samples}", f"n_features={n_features}"]
 
         if self.y is not None:
-            n_targets = self.y.shape[1] or 1
+            try:
+                n_targets = self.y.shape[1]
+            except IndexError:
+                n_targets = 1
             repr_params += [f"n_targets={n_targets}"]
         if self.target_cols is not None:
             repr_params += [f"targets={self.target_cols}"]
