@@ -369,59 +369,71 @@ else:  # pragma: no cover
 
 
 class AFQDataset:
-    """Store and manipulate AFQ data loaded from CSV.
+    """Represent AFQ features and targets.
 
-    This class expects a diffusion metric csv file (specified by ``fn_nodes``)
-    and, optionally, a phenotypic data file (specified by ``fn_subjects``). The
-    nodes csv file must be a long format dataframe with the following columns:
-    "subjectID," "nodeID," "tractID," an optional "sessionID". All other columns
-    are assumed to be diffusion metric columns, which can be optionally subset
-    using the ``dwi_metrics`` parameter.
+    The `AFQDataset` class represents tractometry features and, optionally,
+    phenotypic targets.
 
-    For supervised learning problems (with parameter ``unsupervised=False``)
-    this function will also load phenotypic targets from a subjects csv/tsv
-    file. This function will load the subject data, drop subjects that are
-    not found in the dwi feature matrix, and optionally label encode
-    categorical values.
+    The simplest way to create a new AFQDataset is to pass in the tractometric
+    features and phenotypic targets explicitly.
+
+    >>> import numpy as np
+    >>> AFQDataset(X=np.random.rand(50, 1000), y=np.random.rand(50))
+    AFQDataset(n_samples=50, n_features=1000, n_targets=1)
+
+    You can keep track of the names of the target variables with the `target_cols` parameter.
+    >>> AFQDataset(X=np.random.rand(50, 1000), y=np.random.rand(50), target_cols=["age"])
+    AFQDataset(n_samples=50, n_features=1000, n_targets=1, targets=['age'])
+
+    Source Datasets:
+
+    The most common way to create an AFQDataset is to load data from a set of
+    csv files that conform to the AFQ data format. For example,
+
+    >>> import os.path as op
+    >>> sarica_dir = download_sarica(verbose=False)
+    >>> dataset = AFQDataset.from_files(
+    ...     fn_nodes=op.join(sarica_dir, "nodes.csv"),
+    ...     fn_subjects=op.join(sarica_dir, "subjects.csv"),
+    ...     dwi_metrics=["md", "fa"],
+    ...     target_cols=["class"],
+    ...     label_encode_cols=["class"],
+    ... )
+    >>> dataset
+    AFQDataset(n_samples=48, n_features=4000, n_targets=1, targets=['class'])
+
+    AFQDatasets are indexable and can be sliced.
+
+    >>> dataset[0:10]
+    AFQDataset(n_samples=10, n_features=4000, n_targets=1, targets=['class'])
+
+    You can query the length of the dataset as well as the feature and target
+    shapes.
+
+    >>> len(dataset)
+    48
+    >>> dataset.shape
+    ((48, 4000), (48,))
+
+    Datasets can be used as expected in scikit-learn's model selection
+    functions. For example
+
+    >>> from sklearn.model_selection import train_test_split
+    >>> train_data, test_data = train_test_split(dataset, test_size=0.3, stratify=dataset.y)
+    >>> train_data
+    AFQDataset(n_samples=33, n_features=4000, n_targets=1, targets=['class'])
+    >>> test_data
+    AFQDataset(n_samples=15, n_features=4000, n_targets=1, targets=['class'])
+
+    You can drop samples from the dataset that have null target values using the
+    `drop_target_na` method.
+    >>> dataset.y = dataset.y.astype(float)
+    >>> dataset.y[:5] = np.nan
+    >>> dataset.drop_target_na()
+    >>> dataset
+    AFQDataset(n_samples=43, n_features=4000, n_targets=1, targets=['class'])
 
     Parameters
-    ----------
-    fn_nodes : str, default='nodes.csv'
-        Filename for the nodes csv file.
-
-    fn_subjects : str, default='subjects.csv'
-        Filename for the subjects csv file.
-
-    dwi_metrics : list of strings, optional
-        List of diffusion metrics to extract from nodes csv.
-        e.g. ["dki_md", "dki_fa"]
-
-    target_cols : list of strings, optional
-        List of column names in subjects csv file to use as target variables
-
-    label_encode_cols : list of strings, subset of target_cols
-        Must be a subset of target_cols. These columns will be encoded using
-        :class:`sklearn:sklearn.preprocessing.LabelEncoder`.
-
-    index_col : str, default='subjectID'
-        The name of column in the subject csv file to use as the index. This
-        should contain subject IDs.
-
-    unsupervised : bool, default=False
-        If True, do not load target data from the ``fn_subjects`` file.
-
-    concat_subject_session : bool, default=False
-        If True, create new subject IDs by concatenating the existing subject
-        IDs with the session IDs. This is useful when subjects have multiple
-        sessions and you with to disambiguate between them.
-
-    enforce_sub_prefix : bool, default=True
-        If True, standardize subject IDs to start with the prefix "sub-".
-        This is useful, for example, if the subject IDs in the nodes.csv file
-        have the sub prefix but the subject IDs in the subjects.csv file do
-        not. Default is True in order to comform to the BIDS standard.
-
-    Attributes
     ----------
     X : array-like of shape (n_samples, n_features)
         The feature samples.
@@ -429,32 +441,55 @@ class AFQDataset:
     y : array-like of shape (n_samples,) or (n_samples, n_targets), optional
         Target values. This will be None if ``unsupervised`` is True
 
-    groups : list of numpy.ndarray
-        feature indices for each feature group
+    groups : list of numpy.ndarray, optional
+        The feature indices for each feature group. These are typically used
+        to keep group collections of "nodes" into white matter bundles.
 
-    feature_names : list of tuples
-        The multi-indexed columns of X
+    feature_names : list of tuples, optional
+        The multi-indexed columns of X. i.e. the names of the features.
 
-    group_names : list of tuples
-        The multi-indexed groups of X
+    group_names : list of tuples, optional
+        The multi-indexed groups of X. i.e. the names of the feature groups.
 
-    subjects : list
+    target_cols : list of strings, optional
+        List of column names for the target variables in `y`.
+
+    subjects : list, optional
         Subject IDs
 
-    sessions : list
+    sessions : list, optional
         Session IDs.
 
-    classes : dict
-        Class labels for each column specified in ``label_encode_cols``.
-        This will be None if ``unsupervised`` is True
-
-    See Also
-    --------
-    transform.AFQDataFrameMapper
+    classes : dict, optional
+        Class labels for each label encoded column specified in ``y``.
     """
 
     def __init__(
         self,
+        X,
+        y=None,
+        groups=None,
+        feature_names=None,
+        group_names=None,
+        target_cols=None,
+        subjects=None,
+        sessions=None,
+        classes=None,
+    ):
+        self.X = X
+        self.y = y
+        self.groups = groups
+        self.feature_names = feature_names
+        self.group_names = group_names
+        self.target_cols = target_cols
+        if subjects is None:
+            subjects = [f"sub-{i}" for i in range(len(X))]
+        self.subjects = subjects
+        self.sessions = sessions
+        self.classes = classes
+
+    @staticmethod
+    def from_files(
         fn_nodes="nodes.csv",
         fn_subjects="subjects.csv",
         dwi_metrics=None,
@@ -465,6 +500,66 @@ class AFQDataset:
         concat_subject_session=False,
         enforce_sub_prefix=True,
     ):
+        """Create an `AFQDataset` from csv files.
+
+        This method expects a diffusion metric csv file (specified by ``fn_nodes``)
+        and, optionally, a phenotypic data file (specified by ``fn_subjects``). The
+        nodes csv file must be a long format dataframe with the following columns:
+        "subjectID," "nodeID," "tractID," an optional "sessionID". All other columns
+        are assumed to be diffusion metric columns, which can be optionally subset
+        using the ``dwi_metrics`` parameter.
+
+        For supervised learning problems (with parameter ``unsupervised=False``)
+        this function will also load phenotypic targets from a subjects csv/tsv
+        file. This function will load the subject data, drop subjects that are
+        not found in the dwi feature matrix, and optionally label encode
+        categorical values.
+
+        Parameters
+        ----------
+        fn_nodes : str, default='nodes.csv'
+            Filename for the nodes csv file.
+
+        fn_subjects : str, default='subjects.csv'
+            Filename for the subjects csv file.
+
+        dwi_metrics : list of strings, optional
+            List of diffusion metrics to extract from nodes csv.
+            e.g. ["dki_md", "dki_fa"]
+
+        target_cols : list of strings, optional
+            List of column names in subjects csv file to use as target variables
+
+        label_encode_cols : list of strings, subset of target_cols
+            Must be a subset of target_cols. These columns will be encoded using
+            :class:`sklearn:sklearn.preprocessing.LabelEncoder`.
+
+        index_col : str, default='subjectID'
+            The name of column in the subject csv file to use as the index. This
+            should contain subject IDs.
+
+        unsupervised : bool, default=False
+            If True, do not load target data from the ``fn_subjects`` file.
+
+        concat_subject_session : bool, default=False
+            If True, create new subject IDs by concatenating the existing subject
+            IDs with the session IDs. This is useful when subjects have multiple
+            sessions and you with to disambiguate between them.
+
+        enforce_sub_prefix : bool, default=True
+            If True, standardize subject IDs to start with the prefix "sub-".
+            This is useful, for example, if the subject IDs in the nodes.csv file
+            have the sub prefix but the subject IDs in the subjects.csv file do
+            not. Default is True in order to comform to the BIDS standard.
+
+        Returns
+        -------
+        AFQDataset
+
+        See Also
+        --------
+        transform.AFQDataFrameMapper
+        """
         afq_data = load_afq_data(
             fn_nodes=fn_nodes,
             fn_subjects=fn_subjects,
@@ -477,18 +572,68 @@ class AFQDataset:
             enforce_sub_prefix=enforce_sub_prefix,
         )
 
-        self.X = afq_data.X
-        self.y = afq_data.y
-        if self.y is not None:
-            self.y = self.y.astype(float)
+        return AFQDataset(
+            X=afq_data.X,
+            y=afq_data.y,
+            groups=afq_data.groups,
+            feature_names=afq_data.feature_names,
+            target_cols=target_cols,
+            group_names=afq_data.group_names,
+            subjects=afq_data.subjects,
+            sessions=afq_data.sessions,
+            classes=afq_data.classes,
+        )
 
-        self.groups = afq_data.groups
-        self.feature_names = afq_data.feature_names
-        self.target_cols = target_cols
-        self.group_names = afq_data.group_names
-        self.subjects = afq_data.subjects
-        self.sessions = afq_data.sessions
-        self.classes = afq_data.classes
+    def __repr__(self):
+        """Return a string representation of the dataset."""
+        n_samples, n_features = self.X.shape
+        repr_params = [f"n_samples={n_samples}", f"n_features={n_features}"]
+
+        if self.y is not None:
+            try:
+                n_targets = self.y.shape[1]
+            except IndexError:
+                n_targets = 1
+            repr_params += [f"n_targets={n_targets}"]
+        if self.target_cols is not None:
+            repr_params += [f"targets={self.target_cols}"]
+
+        return f"AFQDataset({', '.join(repr_params)})"
+
+    def __len__(self):
+        """Return the number of samples in the dataset."""
+        return len(self.X)
+
+    def __getitem__(self, indices):
+        """Return a subset of the dataset as a new AFQDataset."""
+        return AFQDataset(
+            X=self.X[indices],
+            y=self.y[indices] if self.y is not None else None,
+            groups=self.groups,
+            feature_names=self.feature_names,
+            target_cols=self.target_cols,
+            group_names=self.group_names,
+            subjects=np.array(self.subjects)[indices].tolist(),
+            sessions=np.array(self.sessions)[indices].tolist()
+            if self.sessions is not None
+            else None,
+            classes=self.classes,
+        )
+
+    @property
+    def shape(self):
+        """Return the shape of the features and targets.
+
+        Returns
+        -------
+        tuple
+            ((n_samples, n_features), (n_samples, n_targets))
+            if y is not None, otherwise (n_samples, n_features)
+        """
+        if self.y is not None:
+            return self.X.shape, self.y.shape
+        else:
+            return self.X.shape
 
     def bundle_means(self):
         """Return diffusion metrics averaged along the length of each bundle.
@@ -516,19 +661,20 @@ class AFQDataset:
             # This nan_mask contains booleans for float NaN values
             # But we also potentially label encoded NaNs above so we need to
             # check for the string "NaN" in the encoded labels
-            nan_encoding = {
-                label: "NaN" in vals for label, vals in self.classes.items()
-            }
-            for label, nan_encoded in nan_encoding.items():
-                if nan_encoded:
-                    encoded_value = np.where(self.classes[label] == "NaN")[0][0]
-                    encoded_col = self.target_cols.index(label)
-                    if len(self.y.shape) > 1:
-                        nan_mask = np.logical_and(
-                            nan_mask, self.y[:, encoded_col] != encoded_value
-                        )
-                    else:
-                        nan_mask = np.logical_and(nan_mask, self.y != encoded_value)
+            if self.classes is not None:
+                nan_encoding = {
+                    label: "NaN" in vals for label, vals in self.classes.items()
+                }
+                for label, nan_encoded in nan_encoding.items():
+                    if nan_encoded:
+                        encoded_value = np.where(self.classes[label] == "NaN")[0][0]
+                        encoded_col = self.target_cols.index(label)
+                        if len(self.y.shape) > 1:
+                            nan_mask = np.logical_and(
+                                nan_mask, self.y[:, encoded_col] != encoded_value
+                            )
+                        else:
+                            nan_mask = np.logical_and(nan_mask, self.y != encoded_value)
 
             self.X = self.X[nan_mask]
             self.y = self.y[nan_mask]
@@ -604,7 +750,7 @@ class AFQDataset:
             return tf.data.Dataset.from_tensor_slices((X, self.y.astype(float)))
 
 
-def _download_url_to_file(url, output_fn, encoding="utf-8"):
+def _download_url_to_file(url, output_fn, encoding="utf-8", verbose=True):
     fn_abs = op.abspath(output_fn)
     base = op.splitext(fn_abs)[0]
     os.makedirs(op.dirname(output_fn), exist_ok=True)
@@ -620,9 +766,11 @@ def _download_url_to_file(url, output_fn, encoding="utf-8"):
         op.isfile(fn_abs)
         and hashlib.md5(open(fn_abs, "rb").read()).hexdigest() == md5sum
     ):
-        print(f"File {op.relpath(fn_abs)} exists.")
+        if verbose:
+            print(f"File {op.relpath(fn_abs)} exists.")
     else:
-        print(f"Downloading {url} to {op.relpath(fn_abs)}.")
+        if verbose:
+            print(f"Downloading {url} to {op.relpath(fn_abs)}.")
         # Download from url and save to file
         with requests.Session() as s:
             download = s.get(url)
@@ -634,7 +782,7 @@ def _download_url_to_file(url, output_fn, encoding="utf-8"):
             md5file.write(hashlib.md5(open(fn_abs, "rb").read()).hexdigest())
 
 
-def _download_afq_dataset(dataset, data_home):
+def _download_afq_dataset(dataset, data_home, verbose=True):
     urls_files = {
         "sarica": [
             {
@@ -659,40 +807,25 @@ def _download_afq_dataset(dataset, data_home):
     }
 
     for dict_ in urls_files[dataset]:
-        _download_url_to_file(dict_["url"], dict_["file"])
+        _download_url_to_file(dict_["url"], dict_["file"], verbose=verbose)
 
 
-def download_sarica(data_home=None):
+def download_sarica(data_home=None, verbose=True):
     """Fetch the ALS classification dataset from Sarica et al [1]_.
 
     Parameters
     ----------
     data_home : str, default=None
         Specify another download and cache folder for the datasets. By default all
-        afq-insight data is stored in ‘~/.afq-insight’ subfolders.
+        afq-insight data is stored in '~/.afq-insight' subfolders.
+
+    verbose : bool, default=True
+        If True, print status messages to stdout.
 
     Returns
     -------
-    X : array-like of shape (48, 3600)
-        The feature samples.
-
-    y : array-like of shape (48,)
-        Target values.
-
-    groups : list of numpy.ndarray
-        feature indices for each feature group
-
-    feature_names : list of tuples
-        The multi-indexed columns of X
-
-    group_names : list of tuples
-        The multi-indexed groups of X
-
-    subjects : list
-        Subject IDs
-
-    classes : dict
-        Class labels for ALS diagnosis.
+    dirname : str
+        Path to the downloaded dataset directory.
 
     References
     ----------
@@ -702,38 +835,26 @@ def download_sarica(data_home=None):
         DOI: 10.1002/hbm.23412
     """
     data_home = data_home if data_home is not None else _DATA_DIR
-    _download_afq_dataset("sarica", data_home=data_home)
+    _download_afq_dataset("sarica", data_home=data_home, verbose=verbose)
     return op.join(data_home, "sarica_data")
 
 
-def download_weston_havens(data_home=None):
+def download_weston_havens(data_home=None, verbose=True):
     """Load the age prediction dataset from Weston-Havens [1]_.
 
     Parameters
     ----------
     data_home : str, default=None
         Specify another download and cache folder for the datasets. By default all
-        afq-insight data is stored in ‘~/.afq-insight’ subfolders.
+        afq-insight data is stored in '~/.afq-insight' subfolders.
 
     Returns
     -------
-    X : array-like of shape (77, 3600)
-        The feature samples.
+    dirname : str
+        Path to the downloaded dataset directory.
 
-    y : array-like of shape (77,) or (n_samples, n_targets), optional
-        Target values.
-
-    groups : list of numpy.ndarray
-        feature indices for each feature group
-
-    feature_names : list of tuples
-        The multi-indexed columns of X
-
-    group_names : list of tuples
-        The multi-indexed groups of X
-
-    subjects : list
-        Subject IDs
+    verbose : bool, default=True
+        If True, print status messages to stdout.
 
     References
     ----------
@@ -743,5 +864,5 @@ def download_weston_havens(data_home=None):
         DOI: 10.1038/ncomms5932
     """
     data_home = data_home if data_home is not None else _DATA_DIR
-    _download_afq_dataset("weston_havens", data_home=data_home)
+    _download_afq_dataset("weston_havens", data_home=data_home, verbose=verbose)
     return op.join(data_home, "weston_havens_data")
