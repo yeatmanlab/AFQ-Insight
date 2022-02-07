@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 
+
 def mahalonobis_dist_match(X, test_idx, threshold=0.2):
     """
     Perform Mahalanobis distance matching (MDM).
@@ -29,13 +30,13 @@ def mahalonobis_dist_match(X, test_idx, threshold=0.2):
     test_X = X[test_idx]
     ctrl_X = np.delete(X, test_idx, axis=0)
     diff = test_X[:, np.newaxis] - ctrl_X[np.newaxis, :]
-    nbrs = np.sqrt(np.sum((diff@v_inv)*diff, axis=2))
+    nbrs = np.sqrt(np.sum((diff @ v_inv) * diff, axis=2))
 
     # assign neighbors using Munkres algorithm
     row_ind, col_ind = linear_sum_assignment(nbrs)
 
     # remove matches that are too bad
-    filtered_test_ind = [] 
+    filtered_test_ind = []
     filtered_ctrl_ind = []
     for row_idx, col_idx in zip(row_ind, col_ind):
         if nbrs[row_idx, col_idx] <= threshold:
