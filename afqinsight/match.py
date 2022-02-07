@@ -1,3 +1,5 @@
+"""Perform statistical matching comparing test and control units."""
+
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 
@@ -24,7 +26,6 @@ def mahalonobis_dist_match(X, test_idx, threshold=0.2):
         Indices into X of matched control subjects,
         this array will be the same length as filtered_test_ind
     """
-
     # calculate mahalonobis distance between all subjects
     v_inv = np.linalg.inv(np.cov(X.T, ddof=0))
     test_X = X[test_idx]
