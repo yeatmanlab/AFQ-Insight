@@ -1,6 +1,6 @@
 """Test functions in the match module"""
 
-from afqinsight.match import *
+import afqinsight.match as aim
 import numpy as np
 import pandas as pd
 from sklearn.utils._testing import (
@@ -19,7 +19,7 @@ ctrl_features = np.asarray([
 
 
 def test_mahalonobis_dist_arr():
-    nbrs = mahalonobis_dist_arr(test_features, ctrl_features)
+    nbrs = aim.mahalonobis_dist_arr(test_features, ctrl_features)
 
     v_inv = np.linalg.inv(np.cov(
         np.concatenate((test_features, ctrl_features), axis=0).T, ddof=0))
@@ -40,7 +40,7 @@ def test_mahalonobis_dist_match_df():
     })
     for ii in range(4):
         data[f"feature_{ii}"] = [*test_features[:, ii], *ctrl_features[:, ii]]
-    filtered_test_id, filtered_ctrl_id = mahalonobis_dist_match_df(
+    filtered_test_id, filtered_ctrl_id = aim.mahalonobis_dist_match_df(
         data,
         "eid",
         [34, 35, 36],
@@ -52,7 +52,7 @@ def test_mahalonobis_dist_match_df():
 
 
 def test_mahalonobis_dist_match():
-    filtered_test_ind, filtered_ctrl_ind = mahalonobis_dist_match(
+    filtered_test_ind, filtered_ctrl_ind = aim.mahalonobis_dist_match(
         test_features, ctrl_features, threshold=1)
     assert_array_equal(filtered_test_ind, [0, 1])
     assert_array_equal(filtered_ctrl_ind, [3, 4])
