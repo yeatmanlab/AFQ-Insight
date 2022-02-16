@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>afqinsight.cross_validate &mdash; AFQ-Insight 0.3.2 documentation</title>
+  <title>afqinsight.cross_validate &mdash; AFQ-Insight 0.3.3 documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/afqinsight.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/sg_gallery.css" type="text/css" />
@@ -32,7 +32,7 @@
             <a href="../../index.html" class="icon icon-home"> AFQ-Insight
           </a>
               <div class="version">
-                0.3.2
+                0.3.3
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -88,9 +88,14 @@
 
 <span class="kn">from</span> <span class="nn">joblib</span> <span class="kn">import</span> <span class="n">delayed</span><span class="p">,</span> <span class="n">Parallel</span>
 <span class="kn">from</span> <span class="nn">sklearn.base</span> <span class="kn">import</span> <span class="n">clone</span><span class="p">,</span> <span class="n">is_classifier</span>
+<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">check_scoring</span>
 <span class="kn">from</span> <span class="nn">sklearn.metrics._scorer</span> <span class="kn">import</span> <span class="n">_check_multimetric_scoring</span>
 <span class="kn">from</span> <span class="nn">sklearn.model_selection._split</span> <span class="kn">import</span> <span class="n">check_cv</span>
-<span class="kn">from</span> <span class="nn">sklearn.model_selection._validation</span> <span class="kn">import</span> <span class="n">_aggregate_score_dicts</span><span class="p">,</span> <span class="n">_fit_and_score</span>
+<span class="kn">from</span> <span class="nn">sklearn.model_selection._validation</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">_aggregate_score_dicts</span><span class="p">,</span>
+    <span class="n">_fit_and_score</span><span class="p">,</span>
+    <span class="n">_normalize_score_results</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span> <span class="nn">sklearn.pipeline</span> <span class="kn">import</span> <span class="n">Pipeline</span>
 <span class="kn">from</span> <span class="nn">sklearn.utils</span> <span class="kn">import</span> <span class="n">indexable</span>
 
@@ -204,18 +209,18 @@
             <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">pkl_file</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
                 <span class="n">estimator</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">fp</span><span class="p">)</span>
 
-            <span class="n">scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">estimator</span><span class="p">)</span>
+            <span class="n">scores</span><span class="p">[</span><span class="s2">&quot;estimator&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">estimator</span>
 
         <span class="k">return</span> <span class="n">scores</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">scores</span> <span class="o">=</span> <span class="n">_fit_and_score</span><span class="p">(</span><span class="n">estimator</span><span class="p">,</span> <span class="o">**</span><span class="n">fit_and_score_kwargs</span><span class="p">)</span>
         <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">workdir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">fit_and_score_kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;return_estimator&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
-            <span class="n">estimator</span> <span class="o">=</span> <span class="n">scores</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">estimator</span> <span class="o">=</span> <span class="n">scores</span><span class="p">[</span><span class="s2">&quot;estimator&quot;</span><span class="p">]</span>
             <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">pkl_file</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
                 <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">estimator</span><span class="p">,</span> <span class="n">fp</span><span class="p">)</span>
 
-            <span class="n">ckpt_scores</span> <span class="o">=</span> <span class="n">scores</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">ckpt_scores</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">scores</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">scores</span> <span class="k">if</span> <span class="n">key</span> <span class="o">!=</span> <span class="s2">&quot;estimator&quot;</span><span class="p">}</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">estimator</span><span class="p">,</span> <span class="n">Pipeline</span><span class="p">):</span>
                 <span class="n">model</span> <span class="o">=</span> <span class="n">estimator</span><span class="o">.</span><span class="n">steps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
             <span class="k">else</span><span class="p">:</span>
@@ -240,7 +245,7 @@
         <span class="n">fit_and_score_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;y&quot;</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="s2">&quot;scorer&quot;</span> <span class="ow">in</span> <span class="n">fit_and_score_kwargs</span><span class="p">:</span>
-            <span class="n">fit_and_score_kwargs</span><span class="p">[</span><span class="s2">&quot;scorer&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">fit_and_score_kwargs</span><span class="p">[</span><span class="s2">&quot;scorer&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+            <span class="n">fit_and_score_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;scorer&quot;</span><span class="p">)</span>
 
         <span class="n">ckpt_dict</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;scores&quot;</span><span class="p">:</span> <span class="n">ckpt_scores</span><span class="p">,</span>
@@ -471,7 +476,13 @@
     <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">groups</span> <span class="o">=</span> <span class="n">indexable</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">groups</span><span class="p">)</span>
 
     <span class="n">cv</span> <span class="o">=</span> <span class="n">check_cv</span><span class="p">(</span><span class="n">cv</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">classifier</span><span class="o">=</span><span class="n">is_classifier</span><span class="p">(</span><span class="n">estimator</span><span class="p">))</span>
-    <span class="n">scorers</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_check_multimetric_scoring</span><span class="p">(</span><span class="n">estimator</span><span class="p">,</span> <span class="n">scoring</span><span class="o">=</span><span class="n">scoring</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">callable</span><span class="p">(</span><span class="n">scoring</span><span class="p">):</span>
+        <span class="n">scorers</span> <span class="o">=</span> <span class="n">scoring</span>
+    <span class="k">elif</span> <span class="n">scoring</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">scoring</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">scorers</span> <span class="o">=</span> <span class="n">check_scoring</span><span class="p">(</span><span class="n">estimator</span><span class="p">,</span> <span class="n">scoring</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">scorers</span> <span class="o">=</span> <span class="n">_check_multimetric_scoring</span><span class="p">(</span><span class="n">estimator</span><span class="p">,</span> <span class="n">scoring</span><span class="p">)</span>
 
     <span class="c1"># We clone the estimator to make sure that all the folds are</span>
     <span class="c1"># independent, and that it is pickle-able.</span>
@@ -521,27 +532,24 @@
             <span class="k">for</span> <span class="n">train</span><span class="p">,</span> <span class="n">test</span> <span class="ow">in</span> <span class="n">cv</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">groups</span><span class="p">)</span>
         <span class="p">)</span>
 
-    <span class="n">zipped_scores</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">scores</span><span class="p">))</span>
-    <span class="k">if</span> <span class="n">return_train_score</span><span class="p">:</span>
-        <span class="n">train_scores</span> <span class="o">=</span> <span class="n">zipped_scores</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-        <span class="n">train_scores</span> <span class="o">=</span> <span class="n">_aggregate_score_dicts</span><span class="p">(</span><span class="n">train_scores</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">return_estimator</span><span class="p">:</span>
-        <span class="n">fitted_estimators</span> <span class="o">=</span> <span class="n">zipped_scores</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
-    <span class="n">test_scores</span><span class="p">,</span> <span class="n">fit_times</span><span class="p">,</span> <span class="n">score_times</span> <span class="o">=</span> <span class="n">zipped_scores</span>
-    <span class="n">test_scores</span> <span class="o">=</span> <span class="n">_aggregate_score_dicts</span><span class="p">(</span><span class="n">test_scores</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">_aggregate_score_dicts</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
 
     <span class="n">ret</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="n">ret</span><span class="p">[</span><span class="s2">&quot;fit_time&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">fit_times</span><span class="p">)</span>
-    <span class="n">ret</span><span class="p">[</span><span class="s2">&quot;score_time&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">score_times</span><span class="p">)</span>
+    <span class="n">ret</span><span class="p">[</span><span class="s2">&quot;fit_time&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s2">&quot;fit_time&quot;</span><span class="p">]</span>
+    <span class="n">ret</span><span class="p">[</span><span class="s2">&quot;score_time&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s2">&quot;score_time&quot;</span><span class="p">]</span>
 
     <span class="k">if</span> <span class="n">return_estimator</span><span class="p">:</span>
-        <span class="n">ret</span><span class="p">[</span><span class="s2">&quot;estimator&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fitted_estimators</span>
+        <span class="n">ret</span><span class="p">[</span><span class="s2">&quot;estimator&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s2">&quot;estimator&quot;</span><span class="p">]</span>
 
-    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">scorers</span><span class="p">:</span>
-        <span class="n">ret</span><span class="p">[</span><span class="s2">&quot;test_</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">test_scores</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+    <span class="n">test_scores_dict</span> <span class="o">=</span> <span class="n">_normalize_score_results</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s2">&quot;test_scores&quot;</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">return_train_score</span><span class="p">:</span>
+        <span class="n">train_scores_dict</span> <span class="o">=</span> <span class="n">_normalize_score_results</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s2">&quot;train_scores&quot;</span><span class="p">])</span>
+
+    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">test_scores_dict</span><span class="p">:</span>
+        <span class="n">ret</span><span class="p">[</span><span class="s2">&quot;test_</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">test_scores_dict</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
         <span class="k">if</span> <span class="n">return_train_score</span><span class="p">:</span>
             <span class="n">key</span> <span class="o">=</span> <span class="s2">&quot;train_</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">name</span>
-            <span class="n">ret</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">train_scores</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+            <span class="n">ret</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">train_scores_dict</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
 
     <span class="k">return</span> <span class="n">ret</span></div>
 </pre></div>

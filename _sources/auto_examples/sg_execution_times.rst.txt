@@ -5,10 +5,10 @@
 
 Computation times
 =================
-**01:56.315** total execution time for **auto_examples** files:
+**01:52.676** total execution time for **auto_examples** files:
 
 +-------------------------------------------------------------------------------------------+-----------+--------+
-| :ref:`sphx_glr_auto_examples_plot_age_regression.py` (``plot_age_regression.py``)         | 01:11.415 | 0.0 MB |
+| :ref:`sphx_glr_auto_examples_plot_age_regression.py` (``plot_age_regression.py``)         | 01:11.155 | 0.0 MB |
 +-------------------------------------------------------------------------------------------+-----------+--------+
-| :ref:`sphx_glr_auto_examples_plot_als_classification.py` (``plot_als_classification.py``) | 00:44.900 | 0.0 MB |
+| :ref:`sphx_glr_auto_examples_plot_als_classification.py` (``plot_als_classification.py``) | 00:41.521 | 0.0 MB |
 +-------------------------------------------------------------------------------------------+-----------+--------+

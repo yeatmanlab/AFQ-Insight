@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>afqinsight.datasets &mdash; AFQ-Insight 0.3.2 documentation</title>
+  <title>afqinsight.datasets &mdash; AFQ-Insight 0.3.3 documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/afqinsight.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/sg_gallery.css" type="text/css" />
@@ -32,7 +32,7 @@
             <a href="../../index.html" class="icon icon-home"> AFQ-Insight
           </a>
               <div class="version">
-                0.3.2
+                0.3.3
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -448,59 +448,71 @@
 
 
 <span class="k">class</span> <span class="nc">AFQDataset</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Store and manipulate AFQ data loaded from CSV.</span>
+    <span class="sd">&quot;&quot;&quot;Represent AFQ features and targets.</span>
 
-<span class="sd">    This class expects a diffusion metric csv file (specified by ``fn_nodes``)</span>
-<span class="sd">    and, optionally, a phenotypic data file (specified by ``fn_subjects``). The</span>
-<span class="sd">    nodes csv file must be a long format dataframe with the following columns:</span>
-<span class="sd">    &quot;subjectID,&quot; &quot;nodeID,&quot; &quot;tractID,&quot; an optional &quot;sessionID&quot;. All other columns</span>
-<span class="sd">    are assumed to be diffusion metric columns, which can be optionally subset</span>
-<span class="sd">    using the ``dwi_metrics`` parameter.</span>
+<span class="sd">    The `AFQDataset` class represents tractometry features and, optionally,</span>
+<span class="sd">    phenotypic targets.</span>
 
-<span class="sd">    For supervised learning problems (with parameter ``unsupervised=False``)</span>
-<span class="sd">    this function will also load phenotypic targets from a subjects csv/tsv</span>
-<span class="sd">    file. This function will load the subject data, drop subjects that are</span>
-<span class="sd">    not found in the dwi feature matrix, and optionally label encode</span>
-<span class="sd">    categorical values.</span>
+<span class="sd">    The simplest way to create a new AFQDataset is to pass in the tractometric</span>
+<span class="sd">    features and phenotypic targets explicitly.</span>
+
+<span class="sd">    &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">    &gt;&gt;&gt; AFQDataset(X=np.random.rand(50, 1000), y=np.random.rand(50))</span>
+<span class="sd">    AFQDataset(n_samples=50, n_features=1000, n_targets=1)</span>
+
+<span class="sd">    You can keep track of the names of the target variables with the `target_cols` parameter.</span>
+<span class="sd">    &gt;&gt;&gt; AFQDataset(X=np.random.rand(50, 1000), y=np.random.rand(50), target_cols=[&quot;age&quot;])</span>
+<span class="sd">    AFQDataset(n_samples=50, n_features=1000, n_targets=1, targets=[&#39;age&#39;])</span>
+
+<span class="sd">    Source Datasets:</span>
+
+<span class="sd">    The most common way to create an AFQDataset is to load data from a set of</span>
+<span class="sd">    csv files that conform to the AFQ data format. For example,</span>
+
+<span class="sd">    &gt;&gt;&gt; import os.path as op</span>
+<span class="sd">    &gt;&gt;&gt; sarica_dir = download_sarica(verbose=False)</span>
+<span class="sd">    &gt;&gt;&gt; dataset = AFQDataset.from_files(</span>
+<span class="sd">    ...     fn_nodes=op.join(sarica_dir, &quot;nodes.csv&quot;),</span>
+<span class="sd">    ...     fn_subjects=op.join(sarica_dir, &quot;subjects.csv&quot;),</span>
+<span class="sd">    ...     dwi_metrics=[&quot;md&quot;, &quot;fa&quot;],</span>
+<span class="sd">    ...     target_cols=[&quot;class&quot;],</span>
+<span class="sd">    ...     label_encode_cols=[&quot;class&quot;],</span>
+<span class="sd">    ... )</span>
+<span class="sd">    &gt;&gt;&gt; dataset</span>
+<span class="sd">    AFQDataset(n_samples=48, n_features=4000, n_targets=1, targets=[&#39;class&#39;])</span>
+
+<span class="sd">    AFQDatasets are indexable and can be sliced.</span>
+
+<span class="sd">    &gt;&gt;&gt; dataset[0:10]</span>
+<span class="sd">    AFQDataset(n_samples=10, n_features=4000, n_targets=1, targets=[&#39;class&#39;])</span>
+
+<span class="sd">    You can query the length of the dataset as well as the feature and target</span>
+<span class="sd">    shapes.</span>
+
+<span class="sd">    &gt;&gt;&gt; len(dataset)</span>
+<span class="sd">    48</span>
+<span class="sd">    &gt;&gt;&gt; dataset.shape</span>
+<span class="sd">    ((48, 4000), (48,))</span>
+
+<span class="sd">    Datasets can be used as expected in scikit-learn&#39;s model selection</span>
+<span class="sd">    functions. For example</span>
+
+<span class="sd">    &gt;&gt;&gt; from sklearn.model_selection import train_test_split</span>
+<span class="sd">    &gt;&gt;&gt; train_data, test_data = train_test_split(dataset, test_size=0.3, stratify=dataset.y)</span>
+<span class="sd">    &gt;&gt;&gt; train_data</span>
+<span class="sd">    AFQDataset(n_samples=33, n_features=4000, n_targets=1, targets=[&#39;class&#39;])</span>
+<span class="sd">    &gt;&gt;&gt; test_data</span>
+<span class="sd">    AFQDataset(n_samples=15, n_features=4000, n_targets=1, targets=[&#39;class&#39;])</span>
+
+<span class="sd">    You can drop samples from the dataset that have null target values using the</span>
+<span class="sd">    `drop_target_na` method.</span>
+<span class="sd">    &gt;&gt;&gt; dataset.y = dataset.y.astype(float)</span>
+<span class="sd">    &gt;&gt;&gt; dataset.y[:5] = np.nan</span>
+<span class="sd">    &gt;&gt;&gt; dataset.drop_target_na()</span>
+<span class="sd">    &gt;&gt;&gt; dataset</span>
+<span class="sd">    AFQDataset(n_samples=43, n_features=4000, n_targets=1, targets=[&#39;class&#39;])</span>
 
 <span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    fn_nodes : str, default=&#39;nodes.csv&#39;</span>
-<span class="sd">        Filename for the nodes csv file.</span>
-
-<span class="sd">    fn_subjects : str, default=&#39;subjects.csv&#39;</span>
-<span class="sd">        Filename for the subjects csv file.</span>
-
-<span class="sd">    dwi_metrics : list of strings, optional</span>
-<span class="sd">        List of diffusion metrics to extract from nodes csv.</span>
-<span class="sd">        e.g. [&quot;dki_md&quot;, &quot;dki_fa&quot;]</span>
-
-<span class="sd">    target_cols : list of strings, optional</span>
-<span class="sd">        List of column names in subjects csv file to use as target variables</span>
-
-<span class="sd">    label_encode_cols : list of strings, subset of target_cols</span>
-<span class="sd">        Must be a subset of target_cols. These columns will be encoded using</span>
-<span class="sd">        :class:`sklearn:sklearn.preprocessing.LabelEncoder`.</span>
-
-<span class="sd">    index_col : str, default=&#39;subjectID&#39;</span>
-<span class="sd">        The name of column in the subject csv file to use as the index. This</span>
-<span class="sd">        should contain subject IDs.</span>
-
-<span class="sd">    unsupervised : bool, default=False</span>
-<span class="sd">        If True, do not load target data from the ``fn_subjects`` file.</span>
-
-<span class="sd">    concat_subject_session : bool, default=False</span>
-<span class="sd">        If True, create new subject IDs by concatenating the existing subject</span>
-<span class="sd">        IDs with the session IDs. This is useful when subjects have multiple</span>
-<span class="sd">        sessions and you with to disambiguate between them.</span>
-
-<span class="sd">    enforce_sub_prefix : bool, default=True</span>
-<span class="sd">        If True, standardize subject IDs to start with the prefix &quot;sub-&quot;.</span>
-<span class="sd">        This is useful, for example, if the subject IDs in the nodes.csv file</span>
-<span class="sd">        have the sub prefix but the subject IDs in the subjects.csv file do</span>
-<span class="sd">        not. Default is True in order to comform to the BIDS standard.</span>
-
-<span class="sd">    Attributes</span>
 <span class="sd">    ----------</span>
 <span class="sd">    X : array-like of shape (n_samples, n_features)</span>
 <span class="sd">        The feature samples.</span>
@@ -508,32 +520,55 @@
 <span class="sd">    y : array-like of shape (n_samples,) or (n_samples, n_targets), optional</span>
 <span class="sd">        Target values. This will be None if ``unsupervised`` is True</span>
 
-<span class="sd">    groups : list of numpy.ndarray</span>
-<span class="sd">        feature indices for each feature group</span>
+<span class="sd">    groups : list of numpy.ndarray, optional</span>
+<span class="sd">        The feature indices for each feature group. These are typically used</span>
+<span class="sd">        to keep group collections of &quot;nodes&quot; into white matter bundles.</span>
 
-<span class="sd">    feature_names : list of tuples</span>
-<span class="sd">        The multi-indexed columns of X</span>
+<span class="sd">    feature_names : list of tuples, optional</span>
+<span class="sd">        The multi-indexed columns of X. i.e. the names of the features.</span>
 
-<span class="sd">    group_names : list of tuples</span>
-<span class="sd">        The multi-indexed groups of X</span>
+<span class="sd">    group_names : list of tuples, optional</span>
+<span class="sd">        The multi-indexed groups of X. i.e. the names of the feature groups.</span>
 
-<span class="sd">    subjects : list</span>
+<span class="sd">    target_cols : list of strings, optional</span>
+<span class="sd">        List of column names for the target variables in `y`.</span>
+
+<span class="sd">    subjects : list, optional</span>
 <span class="sd">        Subject IDs</span>
 
-<span class="sd">    sessions : list</span>
+<span class="sd">    sessions : list, optional</span>
 <span class="sd">        Session IDs.</span>
 
-<span class="sd">    classes : dict</span>
-<span class="sd">        Class labels for each column specified in ``label_encode_cols``.</span>
-<span class="sd">        This will be None if ``unsupervised`` is True</span>
-
-<span class="sd">    See Also</span>
-<span class="sd">    --------</span>
-<span class="sd">    transform.AFQDataFrameMapper</span>
+<span class="sd">    classes : dict, optional</span>
+<span class="sd">        Class labels for each label encoded column specified in ``y``.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
+        <span class="n">X</span><span class="p">,</span>
+        <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">groups</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">feature_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">group_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">target_cols</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">subjects</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">sessions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">classes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">X</span> <span class="o">=</span> <span class="n">X</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">y</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">groups</span> <span class="o">=</span> <span class="n">groups</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">feature_names</span> <span class="o">=</span> <span class="n">feature_names</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">group_names</span> <span class="o">=</span> <span class="n">group_names</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_cols</span> <span class="o">=</span> <span class="n">target_cols</span>
+        <span class="k">if</span> <span class="n">subjects</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">subjects</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;sub-</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">))]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">subjects</span> <span class="o">=</span> <span class="n">subjects</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sessions</span> <span class="o">=</span> <span class="n">sessions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">classes</span> <span class="o">=</span> <span class="n">classes</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">from_files</span><span class="p">(</span>
         <span class="n">fn_nodes</span><span class="o">=</span><span class="s2">&quot;nodes.csv&quot;</span><span class="p">,</span>
         <span class="n">fn_subjects</span><span class="o">=</span><span class="s2">&quot;subjects.csv&quot;</span><span class="p">,</span>
         <span class="n">dwi_metrics</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -544,6 +579,66 @@
         <span class="n">concat_subject_session</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">enforce_sub_prefix</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create an `AFQDataset` from csv files.</span>
+
+<span class="sd">        This method expects a diffusion metric csv file (specified by ``fn_nodes``)</span>
+<span class="sd">        and, optionally, a phenotypic data file (specified by ``fn_subjects``). The</span>
+<span class="sd">        nodes csv file must be a long format dataframe with the following columns:</span>
+<span class="sd">        &quot;subjectID,&quot; &quot;nodeID,&quot; &quot;tractID,&quot; an optional &quot;sessionID&quot;. All other columns</span>
+<span class="sd">        are assumed to be diffusion metric columns, which can be optionally subset</span>
+<span class="sd">        using the ``dwi_metrics`` parameter.</span>
+
+<span class="sd">        For supervised learning problems (with parameter ``unsupervised=False``)</span>
+<span class="sd">        this function will also load phenotypic targets from a subjects csv/tsv</span>
+<span class="sd">        file. This function will load the subject data, drop subjects that are</span>
+<span class="sd">        not found in the dwi feature matrix, and optionally label encode</span>
+<span class="sd">        categorical values.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        fn_nodes : str, default=&#39;nodes.csv&#39;</span>
+<span class="sd">            Filename for the nodes csv file.</span>
+
+<span class="sd">        fn_subjects : str, default=&#39;subjects.csv&#39;</span>
+<span class="sd">            Filename for the subjects csv file.</span>
+
+<span class="sd">        dwi_metrics : list of strings, optional</span>
+<span class="sd">            List of diffusion metrics to extract from nodes csv.</span>
+<span class="sd">            e.g. [&quot;dki_md&quot;, &quot;dki_fa&quot;]</span>
+
+<span class="sd">        target_cols : list of strings, optional</span>
+<span class="sd">            List of column names in subjects csv file to use as target variables</span>
+
+<span class="sd">        label_encode_cols : list of strings, subset of target_cols</span>
+<span class="sd">            Must be a subset of target_cols. These columns will be encoded using</span>
+<span class="sd">            :class:`sklearn:sklearn.preprocessing.LabelEncoder`.</span>
+
+<span class="sd">        index_col : str, default=&#39;subjectID&#39;</span>
+<span class="sd">            The name of column in the subject csv file to use as the index. This</span>
+<span class="sd">            should contain subject IDs.</span>
+
+<span class="sd">        unsupervised : bool, default=False</span>
+<span class="sd">            If True, do not load target data from the ``fn_subjects`` file.</span>
+
+<span class="sd">        concat_subject_session : bool, default=False</span>
+<span class="sd">            If True, create new subject IDs by concatenating the existing subject</span>
+<span class="sd">            IDs with the session IDs. This is useful when subjects have multiple</span>
+<span class="sd">            sessions and you with to disambiguate between them.</span>
+
+<span class="sd">        enforce_sub_prefix : bool, default=True</span>
+<span class="sd">            If True, standardize subject IDs to start with the prefix &quot;sub-&quot;.</span>
+<span class="sd">            This is useful, for example, if the subject IDs in the nodes.csv file</span>
+<span class="sd">            have the sub prefix but the subject IDs in the subjects.csv file do</span>
+<span class="sd">            not. Default is True in order to comform to the BIDS standard.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        AFQDataset</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        transform.AFQDataFrameMapper</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">afq_data</span> <span class="o">=</span> <span class="n">load_afq_data</span><span class="p">(</span>
             <span class="n">fn_nodes</span><span class="o">=</span><span class="n">fn_nodes</span><span class="p">,</span>
             <span class="n">fn_subjects</span><span class="o">=</span><span class="n">fn_subjects</span><span class="p">,</span>
@@ -556,18 +651,68 @@
             <span class="n">enforce_sub_prefix</span><span class="o">=</span><span class="n">enforce_sub_prefix</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">X</span> <span class="o">=</span> <span class="n">afq_data</span><span class="o">.</span><span class="n">X</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">afq_data</span><span class="o">.</span><span class="n">y</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">AFQDataset</span><span class="p">(</span>
+            <span class="n">X</span><span class="o">=</span><span class="n">afq_data</span><span class="o">.</span><span class="n">X</span><span class="p">,</span>
+            <span class="n">y</span><span class="o">=</span><span class="n">afq_data</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
+            <span class="n">groups</span><span class="o">=</span><span class="n">afq_data</span><span class="o">.</span><span class="n">groups</span><span class="p">,</span>
+            <span class="n">feature_names</span><span class="o">=</span><span class="n">afq_data</span><span class="o">.</span><span class="n">feature_names</span><span class="p">,</span>
+            <span class="n">target_cols</span><span class="o">=</span><span class="n">target_cols</span><span class="p">,</span>
+            <span class="n">group_names</span><span class="o">=</span><span class="n">afq_data</span><span class="o">.</span><span class="n">group_names</span><span class="p">,</span>
+            <span class="n">subjects</span><span class="o">=</span><span class="n">afq_data</span><span class="o">.</span><span class="n">subjects</span><span class="p">,</span>
+            <span class="n">sessions</span><span class="o">=</span><span class="n">afq_data</span><span class="o">.</span><span class="n">sessions</span><span class="p">,</span>
+            <span class="n">classes</span><span class="o">=</span><span class="n">afq_data</span><span class="o">.</span><span class="n">classes</span><span class="p">,</span>
+        <span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">groups</span> <span class="o">=</span> <span class="n">afq_data</span><span class="o">.</span><span class="n">groups</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">feature_names</span> <span class="o">=</span> <span class="n">afq_data</span><span class="o">.</span><span class="n">feature_names</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">target_cols</span> <span class="o">=</span> <span class="n">target_cols</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">group_names</span> <span class="o">=</span> <span class="n">afq_data</span><span class="o">.</span><span class="n">group_names</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">subjects</span> <span class="o">=</span> <span class="n">afq_data</span><span class="o">.</span><span class="n">subjects</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">sessions</span> <span class="o">=</span> <span class="n">afq_data</span><span class="o">.</span><span class="n">sessions</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">classes</span> <span class="o">=</span> <span class="n">afq_data</span><span class="o">.</span><span class="n">classes</span>
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a string representation of the dataset.&quot;&quot;&quot;</span>
+        <span class="n">n_samples</span><span class="p">,</span> <span class="n">n_features</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">repr_params</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;n_samples=</span><span class="si">{</span><span class="n">n_samples</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;n_features=</span><span class="si">{</span><span class="n">n_features</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">n_targets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                <span class="n">n_targets</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="n">repr_params</span> <span class="o">+=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;n_targets=</span><span class="si">{</span><span class="n">n_targets</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_cols</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">repr_params</span> <span class="o">+=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;targets=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target_cols</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;AFQDataset(</span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">repr_params</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the number of samples in the dataset.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">indices</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a subset of the dataset as a new AFQDataset.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">AFQDataset</span><span class="p">(</span>
+            <span class="n">X</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">[</span><span class="n">indices</span><span class="p">],</span>
+            <span class="n">y</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">indices</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">groups</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="p">,</span>
+            <span class="n">feature_names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">feature_names</span><span class="p">,</span>
+            <span class="n">target_cols</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">target_cols</span><span class="p">,</span>
+            <span class="n">group_names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">group_names</span><span class="p">,</span>
+            <span class="n">subjects</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">subjects</span><span class="p">)[</span><span class="n">indices</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+            <span class="n">sessions</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sessions</span><span class="p">)[</span><span class="n">indices</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sessions</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">classes</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">classes</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">shape</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the shape of the features and targets.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        tuple</span>
+<span class="sd">            ((n_samples, n_features), (n_samples, n_targets))</span>
+<span class="sd">            if y is not None, otherwise (n_samples, n_features)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span>
 
     <span class="k">def</span> <span class="nf">bundle_means</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return diffusion metrics averaged along the length of each bundle.</span>
@@ -595,19 +740,20 @@
             <span class="c1"># This nan_mask contains booleans for float NaN values</span>
             <span class="c1"># But we also potentially label encoded NaNs above so we need to</span>
             <span class="c1"># check for the string &quot;NaN&quot; in the encoded labels</span>
-            <span class="n">nan_encoding</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="n">label</span><span class="p">:</span> <span class="s2">&quot;NaN&quot;</span> <span class="ow">in</span> <span class="n">vals</span> <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">vals</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">classes</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-            <span class="p">}</span>
-            <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">nan_encoded</span> <span class="ow">in</span> <span class="n">nan_encoding</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                <span class="k">if</span> <span class="n">nan_encoded</span><span class="p">:</span>
-                    <span class="n">encoded_value</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">classes</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;NaN&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-                    <span class="n">encoded_col</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_cols</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
-                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-                        <span class="n">nan_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span>
-                            <span class="n">nan_mask</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">[:,</span> <span class="n">encoded_col</span><span class="p">]</span> <span class="o">!=</span> <span class="n">encoded_value</span>
-                        <span class="p">)</span>
-                    <span class="k">else</span><span class="p">:</span>
-                        <span class="n">nan_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">nan_mask</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">!=</span> <span class="n">encoded_value</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">classes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">nan_encoding</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="n">label</span><span class="p">:</span> <span class="s2">&quot;NaN&quot;</span> <span class="ow">in</span> <span class="n">vals</span> <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">vals</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">classes</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                <span class="p">}</span>
+                <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">nan_encoded</span> <span class="ow">in</span> <span class="n">nan_encoding</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="n">nan_encoded</span><span class="p">:</span>
+                        <span class="n">encoded_value</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">classes</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;NaN&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                        <span class="n">encoded_col</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_cols</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                            <span class="n">nan_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span>
+                                <span class="n">nan_mask</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">[:,</span> <span class="n">encoded_col</span><span class="p">]</span> <span class="o">!=</span> <span class="n">encoded_value</span>
+                            <span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">nan_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">nan_mask</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">!=</span> <span class="n">encoded_value</span><span class="p">)</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">X</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">[</span><span class="n">nan_mask</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">nan_mask</span><span class="p">]</span>
@@ -683,7 +829,7 @@
             <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Dataset</span><span class="o">.</span><span class="n">from_tensor_slices</span><span class="p">((</span><span class="n">X</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)))</span>
 
 
-<span class="k">def</span> <span class="nf">_download_url_to_file</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">output_fn</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_download_url_to_file</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">output_fn</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
     <span class="n">fn_abs</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">output_fn</span><span class="p">)</span>
     <span class="n">base</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">fn_abs</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">output_fn</span><span class="p">),</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -699,9 +845,11 @@
         <span class="n">op</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">fn_abs</span><span class="p">)</span>
         <span class="ow">and</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">md5</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">fn_abs</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">())</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span> <span class="o">==</span> <span class="n">md5sum</span>
     <span class="p">):</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;File </span><span class="si">{</span><span class="n">op</span><span class="o">.</span><span class="n">relpath</span><span class="p">(</span><span class="n">fn_abs</span><span class="p">)</span><span class="si">}</span><span class="s2"> exists.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;File </span><span class="si">{</span><span class="n">op</span><span class="o">.</span><span class="n">relpath</span><span class="p">(</span><span class="n">fn_abs</span><span class="p">)</span><span class="si">}</span><span class="s2"> exists.&quot;</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Downloading </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">op</span><span class="o">.</span><span class="n">relpath</span><span class="p">(</span><span class="n">fn_abs</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Downloading </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">op</span><span class="o">.</span><span class="n">relpath</span><span class="p">(</span><span class="n">fn_abs</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
         <span class="c1"># Download from url and save to file</span>
         <span class="k">with</span> <span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span> <span class="k">as</span> <span class="n">s</span><span class="p">:</span>
             <span class="n">download</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
@@ -713,7 +861,7 @@
             <span class="n">md5file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">hashlib</span><span class="o">.</span><span class="n">md5</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">fn_abs</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">())</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">())</span>
 
 
-<span class="k">def</span> <span class="nf">_download_afq_dataset</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">data_home</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_download_afq_dataset</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">data_home</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
     <span class="n">urls_files</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s2">&quot;sarica&quot;</span><span class="p">:</span> <span class="p">[</span>
             <span class="p">{</span>
@@ -738,40 +886,25 @@
     <span class="p">}</span>
 
     <span class="k">for</span> <span class="n">dict_</span> <span class="ow">in</span> <span class="n">urls_files</span><span class="p">[</span><span class="n">dataset</span><span class="p">]:</span>
-        <span class="n">_download_url_to_file</span><span class="p">(</span><span class="n">dict_</span><span class="p">[</span><span class="s2">&quot;url&quot;</span><span class="p">],</span> <span class="n">dict_</span><span class="p">[</span><span class="s2">&quot;file&quot;</span><span class="p">])</span>
+        <span class="n">_download_url_to_file</span><span class="p">(</span><span class="n">dict_</span><span class="p">[</span><span class="s2">&quot;url&quot;</span><span class="p">],</span> <span class="n">dict_</span><span class="p">[</span><span class="s2">&quot;file&quot;</span><span class="p">],</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">download_sarica</span><span class="p">(</span><span class="n">data_home</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">download_sarica</span><span class="p">(</span><span class="n">data_home</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Fetch the ALS classification dataset from Sarica et al [1]_.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    data_home : str, default=None</span>
 <span class="sd">        Specify another download and cache folder for the datasets. By default all</span>
-<span class="sd">        afq-insight data is stored in ‘~/.afq-insight’ subfolders.</span>
+<span class="sd">        afq-insight data is stored in &#39;~/.afq-insight&#39; subfolders.</span>
+
+<span class="sd">    verbose : bool, default=True</span>
+<span class="sd">        If True, print status messages to stdout.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    X : array-like of shape (48, 3600)</span>
-<span class="sd">        The feature samples.</span>
-
-<span class="sd">    y : array-like of shape (48,)</span>
-<span class="sd">        Target values.</span>
-
-<span class="sd">    groups : list of numpy.ndarray</span>
-<span class="sd">        feature indices for each feature group</span>
-
-<span class="sd">    feature_names : list of tuples</span>
-<span class="sd">        The multi-indexed columns of X</span>
-
-<span class="sd">    group_names : list of tuples</span>
-<span class="sd">        The multi-indexed groups of X</span>
-
-<span class="sd">    subjects : list</span>
-<span class="sd">        Subject IDs</span>
-
-<span class="sd">    classes : dict</span>
-<span class="sd">        Class labels for ALS diagnosis.</span>
+<span class="sd">    dirname : str</span>
+<span class="sd">        Path to the downloaded dataset directory.</span>
 
 <span class="sd">    References</span>
 <span class="sd">    ----------</span>
@@ -781,38 +914,26 @@
 <span class="sd">        DOI: 10.1002/hbm.23412</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">data_home</span> <span class="o">=</span> <span class="n">data_home</span> <span class="k">if</span> <span class="n">data_home</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_DATA_DIR</span>
-    <span class="n">_download_afq_dataset</span><span class="p">(</span><span class="s2">&quot;sarica&quot;</span><span class="p">,</span> <span class="n">data_home</span><span class="o">=</span><span class="n">data_home</span><span class="p">)</span>
+    <span class="n">_download_afq_dataset</span><span class="p">(</span><span class="s2">&quot;sarica&quot;</span><span class="p">,</span> <span class="n">data_home</span><span class="o">=</span><span class="n">data_home</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data_home</span><span class="p">,</span> <span class="s2">&quot;sarica_data&quot;</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">download_weston_havens</span><span class="p">(</span><span class="n">data_home</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">download_weston_havens</span><span class="p">(</span><span class="n">data_home</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Load the age prediction dataset from Weston-Havens [1]_.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    data_home : str, default=None</span>
 <span class="sd">        Specify another download and cache folder for the datasets. By default all</span>
-<span class="sd">        afq-insight data is stored in ‘~/.afq-insight’ subfolders.</span>
+<span class="sd">        afq-insight data is stored in &#39;~/.afq-insight&#39; subfolders.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    X : array-like of shape (77, 3600)</span>
-<span class="sd">        The feature samples.</span>
+<span class="sd">    dirname : str</span>
+<span class="sd">        Path to the downloaded dataset directory.</span>
 
-<span class="sd">    y : array-like of shape (77,) or (n_samples, n_targets), optional</span>
-<span class="sd">        Target values.</span>
-
-<span class="sd">    groups : list of numpy.ndarray</span>
-<span class="sd">        feature indices for each feature group</span>
-
-<span class="sd">    feature_names : list of tuples</span>
-<span class="sd">        The multi-indexed columns of X</span>
-
-<span class="sd">    group_names : list of tuples</span>
-<span class="sd">        The multi-indexed groups of X</span>
-
-<span class="sd">    subjects : list</span>
-<span class="sd">        Subject IDs</span>
+<span class="sd">    verbose : bool, default=True</span>
+<span class="sd">        If True, print status messages to stdout.</span>
 
 <span class="sd">    References</span>
 <span class="sd">    ----------</span>
@@ -822,7 +943,7 @@
 <span class="sd">        DOI: 10.1038/ncomms5932</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">data_home</span> <span class="o">=</span> <span class="n">data_home</span> <span class="k">if</span> <span class="n">data_home</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_DATA_DIR</span>
-    <span class="n">_download_afq_dataset</span><span class="p">(</span><span class="s2">&quot;weston_havens&quot;</span><span class="p">,</span> <span class="n">data_home</span><span class="o">=</span><span class="n">data_home</span><span class="p">)</span>
+    <span class="n">_download_afq_dataset</span><span class="p">(</span><span class="s2">&quot;weston_havens&quot;</span><span class="p">,</span> <span class="n">data_home</span><span class="o">=</span><span class="n">data_home</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data_home</span><span class="p">,</span> <span class="s2">&quot;weston_havens_data&quot;</span><span class="p">)</span>
 </pre></div>
 
