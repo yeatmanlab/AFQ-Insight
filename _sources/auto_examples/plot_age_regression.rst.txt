@@ -209,9 +209,9 @@ Create an analysis pipeline
 
  .. code-block:: none
 
-    Mean train score: 0.897
-    Mean test score:  -0.409
-    Mean fit time:    13.99s
+    Mean train score: 0.877
+    Mean test score:  -0.308
+    Mean fit time:    18.47s
     Mean score time:   0.00s
 
 
@@ -220,7 +220,7 @@ Create an analysis pipeline
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 1 minutes  11.155 seconds)
+   **Total running time of the script:** ( 1 minutes  34.038 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_age_regression.py:
