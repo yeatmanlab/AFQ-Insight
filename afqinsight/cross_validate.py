@@ -9,9 +9,14 @@ import pickle
 
 from joblib import delayed, Parallel
 from sklearn.base import clone, is_classifier
+from sklearn.metrics import check_scoring
 from sklearn.metrics._scorer import _check_multimetric_scoring
 from sklearn.model_selection._split import check_cv
-from sklearn.model_selection._validation import _aggregate_score_dicts, _fit_and_score
+from sklearn.model_selection._validation import (
+    _aggregate_score_dicts,
+    _fit_and_score,
+    _normalize_score_results,
+)
 from sklearn.pipeline import Pipeline
 from sklearn.utils import indexable
 
@@ -125,18 +130,18 @@ def _fit_and_score_ckpt(
             with open(pkl_file, "rb") as fp:
                 estimator = pickle.load(fp)
 
-            scores.append(estimator)
+            scores["estimator"] = estimator
 
         return scores
     else:
         scores = _fit_and_score(estimator, **fit_and_score_kwargs)
         os.makedirs(workdir, exist_ok=True)
         if fit_and_score_kwargs.get("return_estimator", False):
-            estimator = scores[-1]
+            estimator = scores["estimator"]
             with open(pkl_file, "wb") as fp:
                 pickle.dump(estimator, fp)
 
-            ckpt_scores = scores[:-1]
+            ckpt_scores = {key: scores[key] for key in scores if key != "estimator"}
             if isinstance(estimator, Pipeline):
                 model = estimator.steps[-1]
             else:
@@ -161,7 +166,7 @@ def _fit_and_score_ckpt(
         fit_and_score_kwargs.pop("y")
 
         if "scorer" in fit_and_score_kwargs:
-            fit_and_score_kwargs["scorer"] = list(fit_and_score_kwargs["scorer"].keys())
+            fit_and_score_kwargs.pop("scorer")
 
         ckpt_dict = {
             "scores": ckpt_scores,
@@ -392,7 +397,13 @@ def cross_validate_checkpoint(
     X, y, groups = indexable(X, y, groups)
 
     cv = check_cv(cv, y, classifier=is_classifier(estimator))
-    scorers, _ = _check_multimetric_scoring(estimator, scoring=scoring)
+
+    if callable(scoring):
+        scorers = scoring
+    elif scoring is None or isinstance(scoring, str):
+        scorers = check_scoring(estimator, scoring)
+    else:
+        scorers = _check_multimetric_scoring(estimator, scoring)
 
     # We clone the estimator to make sure that all the folds are
     # independent, and that it is pickle-able.
@@ -442,26 +453,23 @@ def cross_validate_checkpoint(
             for train, test in cv.split(X, y, groups)
         )
 
-    zipped_scores = list(zip(*scores))
-    if return_train_score:
-        train_scores = zipped_scores.pop(0)
-        train_scores = _aggregate_score_dicts(train_scores)
-    if return_estimator:
-        fitted_estimators = zipped_scores.pop()
-    test_scores, fit_times, score_times = zipped_scores
-    test_scores = _aggregate_score_dicts(test_scores)
+    results = _aggregate_score_dicts(scores)
 
     ret = {}
-    ret["fit_time"] = np.array(fit_times)
-    ret["score_time"] = np.array(score_times)
+    ret["fit_time"] = results["fit_time"]
+    ret["score_time"] = results["score_time"]
 
     if return_estimator:
-        ret["estimator"] = fitted_estimators
+        ret["estimator"] = results["estimator"]
 
-    for name in scorers:
-        ret["test_%s" % name] = np.array(test_scores[name])
+    test_scores_dict = _normalize_score_results(results["test_scores"])
+    if return_train_score:
+        train_scores_dict = _normalize_score_results(results["train_scores"])
+
+    for name in test_scores_dict:
+        ret["test_%s" % name] = test_scores_dict[name]
         if return_train_score:
             key = "train_%s" % name
-            ret[key] = np.array(train_scores[name])
+            ret[key] = train_scores_dict[name]
 
     return ret

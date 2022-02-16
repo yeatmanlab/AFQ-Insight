@@ -238,7 +238,7 @@ class SerialBaggingClassifier(BaggingClassifier):
     base_estimator_ : estimator
         The base estimator from which the ensemble is grown.
 
-    n_features_ : int
+    n_features_in_ : int
         The number of features when :meth:`fit` is performed.
 
     estimators_ : list of estimators
@@ -357,7 +357,7 @@ class SerialBaggingClassifier(BaggingClassifier):
             sample_weight = _check_sample_weight(sample_weight, X, dtype=None)
 
         # Remap output
-        n_samples, self.n_features_ = X.shape
+        n_samples, self.n_features_in_ = X.shape
         self._n_samples = n_samples
         y = self._validate_y(y)
         self.y_train_ = np.copy(y)
@@ -384,11 +384,11 @@ class SerialBaggingClassifier(BaggingClassifier):
         if isinstance(self.max_features, numbers.Integral):
             max_features = self.max_features
         elif isinstance(self.max_features, np.float):
-            max_features = self.max_features * self.n_features_
+            max_features = self.max_features * self.n_features_in_
         else:
             raise ValueError("max_features must be int or float")
 
-        if not (0 < max_features <= self.n_features_):
+        if not (0 < max_features <= self.n_features_in_):
             raise ValueError("max_features must be in (0, n_features]")
 
         max_features = max(1, int(max_features))
@@ -482,7 +482,7 @@ class SerialBaggingClassifier(BaggingClassifier):
                 seed,
                 self.bootstrap_features,
                 self.bootstrap,
-                self.n_features_,
+                self.n_features_in_,
                 self._n_samples,
                 self._max_features,
                 self._max_samples,
@@ -519,12 +519,12 @@ class SerialBaggingClassifier(BaggingClassifier):
             X, accept_sparse=["csr", "csc"], dtype=None, force_all_finite=False
         )
 
-        if self.n_features_ != X.shape[1]:
+        if self.n_features_in_ != X.shape[1]:
             raise ValueError(
                 "Number of features of the model must "
                 "match the input. Model n_features is {0} and "
                 "input n_features is {1}."
-                "".format(self.n_features_, X.shape[1])
+                "".format(self.n_features_in_, X.shape[1])
             )
 
         # Partition the estimators
@@ -573,12 +573,12 @@ class SerialBaggingClassifier(BaggingClassifier):
                 X, accept_sparse=["csr", "csc"], dtype=None, force_all_finite=False
             )
 
-            if self.n_features_ != X.shape[1]:
+            if self.n_features_in_ != X.shape[1]:
                 raise ValueError(
                     "Number of features of the model must "
                     "match the input. Model n_features is {0} "
                     "and input n_features is {1} "
-                    "".format(self.n_features_, X.shape[1])
+                    "".format(self.n_features_in_, X.shape[1])
                 )
 
             # Partition the estimators
@@ -635,12 +635,12 @@ class SerialBaggingClassifier(BaggingClassifier):
             X, accept_sparse=["csr", "csc"], dtype=None, force_all_finite=False
         )
 
-        if self.n_features_ != X.shape[1]:
+        if self.n_features_in_ != X.shape[1]:
             raise ValueError(
                 "Number of features of the model must "
                 "match the input. Model n_features is {0} and "
                 "input n_features is {1} "
-                "".format(self.n_features_, X.shape[1])
+                "".format(self.n_features_in_, X.shape[1])
             )
 
         # Partition the estimators
@@ -747,7 +747,7 @@ class SerialBaggingRegressor(BaggingRegressor):
     base_estimator_ : estimator
         The base estimator from which the ensemble is grown.
 
-    n_features_ : int
+    n_features_in_ : int
         The number of features when :meth:`fit` is performed.
 
     estimators_ : list of estimators
@@ -872,7 +872,7 @@ class SerialBaggingRegressor(BaggingRegressor):
             sample_weight = _check_sample_weight(sample_weight, X, dtype=None)
 
         # Remap output
-        n_samples, self.n_features_ = X.shape
+        n_samples, self.n_features_in_ = X.shape
         self._n_samples = n_samples
         y = self._validate_y(y)
 
@@ -898,11 +898,11 @@ class SerialBaggingRegressor(BaggingRegressor):
         if isinstance(self.max_features, numbers.Integral):
             max_features = self.max_features
         elif isinstance(self.max_features, np.float):  # pragma: no cover
-            max_features = self.max_features * self.n_features_
+            max_features = self.max_features * self.n_features_in_
         else:  # pragma: no cover
             raise ValueError("max_features must be int or float")
 
-        if not (0 < max_features <= self.n_features_):  # pragma: no cover
+        if not (0 < max_features <= self.n_features_in_):  # pragma: no cover
             raise ValueError("max_features must be in (0, n_features]")
 
         max_features = max(1, int(max_features))
