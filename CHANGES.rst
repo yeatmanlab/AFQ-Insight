@@ -1,3 +1,8 @@
+v0.3.3 (February 16, 2022)
+==========================
+  * Fix attribute errors in bagging and cross-validation. Loosen dependency reqs (#108)
+  * Make AFQDataset work with different input formats and make indexable (#105)
+
 v0.3.2 (December 22, 2021)
 ==========================
   * ENH: Expose figsize and tight_layout kwargs to plot_tract_profiles (#104)
