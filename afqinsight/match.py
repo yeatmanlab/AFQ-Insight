@@ -1,6 +1,5 @@
 """Perform statistical matching comparing test and control units."""
 
-from os import name
 import numpy as np
 import pandas as pd
 from scipy.optimize import linear_sum_assignment
@@ -44,7 +43,11 @@ def mahalonobis_dist_match(
 
     Returns
     -------
-    
+    selected_data : pandas Dataframe
+        If data is None, returns a Dataframe with columns named
+        'feature_0', 'feature_1', etc. and a 'status' column
+        where 1 corresponds to test and 0 corresponds to control.
+        If data is not None, returns data with only the selected rows.
     """
     if data is not None:
         if status_col is None:
@@ -58,8 +61,7 @@ def mahalonobis_dist_match(
             )
 
         if feature_cols is None:
-            feature_cols = data.columns
-            feature_cols.remove(status_col)
+            feature_cols = data.columns.drop(status_col)
 
         df_test_rows = data[status_col].astype(bool)
         df_ctrl_rows = ~data[status_col].astype(bool)
