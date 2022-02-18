@@ -12,6 +12,8 @@ def mahalonobis_dist_match(
     data=None, test=None, ctrl=None, status_col=None, feature_cols=None, threshold=0.2
 ):
     """
+    Perform Mahalanobis distance matching (MDM) on a pandas dataframe or 2d array.
+
     If data is None, then test and ctrl must be arrays.
     If data is provided, then status_col and feature_cols are used.
 
@@ -119,8 +121,7 @@ def mahalonobis_dist_match(
 
 def _mahalonobis_dist(arr1, arr2):
     """
-    Calculate the Mahalonobis distance between two
-    2-dimensional arrays along the first axis.
+    Calculate the Mahalonobis distance between two 2d arrays along the first axis.
 
     Parameters
     ----------
