@@ -74,7 +74,9 @@ def test_mahalonobis_dist_match_df_err():
 def test_mahalonobis_dist_match_df_feauture_none():
     data_wo_extras = data.drop(columns=["eid", "age"])
     matched_df = aim.mahalonobis_dist_match(
-        data=data_wo_extras, status_col="status", threshold=1,
+        data=data_wo_extras,
+        status_col="status",
+        threshold=1,
     )
 
     assert_array_equal(
