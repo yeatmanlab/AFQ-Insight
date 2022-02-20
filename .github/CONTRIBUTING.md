@@ -47,7 +47,7 @@ Already know what you're looking for in this guide? Jump to the following sectio
 
 ## Joining the conversation
 
-_Groupyr_ is primarily maintained by a [collaborative research group][link_autofq].
+_AFQ-Insight_ is primarily maintained by a [collaborative research group][link_autofq].
 But we maintain this software as an open project. This means that we welcome
 contributions from people outside our group and we make sure to give
 contributors from outside our group credit in presentations of the work. In
@@ -238,7 +238,7 @@ but those accepted fastest will follow a workflow similar to the following:
    requested changes, we might ask [@bedevere-bot][link_bedevere] to [poke
    you with soft cushions][link_bedevere_video]!
 
-## _Groupyr_ coding style guide
+## _AFQ-Insight_ coding style guide
 
 We use the [Black code formatter][link_black] for format our code
 contributions to a common style. All pull requests will automatically be
@@ -261,12 +261,12 @@ docstrings.
 
 ## Licensing
 
-_Groupyr_ is licensed under the BSD license. By contributing to _AFQ-Insight_, you
+_AFQ-Insight_ is licensed under the BSD license. By contributing to _AFQ-Insight_, you
 acknowledge that any contributions will be licensed under the same terms.
 
 ### Reminder note for maintainers
 
-_Groupyr_ pushes a development version to
+_AFQ-Insight_ pushes a development version to
 [Test-PyPI](https://test.pypi.org/) on every pull request merged into
 the main branch. To release a new version of _AFQ-Insight_, use the `publish_release.sh` script from the root directory, i.e.:
 
