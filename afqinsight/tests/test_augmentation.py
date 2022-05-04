@@ -11,7 +11,7 @@ from sklearn.impute import SimpleImputer
 @pytest.fixture
 def sarica_Xy():
     sarica_dir = download_sarica()
-    afq_data = AFQDataset(
+    afq_data = AFQDataset.from_files(
         fn_nodes=op.join(sarica_dir, "nodes.csv"),
         fn_subjects=op.join(sarica_dir, "subjects.csv"),
         dwi_metrics=["md", "fa"],
