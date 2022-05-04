@@ -4,7 +4,7 @@ This module provides data augmentation methods for one-dimensional sequences.
 The code itself borrows heavily from the code accompanying ref [1]_, which is
 available at https://github.com/uchidalab/time_series_augmentation and is
 licensed under the Apache-2.0 license. The code here has been modified to allow
-independent multi-channel input. That is, is allows independent data
+independent multi-channel input. That is, it allows independent data
 augmentation for each channel of multi-channel input data.
 
 References
