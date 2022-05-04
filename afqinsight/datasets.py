@@ -30,7 +30,7 @@ tf_msg = (
 )
 tf, _, _ = optional_package("tensorflow", tf_msg)
 
-__all__ = ["AFQDataset", "load_afq_data"]
+__all__ = ["AFQDataset", "load_afq_data", "bundles2channels"]
 _DATA_DIR = op.join(op.expanduser("~"), ".cache", "afq-insight")
 _FIELDS = [
     "X",
