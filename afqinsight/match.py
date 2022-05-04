@@ -116,7 +116,7 @@ def mahalonobis_dist_match(
         all_idx = np.concatenate(
             (df_test_idx[filtered_test_ind], df_ctrl_idx[filtered_ctrl_ind]), axis=0
         )
-        return data.loc[all_idx]
+        return data.iloc[all_idx]
 
 
 def _mahalonobis_dist(arr1, arr2):
