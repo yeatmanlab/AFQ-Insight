@@ -102,7 +102,7 @@ def cnn_vgg(input_shape, n_classes, output_activation="softmax", verbose=False):
         print("pooling layers: %d" % n_conv_layers)
 
     for i in range(n_conv_layers):
-        num_filters = min(64 * 2 ** i, 512)
+        num_filters = min(64 * 2**i, 512)
         conv = Conv1D(
             num_filters,
             3,
