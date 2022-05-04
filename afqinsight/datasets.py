@@ -30,7 +30,7 @@ tf_msg = (
 )
 tf, _, _ = optional_package("tensorflow", tf_msg)
 
-__all__ = ["AFQDataset", "load_afq_data"]
+__all__ = ["AFQDataset", "load_afq_data", "bundles2channels"]
 _DATA_DIR = op.join(op.expanduser("~"), ".cache", "afq-insight")
 _FIELDS = [
     "X",
@@ -360,9 +360,9 @@ if HAS_TORCH:
 
         def __getitem__(self, idx):
             if self.unsupervised:
-                return self.X[idx]
+                return self.X[idx].float()
             else:
-                return self.X[idx], self.y[idx]
+                return self.X[idx].float(), self.y[idx].float()
 
 else:  # pragma: no cover
     AFQTorchDataset = TripWire(torch_msg)
