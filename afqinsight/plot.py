@@ -78,11 +78,12 @@ def plot_tract_profiles(
     groups : list of numpy.ndarray, optional
         feature indices for each feature group of ``X``.
         Must be provided if ``X`` is an array. Should not be provided if
-        ``X`` is an AFQDataset
+        ``X`` is an AFQDataset.
 
     group_names : list of tuples
         the multi-indexed name for each group in ``groups``. Must be of same
-        length as ``groups``.
+        length as ``groups``. Must be provided if ``X`` is an array.
+        Should not be provided if ``X`` is an AFQDataset
 
     group_by : list-like
         grouping variable that will produce different bundle profiles with
