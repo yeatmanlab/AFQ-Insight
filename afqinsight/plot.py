@@ -146,7 +146,7 @@ def plot_tract_profiles(
         dictionary of matplotlib figures, with keys corresponding to the
         different diffusion metrics
     """
-    if isinstance(AFQDataset, X):
+    if isinstance(X, AFQDataset):
         if groups is not None or group_names is not None:
             raise ValueError(
                 "You provided an AFQDataset class instance as `X` input and also a `groups` or `group_names` input, but these are mutually exclusive."
