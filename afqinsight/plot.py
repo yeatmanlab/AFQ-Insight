@@ -160,7 +160,7 @@ def plot_tract_profiles(
         if groups is None or group_names is None:
             raise ValueError(
                 "You provided an array input as `X` but did not provide both a `groups` and a `group_names` input. You must provide both of these for array input. "
-                )
+            )
 
     plt_positions = subplot_positions if subplot_positions is not None else POSITIONS
 
