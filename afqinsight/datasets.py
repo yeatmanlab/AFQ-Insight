@@ -749,6 +749,116 @@ class AFQDataset:
         else:
             return tf.data.Dataset.from_tensor_slices((X, self.y.astype(float)))
 
+    def fit(self, model, **fit_params):
+        """Fit the dataset.
+
+        Parameters
+        ----------
+        model : sklearn model
+            The estimator or transformer to fit
+
+        **fit_params : dict
+            Additional parameters to pass to the fit method
+
+        Returns
+        -------
+        model : object
+            The fitted model
+        """
+        return model.fit(X=self.X, y=self.y, **fit_params)
+
+    def fit_transform(self, model, **fit_params):
+        """Fit and transform the dataset.
+
+        Parameters
+        ----------
+        model : sklearn model
+            The estimator or transformer to fit
+
+        **fit_params : dict
+            Additional parameters to pass to the fit_transform method
+
+        Returns
+        -------
+        dataset_new : AFQDataset
+            New AFQDataset with transformed features
+        """
+        return AFQDataset(
+            X=model.fit_transform(X=self.X, y=self.y, **fit_params),
+            y=self.y,
+            groups=self.groups,
+            feature_names=self.feature_names,
+            target_cols=self.target_cols,
+            group_names=self.group_names,
+            subjects=self.subjects,
+            sessions=self.sessions,
+            classes=self.classes,
+        )
+
+    def transform(self, model, **transform_params):
+        """Transform the dataset.
+
+        Parameters
+        ----------
+        model : sklearn model
+            The estimator or transformer to use to transform the features
+
+        **transform_params : dict
+            Additional parameters to pass to the transform method
+
+        Returns
+        -------
+        dataset_new : AFQDataset
+            New AFQDataset with transformed features
+        """
+        return AFQDataset(
+            X=model.transform(X=self.X, y=self.y, **transform_params),
+            y=self.y,
+            groups=self.groups,
+            feature_names=self.feature_names,
+            target_cols=self.target_cols,
+            group_names=self.group_names,
+            subjects=self.subjects,
+            sessions=self.sessions,
+            classes=self.classes,
+        )
+
+    def predict(self, model, **predict_params):
+        """Predict the targets.
+
+        Parameters
+        ----------
+        model : sklearn model
+            The estimator or transformer to use to predict the targets
+
+        **predict_params : dict
+            Additional parameters to pass to the predict method
+
+        Returns
+        -------
+        y_pred : ndarray
+            Predicted targets
+        """
+        return model.predict(X=self.X, **predict_params)
+
+    def score(self, model, **score_params):
+        """Score a model on this dataset.
+
+        Parameters
+        ----------
+        model : sklearn model
+            The estimator or transformer to use to score the model
+
+        **score_params : dict
+            Additional parameters to pass to the score method, e.g. sample_weight
+
+        Returns
+        -------
+        score : float
+            The score of the model (e.g. R2, accuracy, etc.)
+        """
+        return model.score(X=self.X, y=self.y, **score_params)
+
 
 def _download_url_to_file(url, output_fn, encoding="utf-8", verbose=True):
     fn_abs = op.abspath(output_fn)
