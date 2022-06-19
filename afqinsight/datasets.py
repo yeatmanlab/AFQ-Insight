@@ -812,7 +812,7 @@ class AFQDataset:
             New AFQDataset with transformed features
         """
         return AFQDataset(
-            X=model.transform(X=self.X, y=self.y, **transform_params),
+            X=model.transform(X=self.X, **transform_params),
             y=self.y,
             groups=self.groups,
             feature_names=self.feature_names,
