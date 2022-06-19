@@ -749,7 +749,7 @@ class AFQDataset:
         else:
             return tf.data.Dataset.from_tensor_slices((X, self.y.astype(float)))
 
-    def fit(self, model, **fit_params):
+    def model_fit(self, model, **fit_params):
         """Fit the dataset.
 
         Parameters
@@ -767,7 +767,7 @@ class AFQDataset:
         """
         return model.fit(X=self.X, y=self.y, **fit_params)
 
-    def fit_transform(self, model, **fit_params):
+    def model_fit_transform(self, model, **fit_params):
         """Fit and transform the dataset.
 
         Parameters
@@ -795,7 +795,7 @@ class AFQDataset:
             classes=self.classes,
         )
 
-    def transform(self, model, **transform_params):
+    def model_transform(self, model, **transform_params):
         """Transform the dataset.
 
         Parameters
@@ -823,7 +823,7 @@ class AFQDataset:
             classes=self.classes,
         )
 
-    def predict(self, model, **predict_params):
+    def model_predict(self, model, **predict_params):
         """Predict the targets.
 
         Parameters
@@ -841,7 +841,7 @@ class AFQDataset:
         """
         return model.predict(X=self.X, **predict_params)
 
-    def score(self, model, **score_params):
+    def model_score(self, model, **score_params):
         """Score a model on this dataset.
 
         Parameters
