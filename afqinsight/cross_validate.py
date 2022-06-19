@@ -349,6 +349,7 @@ def cross_validate_checkpoint(
     Examples
     --------
     >>> import shutil
+    >>> import numpy as np
     >>> import tempfile
     >>> from sklearn import datasets, linear_model
     >>> from afqinsight import cross_validate_checkpoint
@@ -364,8 +365,8 @@ def cross_validate_checkpoint(
     >>> cv_results = cross_validate_checkpoint(lasso, X, y, cv=3, checkpoint=False)
     >>> sorted(cv_results.keys())
     ['fit_time', 'score_time', 'test_score']
-    >>> cv_results['test_score']
-    array([0.33150734, 0.08022311, 0.03531764])
+    >>> np.allclose(cv_results['test_score'], [0.33150734, 0.08022311, 0.03531764])
+    True
 
     Multiple metric evaluation using ``cross_validate``, an estimator
     pipeline, and checkpointing (please refer the ``scoring`` parameter doc
