@@ -14,6 +14,8 @@ from afqinsight.datasets import (
     AFQDataset,
     standardize_subject_id,
 )
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import Lasso
 
 data_path = op.join(afqi.__path__[0], "data")
 test_data_path = op.join(data_path, "test_data")
@@ -161,6 +163,46 @@ def test_AFQDataset_shape_len_index():
     assert len(dataset[:2]) == 2  # nosec
     assert isinstance(dataset[:2], AFQDataset)  # nosec
     assert repr(dataset) == "AFQDataset(n_samples=10, n_features=4)"  # nosec
+
+
+def test_AFQDataset_fit_transform():
+    sarica_dir = download_sarica()
+    dataset = AFQDataset.from_files(
+        fn_nodes=op.join(sarica_dir, "nodes.csv"),
+        fn_subjects=op.join(sarica_dir, "subjects.csv"),
+        dwi_metrics=["md", "fa"],
+        target_cols=["class"],
+        label_encode_cols=["class"],
+    )
+
+    # Test that model_fit fits the imputer
+    imputer = dataset.model_fit(SimpleImputer())
+    assert np.allclose(imputer.statistics_, np.nanmean(dataset.X, axis=0))
+
+    # Test that model_transform imputes the data
+    dataset_imputed = dataset.model_transform(imputer)
+    assert np.allclose(dataset_imputed.X, imputer.transform(dataset.X))
+
+    # Test that fit_transform does the same as fit and then transform
+    dataset_transformed = dataset.model_fit_transform(SimpleImputer())
+    assert np.allclose(dataset_transformed.X, dataset_imputed.X)
+
+
+def test_AFQDataset_predict_score():
+    wh_dir = download_weston_havens()
+    dataset = AFQDataset.from_files(
+        fn_nodes=op.join(wh_dir, "nodes.csv"),
+        fn_subjects=op.join(wh_dir, "subjects.csv"),
+        dwi_metrics=["md", "fa"],
+        target_cols=["Age"],
+    )
+    dataset = dataset.model_fit_transform(SimpleImputer(strategy="median"))
+    estimator = dataset.model_fit(Lasso())
+    y_pred = dataset.model_predict(estimator)
+    assert np.allclose(estimator.predict(dataset.X), y_pred)
+    assert np.allclose(
+        estimator.score(dataset.X, dataset.y), dataset.model_score(estimator)
+    )
 
 
 def test_drop_target_na():
