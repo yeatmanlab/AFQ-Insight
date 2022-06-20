@@ -6,7 +6,7 @@ Load and interact with an AFQ dataset
 This example loads AFQ data from CSV files and manipulates that data using
 scikit-learn transformers and estimators. First we fetch the Weston-Havens
 dataset described in Yeatman et al [1]_. This dataset contains tractometry
-features from 77 subjects ages 6-50. 
+features from 77 subjects ages 6-50.
 
 Next, we split the dataset into a train and test split, impute missing values,
 and fit a LASSO model, all using :class:`AFQDataset` methods. Predictive
@@ -111,7 +111,8 @@ print("LASSO test score: ", test_score)
 #
 # Next we convert the train and test datasets to tensorflow datasets
 # and use one of AFQ-Insight's built-in one-dimensional CNNs to predict
-# age.
+# age. This model also performs poorly. It turns out predicting age in
+# this dataset requires a bit more work.
 
 tfset_train = dataset_train.as_tensorflow_dataset()
 tfset_test = dataset_test.as_tensorflow_dataset()
