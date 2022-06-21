@@ -770,7 +770,7 @@ class AFQDataset:
             return tf.data.Dataset.from_tensor_slices((X, self.y.astype(float)))
 
     def model_fit(self, model, **fit_params):
-        """Fit the dataset.
+        """Fit the dataset with a provided model object.
 
         Parameters
         ----------
@@ -788,7 +788,7 @@ class AFQDataset:
         return model.fit(X=self.X, y=self.y, **fit_params)
 
     def model_fit_transform(self, model, **fit_params):
-        """Fit and transform the dataset.
+        """Fit and transform the dataset with a provided model object.
 
         Parameters
         ----------
@@ -816,7 +816,7 @@ class AFQDataset:
         )
 
     def model_transform(self, model, **transform_params):
-        """Transform the dataset.
+        """Transform the dataset with a provided model object.
 
         Parameters
         ----------
@@ -844,7 +844,7 @@ class AFQDataset:
         )
 
     def model_predict(self, model, **predict_params):
-        """Predict the targets.
+        """Predict the targets with a provided model object.
 
         Parameters
         ----------
@@ -870,7 +870,7 @@ class AFQDataset:
             The estimator or transformer to use to score the model
 
         **score_params : dict
-            Additional parameters to pass to the score method, e.g. sample_weight
+            Additional parameters to pass to the `score` method, e.g., `sample_weight`
 
         Returns
         -------
