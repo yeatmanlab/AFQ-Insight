@@ -188,17 +188,22 @@ def plot_tract_profiles(
         group_by = np.ones(X.shape[0])
         group_by_name = None
 
-    if dataset is not None and None in [X, groups, group_names]:
-        raise ValueError(
-            "You provided both a `dataset` and one of `X`, `groups`, or "
-            "`group_names`. These parameters are mutually exclusive. "
-            "Please try again with just the dataset."
-        )
-
     if dataset is not None:
+        if any([var is not None for var in [X, groups, group_names]]):
+            raise ValueError(
+                "You provided both a `dataset` and one of `X`, `groups`, or "
+                "`group_names`. These parameters are mutually exclusive. "
+                "Please try again with just the dataset."
+            )
         X = dataset.X
         groups = dataset.groups
         group_names = dataset.group_names
+
+    if dataset is None and None in [X, groups, group_names]:
+        raise ValueError(
+            "You must supply either a `dataset` or all of `X`, "
+            "`groups`, and `group_names`."
+        )
 
     figs = {}
 
