@@ -188,6 +188,30 @@ def test_AFQDataset_fit_transform():
     assert np.allclose(dataset_transformed.X, dataset_imputed.X)
 
 
+def test_AFQDataset_copy():
+    wh_dir = download_weston_havens()
+    dataset_1 = AFQDataset.from_files(
+        fn_nodes=op.join(wh_dir, "nodes.csv"),
+        fn_subjects=op.join(wh_dir, "subjects.csv"),
+        dwi_metrics=["md", "fa"],
+        target_cols=["Age"],
+    )
+    dataset_2 = dataset_1.copy()
+
+    # Test that it copied
+    assert np.allclose(dataset_1.X, dataset_2.X)
+    assert np.allclose(dataset_1.y, dataset_2.y)
+    assert dataset_1.groups == dataset_2.groups
+    assert dataset_1.group_names == dataset_2.group_names
+    assert dataset_1.subjects == dataset_2.subjects
+
+    # Test that it's a deep copy
+    dataset_1.X = 0
+    dataset_1.y = "foo"
+    assert dataset_2.X != 0
+    assert dataset_2.y != "foo"
+
+
 def test_AFQDataset_predict_score():
     wh_dir = download_weston_havens()
     dataset = AFQDataset.from_files(
