@@ -200,16 +200,15 @@ def test_AFQDataset_copy():
 
     # Test that it copied
     assert np.allclose(dataset_1.X, dataset_2.X, equal_nan=True)
-    assert np.allclose(dataset_1.y, dataset_2.y, equal_nan=True)
     assert dataset_1.groups == dataset_2.groups
     assert dataset_1.group_names == dataset_2.group_names
     assert dataset_1.subjects == dataset_2.subjects
 
     # Test that it's a deep copy
-    dataset_1.X = 0
-    dataset_1.y = "foo"
-    assert dataset_2.X != 0
-    assert dataset_2.y != "foo"
+    dataset_1.X = np.zeros_like(dataset_2.X)
+    dataset_1.y = np.zeros_like(dataset_2.y)
+    assert not np.allclose(dataset_2.X, dataset_1.X, equal_nan=True)
+    assert not np.allclose(dataset_1.y, dataset_2.y, equal_nan=True)
 
 
 def test_AFQDataset_predict_score():
