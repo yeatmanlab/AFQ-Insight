@@ -199,8 +199,8 @@ def test_AFQDataset_copy():
     dataset_2 = dataset_1.copy()
 
     # Test that it copied
-    assert np.allclose(dataset_1.X, dataset_2.X)
-    assert np.allclose(dataset_1.y, dataset_2.y)
+    assert np.allclose(dataset_1.X, dataset_2.X, equal_nan=True)
+    assert np.allclose(dataset_1.y, dataset_2.y, equal_nan=True)
     assert dataset_1.groups == dataset_2.groups
     assert dataset_1.group_names == dataset_2.group_names
     assert dataset_1.subjects == dataset_2.subjects
