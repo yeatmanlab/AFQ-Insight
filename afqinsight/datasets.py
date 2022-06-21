@@ -788,7 +788,7 @@ class AFQDataset:
         return model.fit(X=self.X, y=self.y, **fit_params)
 
     def model_fit_transform(self, model, **fit_params):
-        """Fit and transform the dataset.
+        """Fit and transform the dataset with a provided model object.
 
         Parameters
         ----------
