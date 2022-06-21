@@ -770,7 +770,7 @@ class AFQDataset:
             return tf.data.Dataset.from_tensor_slices((X, self.y.astype(float)))
 
     def model_fit(self, model, **fit_params):
-        """Fit the dataset.
+        """Fit the dataset with a provided model object.
 
         Parameters
         ----------
