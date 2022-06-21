@@ -52,9 +52,10 @@ POSITIONS = OrderedDict(
 
 
 def plot_tract_profiles(
-    X,
+    X=None,
     groups=None,
     group_names=None,
+    dataset=None,
     group_by=None,
     group_by_name=None,
     bins=None,
@@ -84,6 +85,11 @@ def plot_tract_profiles(
         the multi-indexed name for each group in ``groups``. Must be of same
         length as ``groups``. Must be provided if ``X`` is an array.
         Should not be provided if ``X`` is an AFQDataset
+
+    dataset : AFQDataset
+        In leiu of passing ``X``, ``groups``, and ``group_names`` explicitly,
+        you may provide an AFQDataset and this function will extract those
+        quantities from the dataset.
 
     group_by : list-like
         grouping variable that will produce different bundle profiles with
@@ -181,6 +187,18 @@ def plot_tract_profiles(
             )
         group_by = np.ones(X.shape[0])
         group_by_name = None
+
+    if dataset is not None and None in [X, groups, group_names]:
+        raise ValueError(
+            "You provided both a `dataset` and one of `X`, `groups`, or "
+            "`group_names`. These parameters are mutually exclusive. "
+            "Please try again with just the dataset."
+        )
+
+    if dataset is not None:
+        X = dataset.X
+        groups = dataset.groups
+        group_names = dataset.group_names
 
     figs = {}
 

@@ -635,6 +635,26 @@ class AFQDataset:
         else:
             return self.X.shape
 
+    def copy(self):
+        """Return a deep copy of this dataset.
+
+        Returns
+        -------
+        AFQDataset
+            A deep copy of this dataset
+        """
+        return AFQDataset(
+            X=self.X,
+            y=self.y,
+            groups=self.groups,
+            feature_names=self.feature_names,
+            target_cols=self.target_cols,
+            group_names=self.group_names,
+            subjects=self.subjects,
+            sessions=self.sessions,
+            classes=self.classes,
+        )
+
     def bundle_means(self):
         """Return diffusion metrics averaged along the length of each bundle.
 
