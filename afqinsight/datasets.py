@@ -844,7 +844,7 @@ class AFQDataset:
         )
 
     def model_predict(self, model, **predict_params):
-        """Predict the targets.
+        """Predict the targets with a provided model object.
 
         Parameters
         ----------
