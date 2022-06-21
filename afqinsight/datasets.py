@@ -870,7 +870,7 @@ class AFQDataset:
             The estimator or transformer to use to score the model
 
         **score_params : dict
-            Additional parameters to pass to the score method, e.g. sample_weight
+            Additional parameters to pass to the `score` method, e.g., `sample_weight`
 
         Returns
         -------
