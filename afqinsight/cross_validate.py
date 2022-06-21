@@ -365,8 +365,8 @@ def cross_validate_checkpoint(
     >>> cv_results = cross_validate_checkpoint(lasso, X, y, cv=3, checkpoint=False)
     >>> sorted(cv_results.keys())
     ['fit_time', 'score_time', 'test_score']
-    >>> np.allclose(cv_results['test_score'], [0.3315057 , 0.08022103, 0.03531816], rtol=1e-4)
-    True
+    >>> cv_results['test_score']  # doctest: +ELLIPSIS, +NORMALIZE_WHITESPACE
+    array([0.33150..., 0.08022..., 0.03531...])
 
     Multiple metric evaluation using ``cross_validate``, an estimator
     pipeline, and checkpointing (please refer the ``scoring`` parameter doc
