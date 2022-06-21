@@ -78,7 +78,7 @@ dataset = dataset.model_fit_transform(SimpleImputer(strategy="median"))
 # grouped by a categorical or continuous variable.
 
 site_figs = plot_tract_profiles(
-    dataset=dataset,
+    X=dataset,
     group_by=dataset.classes["scan_site_id"][dataset.y[:, 2].astype(int)],
     group_by_name="Site",
     figsize=(14, 14),
@@ -113,7 +113,7 @@ dataset_harmonized.X = CombatModel().fit_transform(
 )
 
 site_figs = plot_tract_profiles(
-    dataset=dataset_harmonized,
+    X=dataset_harmonized,
     group_by=dataset_harmonized.classes["scan_site_id"][
         dataset_harmonized.y[:, 2].astype(int)
     ],
