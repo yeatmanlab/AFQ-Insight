@@ -816,7 +816,7 @@ class AFQDataset:
         )
 
     def model_transform(self, model, **transform_params):
-        """Transform the dataset.
+        """Transform the dataset with a provided model object.
 
         Parameters
         ----------
