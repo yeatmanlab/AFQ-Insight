@@ -1,7 +1,7 @@
 """
-============================================================
-Load HBN data and plot average bundle profiles for each site
-============================================================
+===============================
+Harmonize HBN data using ComBat
+===============================
 
 This example loads AFQ data from the Healthy Brain Network (HBN) preprocessed
 diffusion derivatives [1]_. The HBN is a landmark...
@@ -37,12 +37,13 @@ from afqinsight import AFQDataset
 from afqinsight.plot import plot_tract_profiles
 from neurocombat_sklearn import CombatModel
 from sklearn.impute import SimpleImputer
+from sklearn.model_selection import train_test_split
 
 ##########################################################################
 # Fetch the HBN data
 # ------------------
 #
-# The :method:`AFQDataset.from_files` static method expects a path to
+# The :func:`AFQDataset.from_files` static method expects a path to
 # nodes.csv and subjects.csv files, but these file paths can be remote
 # URLs or AWS S3 URIs. We'll use S3 URIs to grab the HBN data. After dropping
 # participants with null phenotypic values, it has 1,867 participants.
@@ -59,27 +60,38 @@ dataset.drop_target_na()
 print(dataset)
 
 ##########################################################################
+# Train / test split
+# ------------------
+#
+# We can use the dataset in the :func:`train_test_split` function just as we
+# would with an array.
+
+dataset_train, dataset_test = train_test_split(dataset, test_size=0.5)
+
+##########################################################################
 # Impute missing values
 # ---------------------
 #
-# Next we impute missing values using median imputation. There's no model
-# evaluation going on here. We're just making pretty pictures so we're
-# going to skip the usual train/test split.
+# Next we impute missing values using median imputation. We fit the imputer
+# using the training set and then use it to transform both the training and test
+# sets.
 
-dataset = dataset.model_fit_transform(SimpleImputer(strategy="median"))
+imputer = dataset_train.model_fit(SimpleImputer(strategy="median"))
+dataset_train = dataset_train.model_transform(imputer)
+dataset_test = dataset_test.model_transform(imputer)
 
 ##########################################################################
 # Plot average bundle profiles by scan site
 # -----------------------------------------
 #
-# Next we plot the mean bundle profiles by scanning site. The :func:`plot_tract_profiles`
-# function takes as input an :class:`AFQDataset` and returns matplotlib figures
-# displaying the mean bundle profile for each bundle and metric, optionally
-# grouped by a categorical or continuous variable.
+# Next we plot the mean bundle profiles in the test set by scanning site. The
+# :func:`plot_tract_profiles` function takes as input an :class:`AFQDataset` and
+# returns matplotlib figures displaying the mean bundle profile for each bundle
+# and metric, optionally grouped by a categorical or continuous variable.
 
 site_figs = plot_tract_profiles(
-    X=dataset,
-    group_by=dataset.classes["scan_site_id"][dataset.y[:, 2].astype(int)],
+    X=dataset_test,
+    group_by=dataset_test.classes["scan_site_id"][dataset_test.y[:, 2].astype(int)],
     group_by_name="Site",
     figsize=(14, 14),
 )
@@ -104,18 +116,28 @@ site_figs = plot_tract_profiles(
 # Lastly, we replot the mean bundle profiles and confirm that ComBat did its
 # job.
 
-dataset_harmonized = dataset.copy()
-dataset_harmonized.X = CombatModel().fit_transform(
-    dataset.X,
-    dataset.y[:, 2][:, np.newaxis],
-    dataset.y[:, 1][:, np.newaxis],
-    dataset.y[:, 0][:, np.newaxis],
+# Fit the ComBat transformer to the training set
+combat = CombatModel()
+combat.fit(
+    dataset_train.X,
+    dataset_train.y[:, 2][:, np.newaxis],
+    dataset_train.y[:, 1][:, np.newaxis],
+    dataset_train.y[:, 0][:, np.newaxis],
+)
+
+# And then transform a copy of the test set
+harmonized_test = dataset_test.copy()
+harmonized_test.X = combat.transform(
+    dataset_test.X,
+    dataset_test.y[:, 2][:, np.newaxis],
+    dataset_test.y[:, 1][:, np.newaxis],
+    dataset_test.y[:, 0][:, np.newaxis],
 )
 
 site_figs = plot_tract_profiles(
-    X=dataset_harmonized,
-    group_by=dataset_harmonized.classes["scan_site_id"][
-        dataset_harmonized.y[:, 2].astype(int)
+    X=harmonized_test,
+    group_by=harmonized_test.classes["scan_site_id"][
+        harmonized_test.y[:, 2].astype(int)
     ],
     group_by_name="Site",
     figsize=(14, 14),

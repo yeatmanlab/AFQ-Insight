@@ -16,7 +16,14 @@ use more advanced estimators, such as the SGL [2]_, a gradient boosting machine,
 or a neural network.
 
 Finally, we convert the AFQDataset to a tensorflow dataset and fit a basic
-one-dimensional CNN to predict age from the features.
+one-dimensional CNN to predict age from the features. This last step requires that
+AFQ-Insight has been installed with::
+
+    pip install afqinsight[tf]
+    
+or that tensorflow has been separately installed with::
+
+    pip install tensorflow
 
 .. [1]  Jason D. Yeatman, Brian A. Wandell, & Aviv A. Mezer, "Lifespan
     maturation and degeneration of human brain white matter" Nature
@@ -60,7 +67,7 @@ workdir = download_weston_havens()
 # Read in the data
 # ----------------
 #
-# Next, we read in the data. The :method:`AFQDataset.from_files` static method
+# Next, we read in the data. The :func:`AFQDataset.from_files` static method
 # expects a the filenames of a nodes.csv and subjects.csv file, and returns a
 # dataset object.
 
@@ -111,7 +118,16 @@ print("LASSO test score: ", test_score)
 #
 # Next we convert the train and test datasets to tensorflow datasets
 # and use one of AFQ-Insight's built-in one-dimensional CNNs to predict
-# age. This model also performs poorly. It turns out predicting age in
+# age. This part of the example will only work if you have either installed
+# AFQ-Insight with tensorflow using::
+#
+#     pip install afqinsight[tf]
+#
+# or separately install tensorflow using::
+#
+#     pip install tensorflow
+#
+# This model also performs poorly. It turns out predicting age in
 # this dataset requires a bit more work.
 
 tfset_train = dataset_train.as_tensorflow_dataset()
