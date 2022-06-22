@@ -4,10 +4,12 @@ Harmonize HBN data using ComBat
 ===============================
 
 This example loads AFQ data from the Healthy Brain Network (HBN) preprocessed
-diffusion derivatives [1]_. The HBN is a landmark pediatric mental health study. Over the course of the study, it 
-will collect diffusion MRI data from approximately 5,000 children and adolescents. We recently processed 
-the available data from over 2,000 of these subjects, and provide the tract profiles from this dataset, which can 
-be downloaded from AWS thanks for [INDI](http://fcon_1000.projects.nitrc.org/).
+diffusion derivatives [1]_. The HBN is a landmark pediatric mental health study.
+Over the course of the study, it will collect diffusion MRI data from
+approximately 5,000 children and adolescents. We recently processed the
+available data from over 2,000 of these subjects, and provide the tract profiles
+from this dataset, which can be downloaded from AWS thanks to
+[INDI](http://fcon_1000.projects.nitrc.org/).
 
 We first load the data by using the :func:`AFQDataset.from_files` static method
 and supplying AWS S3 URIs instead of local file names. We then impute missing
