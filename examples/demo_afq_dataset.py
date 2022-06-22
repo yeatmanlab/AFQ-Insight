@@ -20,7 +20,7 @@ one-dimensional CNN to predict age from the features. This last step requires th
 AFQ-Insight has been installed with::
 
     pip install afqinsight[tf]
-    
+
 or that tensorflow has been separately installed with::
 
     pip install tensorflow
