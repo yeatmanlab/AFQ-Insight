@@ -635,6 +635,26 @@ class AFQDataset:
         else:
             return self.X.shape
 
+    def copy(self):
+        """Return a deep copy of this dataset.
+
+        Returns
+        -------
+        AFQDataset
+            A deep copy of this dataset
+        """
+        return AFQDataset(
+            X=self.X,
+            y=self.y,
+            groups=self.groups,
+            feature_names=self.feature_names,
+            target_cols=self.target_cols,
+            group_names=self.group_names,
+            subjects=self.subjects,
+            sessions=self.sessions,
+            classes=self.classes,
+        )
+
     def bundle_means(self):
         """Return diffusion metrics averaged along the length of each bundle.
 
@@ -748,6 +768,116 @@ class AFQDataset:
             return tf.data.Dataset.from_tensor_slices(X)
         else:
             return tf.data.Dataset.from_tensor_slices((X, self.y.astype(float)))
+
+    def model_fit(self, model, **fit_params):
+        """Fit the dataset with a provided model object.
+
+        Parameters
+        ----------
+        model : sklearn model
+            The estimator or transformer to fit
+
+        **fit_params : dict
+            Additional parameters to pass to the fit method
+
+        Returns
+        -------
+        model : object
+            The fitted model
+        """
+        return model.fit(X=self.X, y=self.y, **fit_params)
+
+    def model_fit_transform(self, model, **fit_params):
+        """Fit and transform the dataset with a provided model object.
+
+        Parameters
+        ----------
+        model : sklearn model
+            The estimator or transformer to fit
+
+        **fit_params : dict
+            Additional parameters to pass to the fit_transform method
+
+        Returns
+        -------
+        dataset_new : AFQDataset
+            New AFQDataset with transformed features
+        """
+        return AFQDataset(
+            X=model.fit_transform(X=self.X, y=self.y, **fit_params),
+            y=self.y,
+            groups=self.groups,
+            feature_names=self.feature_names,
+            target_cols=self.target_cols,
+            group_names=self.group_names,
+            subjects=self.subjects,
+            sessions=self.sessions,
+            classes=self.classes,
+        )
+
+    def model_transform(self, model, **transform_params):
+        """Transform the dataset with a provided model object.
+
+        Parameters
+        ----------
+        model : sklearn model
+            The estimator or transformer to use to transform the features
+
+        **transform_params : dict
+            Additional parameters to pass to the transform method
+
+        Returns
+        -------
+        dataset_new : AFQDataset
+            New AFQDataset with transformed features
+        """
+        return AFQDataset(
+            X=model.transform(X=self.X, **transform_params),
+            y=self.y,
+            groups=self.groups,
+            feature_names=self.feature_names,
+            target_cols=self.target_cols,
+            group_names=self.group_names,
+            subjects=self.subjects,
+            sessions=self.sessions,
+            classes=self.classes,
+        )
+
+    def model_predict(self, model, **predict_params):
+        """Predict the targets with a provided model object.
+
+        Parameters
+        ----------
+        model : sklearn model
+            The estimator or transformer to use to predict the targets
+
+        **predict_params : dict
+            Additional parameters to pass to the predict method
+
+        Returns
+        -------
+        y_pred : ndarray
+            Predicted targets
+        """
+        return model.predict(X=self.X, **predict_params)
+
+    def model_score(self, model, **score_params):
+        """Score a model on this dataset.
+
+        Parameters
+        ----------
+        model : sklearn model
+            The estimator or transformer to use to score the model
+
+        **score_params : dict
+            Additional parameters to pass to the `score` method, e.g., `sample_weight`
+
+        Returns
+        -------
+        score : float
+            The score of the model (e.g. R2, accuracy, etc.)
+        """
+        return model.score(X=self.X, y=self.y, **score_params)
 
 
 def _download_url_to_file(url, output_fn, encoding="utf-8", verbose=True):
