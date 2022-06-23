@@ -384,8 +384,10 @@ def test_from_study(study):
     target_cols = shapes[study]["target_cols"]
     n_targets = len(target_cols)
     n_groups = shapes[study]["n_groups"]
+    X_shape = (n_subjects, n_features)
+    y_shape = (n_subjects, n_targets) if n_targets > 1 else (n_subjects,)
 
-    assert dataset.shape == ((n_subjects, n_features), (n_subjects, n_targets))
+    assert dataset.shape == (X_shape, y_shape)
     assert dataset.target_cols == target_cols
     assert len(dataset.groups) == n_groups
     assert len(dataset.group_names) == n_groups
