@@ -1053,6 +1053,10 @@ def _download_afq_dataset(dataset, data_home, verbose=True):
     for dict_ in urls_files[dataset]:
         _download_url_to_file(dict_["url"], dict_["file"], verbose=verbose)
 
+    return op.commonpath(
+        [download_dict["file"] for download_dict in urls_files[dataset]]
+    )
+
 
 def download_sarica(data_home=None, verbose=True):
     """Fetch the ALS classification dataset from Sarica et al [1]_.
@@ -1079,8 +1083,7 @@ def download_sarica(data_home=None, verbose=True):
         DOI: 10.1002/hbm.23412
     """
     data_home = data_home if data_home is not None else _DATA_DIR
-    _download_afq_dataset("sarica", data_home=data_home, verbose=verbose)
-    return op.join(data_home, "sarica_data")
+    return _download_afq_dataset("sarica", data_home=data_home, verbose=verbose)
 
 
 def download_weston_havens(data_home=None, verbose=True):
@@ -1108,8 +1111,7 @@ def download_weston_havens(data_home=None, verbose=True):
         DOI: 10.1038/ncomms5932
     """
     data_home = data_home if data_home is not None else _DATA_DIR
-    _download_afq_dataset("weston_havens", data_home=data_home, verbose=verbose)
-    return op.join(data_home, "weston_havens_data")
+    return _download_afq_dataset("weston_havens", data_home=data_home, verbose=verbose)
 
 
 def download_hbn(data_home=None, verbose=True):
@@ -1142,5 +1144,4 @@ def download_hbn(data_home=None, verbose=True):
        doi: https://doi.org/10.1101/2022.02.24.481303
     """
     data_home = data_home if data_home is not None else _DATA_DIR
-    _download_afq_dataset("hbn", data_home=data_home, verbose=verbose)
-    return op.join(data_home, "hbn")
+    return _download_afq_dataset("hbn", data_home=data_home, verbose=verbose)
