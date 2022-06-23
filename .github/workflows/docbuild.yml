@@ -8,7 +8,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python-version: [3.7, 3.8, 3.9]
+        python-version: [3.7, 3.8, 3.9, 3.10]
 
     steps:
       - name: Checkout repo
@@ -31,7 +31,7 @@ jobs:
           name: docs
           path: doc/_build/html
       - name: Publish docs to Github Pages
-        if: startsWith(github.event.ref, 'refs/tags')
+        if: ${{ startsWith(github.event.ref, 'refs/tags') && matrix.python-version == 3.9 }}
         uses: JamesIves/github-pages-deploy-action@releases/v3
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
