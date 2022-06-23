@@ -588,7 +588,7 @@ class AFQDataset:
 
     @staticmethod
     def from_study(study, verbose=None):
-        """Fetch a predefined study as an `AFQDataset`
+        """Fetch an AFQ dataset from a predefined study.
 
         This method expects downloads a pre-existing AFQ dataset.
         ``study="sarica"` will download the ALS classification dataset used in
