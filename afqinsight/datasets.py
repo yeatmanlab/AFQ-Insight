@@ -9,8 +9,10 @@ import requests
 from collections import namedtuple
 from dipy.utils.optpkg import optional_package
 from dipy.utils.tripwire import TripWire
+from glob import glob
 from groupyr.transform import GroupAggregator
 from sklearn.preprocessing import LabelEncoder
+from tqdm.auto import tqdm
 
 from .transform import AFQDataFrameMapper
 
@@ -584,6 +586,95 @@ class AFQDataset:
             classes=afq_data.classes,
         )
 
+    @staticmethod
+    def from_study(study, verbose=None):
+        """Fetch a predefined study as an `AFQDataset`
+
+        This method expects downloads a pre-existing AFQ dataset.
+        ``study="sarica"` will download the ALS classification dataset used in
+        Sarica et al. [1]_ ``study="weston-havens"`` will download the lifespan
+        maturation dataset described in Yeatman et al. [2]_. ``study="hbn"``
+        will download the pediatric Healthy Brain Network dataset [3]_.
+
+        Parameters
+        ----------
+        study : ["sarica", "weston-havens", "hbn"]
+            Name of the study to download.
+
+        verbose : bool, optional
+            If True, print download status messages to stdout. The default of
+            None will default to the datasets default verbosity.
+
+        Returns
+        -------
+        AFQDataset
+
+        See Also
+        --------
+        download_sarica : downloader for the Sarica dataset
+        download_weston_havens : downloader for Weston-Havens dataset
+        download_hbn : downloader for the HBN dataset
+
+        References
+        ----------
+        .. [1]  Alessia Sarica, et al.
+            "The Corticospinal Tract Profile in AmyotrophicLateral Sclerosis"
+            Human Brain Mapping, vol. 38, pp. 727-739, 2017
+            DOI: 10.1002/hbm.23412
+
+        .. [2]  Jason D. Yeatman, Brian A. Wandell, & Aviv A. Mezer,
+            "Lifespan maturation and degeneration of human brain white matter"
+            Nature Communications, vol. 5:1, pp. 4932, 2014
+            DOI: 10.1038/ncomms5932
+
+        .. [3]  Adam Richie-Halford, Matthew Cieslak, Lei Ai, Sendy Caffarra, Sydney
+           Covitz, Alexandre R. Franco, Iliana I. Karipidis, John Kruper, Michael
+           Milham, Bárbara Avelar-Pereira, Ethan Roy, Valerie J. Sydnor, Jason
+           Yeatman, The Fibr Community Science Consortium, Theodore D.
+           Satterthwaite, and Ariel Rokem,
+           "An open, analysis-ready, and quality controlled resource for pediatric
+           brain white-matter research"
+           bioRxiv 2022.02.24.481303;
+           doi: https://doi.org/10.1101/2022.02.24.481303
+        """
+        downloaders = {
+            "sarica": download_sarica,
+            "weston-havens": download_weston_havens,
+            "hbn": download_hbn,
+        }
+
+        if study.lower() not in downloaders.keys():
+            raise ValueError(
+                f"study must be one of {downloaders.keys()}. Got {study} instead."
+            )
+
+        download_kwargs = dict()
+        if verbose is not None:
+            download_kwargs["verbose"] = verbose
+
+        data_dir = downloaders[study.lower()](**download_kwargs)
+        fn_subs = glob(op.join(data_dir, "subjects.?sv"))[0]
+        dataset_kwargs = {
+            "sarica": dict(
+                dwi_metrics=["md", "fa"],
+                target_cols=["class"],
+                label_encode_cols=["class"],
+            ),
+            "weston-havens": dict(dwi_metrics=["md", "fa"], target_cols=["Age"]),
+            "hbn": dict(
+                dwi_metrics=["dki_md", "dki_fa"],
+                target_cols=["age", "sex", "scan_site_id"],
+                label_encode_cols=["sex", "scan_site_id"],
+                index_col="subject_id",
+            ),
+        }
+
+        return AFQDataset.from_files(
+            fn_nodes=op.join(data_dir, "nodes.csv"),
+            fn_subjects=fn_subs,
+            **dataset_kwargs[study],
+        )
+
     def __repr__(self):
         """Return a string representation of the dataset."""
         n_samples, n_features = self.X.shape
@@ -880,7 +971,7 @@ class AFQDataset:
         return model.score(X=self.X, y=self.y, **score_params)
 
 
-def _download_url_to_file(url, output_fn, encoding="utf-8", verbose=True):
+def _download_url_to_file(url, output_fn, verbose=True):
     fn_abs = op.abspath(output_fn)
     base = op.splitext(fn_abs)[0]
     os.makedirs(op.dirname(output_fn), exist_ok=True)
@@ -897,15 +988,28 @@ def _download_url_to_file(url, output_fn, encoding="utf-8", verbose=True):
         and hashlib.md5(open(fn_abs, "rb").read()).hexdigest() == md5sum
     ):
         if verbose:
-            print(f"File {op.relpath(fn_abs)} exists.")
+            print(f"File {fn_abs} exists.")
     else:
-        if verbose:
-            print(f"Downloading {url} to {op.relpath(fn_abs)}.")
         # Download from url and save to file
         with requests.Session() as s:
-            download = s.get(url)
-            with open(fn_abs, "w") as fp:
-                fp.write(download.content.decode(encoding))
+            response = s.get(url, stream=True)
+            total_size_in_bytes = int(response.headers.get("content-length", 0))
+            block_size = 1024  # 1 Kibibyte
+            progress_bar = tqdm(
+                total=total_size_in_bytes,
+                unit="iB",
+                unit_scale=True,
+                desc=op.basename(output_fn),
+                disable=not verbose,
+            )
+            with open(fn_abs, "wb") as file:
+                for data in response.iter_content(block_size):
+                    progress_bar.update(len(data))
+                    file.write(data)
+            progress_bar.close()
+
+            if total_size_in_bytes != 0 and progress_bar.total != total_size_in_bytes:
+                print("ERROR, something went wrong")
 
         # Write MD5 checksum to file
         with open(base + ".md5", "w") as md5file:
@@ -916,22 +1020,32 @@ def _download_afq_dataset(dataset, data_home, verbose=True):
     urls_files = {
         "sarica": [
             {
-                "url": "https://github.com/yeatmanlab/Sarica_2017/raw/gh-pages/data/nodes.csv",
-                "file": op.join(data_home, "sarica_data", "nodes.csv"),
+                "url": "https://github.com/yeatmanlab/Sarica_2017/raw/gh-pages/data/subjects.csv",
+                "file": op.join(data_home, "sarica", "subjects.csv"),
             },
             {
-                "url": "https://github.com/yeatmanlab/Sarica_2017/raw/gh-pages/data/subjects.csv",
-                "file": op.join(data_home, "sarica_data", "subjects.csv"),
+                "url": "https://github.com/yeatmanlab/Sarica_2017/raw/gh-pages/data/nodes.csv",
+                "file": op.join(data_home, "sarica", "nodes.csv"),
             },
         ],
         "weston_havens": [
             {
-                "url": "https://yeatmanlab.github.io/AFQBrowser-demo/data/nodes.csv",
-                "file": op.join(data_home, "weston_havens_data", "nodes.csv"),
+                "url": "https://yeatmanlab.github.io/AFQBrowser-demo/data/subjects.csv",
+                "file": op.join(data_home, "weston_havens", "subjects.csv"),
             },
             {
-                "url": "https://yeatmanlab.github.io/AFQBrowser-demo/data/subjects.csv",
-                "file": op.join(data_home, "weston_havens_data", "subjects.csv"),
+                "url": "https://yeatmanlab.github.io/AFQBrowser-demo/data/nodes.csv",
+                "file": op.join(data_home, "weston_havens", "nodes.csv"),
+            },
+        ],
+        "hbn": [
+            {
+                "url": "http://s3.amazonaws.com/fcp-indi/data/Projects/HBN/BIDS_curated/derivatives/qsiprep/participants.tsv",
+                "file": op.join(data_home, "hbn", "subjects.tsv"),
+            },
+            {
+                "url": "http://s3.amazonaws.com/fcp-indi/data/Projects/HBN/BIDS_curated/derivatives/afq/combined_tract_profiles.csv",
+                "file": op.join(data_home, "hbn", "nodes.csv"),
             },
         ],
     }
@@ -996,3 +1110,37 @@ def download_weston_havens(data_home=None, verbose=True):
     data_home = data_home if data_home is not None else _DATA_DIR
     _download_afq_dataset("weston_havens", data_home=data_home, verbose=verbose)
     return op.join(data_home, "weston_havens_data")
+
+
+def download_hbn(data_home=None, verbose=True):
+    """Load the Healthy Brain Network Preprocessed Diffusion Derivatives [1]_.
+
+    Parameters
+    ----------
+    data_home : str, default=None
+        Specify another download and cache folder for the datasets. By default all
+        afq-insight data is stored in '~/.afq-insight' subfolders.
+
+    Returns
+    -------
+    dirname : str
+        Path to the downloaded dataset directory.
+
+    verbose : bool, default=True
+        If True, print status messages to stdout.
+
+    References
+    ----------
+    .. [1]  Adam Richie-Halford, Matthew Cieslak, Lei Ai, Sendy Caffarra, Sydney
+       Covitz, Alexandre R. Franco, Iliana I. Karipidis, John Kruper, Michael
+       Milham, Bárbara Avelar-Pereira, Ethan Roy, Valerie J. Sydnor, Jason
+       Yeatman, The Fibr Community Science Consortium, Theodore D.
+       Satterthwaite, and Ariel Rokem,
+       "An open, analysis-ready, and quality controlled resource for pediatric
+       brain white-matter research"
+       bioRxiv 2022.02.24.481303;
+       doi: https://doi.org/10.1101/2022.02.24.481303
+    """
+    data_home = data_home if data_home is not None else _DATA_DIR
+    _download_afq_dataset("hbn", data_home=data_home, verbose=verbose)
+    return op.join(data_home, "hbn")

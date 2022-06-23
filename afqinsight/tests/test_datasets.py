@@ -360,6 +360,37 @@ def test_AFQDataset(target_cols):
     assert len(afq_data.subjects) == 48  # nosec
 
 
+@pytest.mark.parametrize("study", ["sarica", "weston-havens", "hbn"])
+def test_from_study(study):
+    dataset = AFQDataset.from_study(study=study)
+
+    shapes = {
+        "sarica": dict(
+            n_subjects=48, n_features=4000, n_groups=40, target_cols=["class"]
+        ),
+        "weston-havens": dict(
+            n_subjects=77, n_features=4000, n_groups=40, target_cols=["Age"]
+        ),
+        "hbn": dict(
+            n_subjects=1878,
+            n_features=4800,
+            n_groups=48,
+            target_cols=["age", "sex", "scan_site_id"],
+        ),
+    }
+
+    n_subjects = shapes[study]["n_subjects"]
+    n_features = shapes[study]["n_features"]
+    target_cols = shapes[study]["target_cols"]
+    n_targets = len(target_cols)
+    n_groups = shapes[study]["n_groups"]
+
+    assert dataset.shape == ((n_subjects, n_features), (n_subjects, n_targets))
+    assert dataset.target_cols == target_cols
+    assert len(dataset.groups) == n_groups
+    assert len(dataset.group_names) == n_groups
+
+
 @pytest.mark.parametrize("dwi_metrics", [["md", "fa"], None])
 @pytest.mark.parametrize("enforce_sub_prefix", [True, False])
 def test_fetch(dwi_metrics, enforce_sub_prefix):
@@ -393,11 +424,9 @@ def test_fetch(dwi_metrics, enforce_sub_prefix):
     assert len(feature_names) == n_features  # nosec
     assert len(group_names) == n_groups  # nosec
     assert len(subjects) == 48  # nosec
+    assert op.isfile(op.join(afqi.datasets._DATA_DIR, "sarica", "nodes.csv"))  # nosec
     assert op.isfile(
-        op.join(afqi.datasets._DATA_DIR, "sarica_data", "nodes.csv")
-    )  # nosec
-    assert op.isfile(
-        op.join(afqi.datasets._DATA_DIR, "sarica_data", "subjects.csv")
+        op.join(afqi.datasets._DATA_DIR, "sarica", "subjects.csv")
     )  # nosec
 
     wh_dir = download_weston_havens()
@@ -418,19 +447,19 @@ def test_fetch(dwi_metrics, enforce_sub_prefix):
     assert len(group_names) == n_groups  # nosec
     assert len(subjects) == 77  # nosec
     assert op.isfile(
-        op.join(afqi.datasets._DATA_DIR, "weston_havens_data", "nodes.csv")
+        op.join(afqi.datasets._DATA_DIR, "weston_havens", "nodes.csv")
     )  # nosec
     assert op.isfile(
-        op.join(afqi.datasets._DATA_DIR, "weston_havens_data", "subjects.csv")
+        op.join(afqi.datasets._DATA_DIR, "weston_havens", "subjects.csv")
     )  # nosec
 
     with tempfile.TemporaryDirectory() as td:
         _ = download_sarica(data_home=td)
         _ = download_weston_havens(data_home=td)
-        assert op.isfile(op.join(td, "sarica_data", "nodes.csv"))  # nosec
-        assert op.isfile(op.join(td, "sarica_data", "subjects.csv"))  # nosec
-        assert op.isfile(op.join(td, "weston_havens_data", "nodes.csv"))  # nosec
-        assert op.isfile(op.join(td, "weston_havens_data", "subjects.csv"))  # nosec
+        assert op.isfile(op.join(td, "sarica", "nodes.csv"))  # nosec
+        assert op.isfile(op.join(td, "sarica", "subjects.csv"))  # nosec
+        assert op.isfile(op.join(td, "weston_havens", "nodes.csv"))  # nosec
+        assert op.isfile(op.join(td, "weston_havens", "subjects.csv"))  # nosec
 
 
 def test_load_afq_data_smoke():
