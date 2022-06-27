@@ -66,7 +66,7 @@ print(dataset)
 # / test split
 # ------------------
 #
-# We can pass the :class:`AFQDataset` class instance to Sckit Learn's
+# We can pass the :class:`AFQDataset` class instance to scikit-learn's
 # :func:`train_test_split` function, just as we would with an array.
 
 dataset_train, dataset_test = train_test_split(dataset, test_size=0.5)
