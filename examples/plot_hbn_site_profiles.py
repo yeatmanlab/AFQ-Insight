@@ -47,15 +47,15 @@ from sklearn.model_selection import train_test_split
 #############################################################################
 # Fetch the HBN data
 # ------------------
-# For datasets that are part of our example suite, a :class:`AFQDataset` class
-# instance can be initialized using the :func:`AFQDataset.from_study` static
-# method. This expects the name of one of the datasets supported (see the method
-# documentation for the list of these datasets). By passing `"hbn"`, we request
-# that the object download the HBN dataset from the AWS Open Data program where
-# it has been stored and initialize the objects with the subjects and nodes
-# information. Subjects' age is set as the target variable. After dropping
-# subjects that don't have their age recorded, there are 1867 subjects in the
-# dataset.
+# As a shortcut, we have incorporated a few studies  into the software. In these
+# cases, a :class:`AFQDataset` class instance can be initialized using the
+# :func:`AFQDataset.from_study` static method. This expects the name of one of
+# the studies that are supported (see the method documentation for the list of
+# these studies). By passing `"hbn"`, we request that the object download the
+# HBN dataset from the AWS Open Data program where it has been stored and
+# initialize the objects with the subjects and nodes information. Subjects' age
+# is set as the target variable. After dropping subjects that don't have their
+# age recorded, there are 1867 subjects in the dataset.
 
 
 dataset = AFQDataset.from_study("hbn")
