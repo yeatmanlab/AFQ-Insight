@@ -44,32 +44,30 @@ from neurocombat_sklearn import CombatModel
 from sklearn.impute import SimpleImputer
 from sklearn.model_selection import train_test_split
 
-##########################################################################
+#############################################################################
 # Fetch the HBN data
 # ------------------
-#
-# The :func:`AFQDataset.from_files` static method expects a path to
-# nodes.csv and subjects.csv files, but these file paths can be remote
-# URLs or AWS S3 URIs. We'll use S3 URIs to grab the HBN data. After dropping
-# participants with null phenotypic values, it has 1,867 participants.
+# As a shortcut, we have incorporated a few studies  into the software. In these
+# cases, a :class:`AFQDataset` class instance can be initialized using the
+# :func:`AFQDataset.from_study` static method. This expects the name of one of
+# the studies that are supported (see the method documentation for the list of
+# these studies). By passing `"hbn"`, we request that the object download the
+# HBN dataset from the AWS Open Data program where it has been stored and
+# initialize the objects with the subjects and nodes information. Subjects' age
+# is set as the target variable. After dropping subjects that don't have their
+# age recorded, there are 1867 subjects in the dataset.
 
-dataset = AFQDataset.from_files(
-    fn_nodes="s3://fcp-indi/data/Projects/HBN/BIDS_curated/derivatives/afq/combined_tract_profiles.csv",
-    fn_subjects="s3://fcp-indi/data/Projects/HBN/BIDS_curated/derivatives/qsiprep/participants.tsv",
-    dwi_metrics=["dki_fa", "dki_md"],
-    target_cols=["age", "sex", "scan_site_id"],
-    label_encode_cols=["sex", "scan_site_id"],
-    index_col="subject_id",
-)
+
+dataset = AFQDataset.from_study("hbn")
 dataset.drop_target_na()
 print(dataset)
 
-##########################################################################
+#############################################################################
 # Train / test split
 # ------------------
 #
-# We can use the dataset in the :func:`train_test_split` function just as we
-# would with an array.
+# We can pass the :class:`AFQDataset` class instance to scikit-learn's
+# :func:`train_test_split` function, just as we would with an array.
 
 dataset_train, dataset_test = train_test_split(dataset, test_size=0.5)
 
@@ -111,7 +109,7 @@ site_figs = plot_tract_profiles(
 #
 # N.B. We use the excellent `neurocombat_sklearn
 # <https://github.com/Warvito/neurocombat_sklearn>`_ package to apply ComBat to
-# our data. We love this library, however it is not fully compliant with the
+# our data. We love this library, however, it is not fully compliant with the
 # scikit-learn transformer API, so we cannot use the
 # :func:`AFQDataset.model_fit_transform` method to apply this transformer to our
 # dataset. No problem! We can simply copy the unharmonized dataset into a new
