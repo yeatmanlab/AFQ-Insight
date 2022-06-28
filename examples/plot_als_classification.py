@@ -52,8 +52,7 @@ afqdata = AFQDataset.from_study("sarica")
 
 # Examine the data
 # ----------------
-# afqdata is a namedtuple. You can access it's fields using dot notation or by
-# unpacking the tuple. To see all of the available fields use `afqdata._fields`
+# ``afqdata`` is an ``AFQDataset`` object, with properties corresponding to the tractometry features and phenotypic targets.
 
 X = afqdata.X
 y = afqdata.y
