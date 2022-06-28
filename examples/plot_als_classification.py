@@ -28,6 +28,7 @@ For more details on this approach in a research setting, please see [2]_.
 import matplotlib.pyplot as plt
 import numpy as np
 
+from afqinsight import AFQDataset
 from afqinsight import make_afq_classifier_pipeline
 
 from groupyr.decomposition import GroupPCA
