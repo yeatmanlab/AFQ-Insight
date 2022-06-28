@@ -27,9 +27,7 @@ For more details on this approach in a research setting, please see [2]_.
 """
 import matplotlib.pyplot as plt
 import numpy as np
-import os.path as op
 
-from afqinsight.datasets import download_sarica, load_afq_data
 from afqinsight import make_afq_classifier_pipeline
 
 from groupyr.decomposition import GroupPCA
