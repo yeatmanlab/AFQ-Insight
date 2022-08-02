@@ -1,3 +1,8 @@
+v0.3.5 (August 02, 2022)
+========================
+  * Use the new from_dataset method to initialize objects in examples.  (#123)
+  * Add HBN (#121)
+
 v0.3.4 (August 02, 2022)
 ========================
   * Add Python 3.10 to CI workflows (#122)
