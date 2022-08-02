@@ -16,23 +16,6 @@ Introductory examples.
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example loads AFQ data from the Healthy Brain Network (HBN) preprocessed diffusion derivat...">
-
-.. only:: html
-
-  .. image:: /auto_examples/images/thumb/sphx_glr_plot_hbn_site_profiles_thumb.png
-    :alt: Harmonize HBN data using ComBat
-
-  :ref:`sphx_glr_auto_examples_plot_hbn_site_profiles.py`
-
-.. raw:: html
-
-      <div class="sphx-glr-thumbnail-title">Harmonize HBN data using ComBat</div>
-    </div>
-
-
-.. raw:: html
-
     <div class="sphx-glr-thumbcontainer" tooltip="This example loads AFQ data from CSV files and manipulates that data using scikit-learn transfo...">
 
 .. only:: html
@@ -45,6 +28,23 @@ Introductory examples.
 .. raw:: html
 
       <div class="sphx-glr-thumbnail-title">Load and interact with an AFQ dataset</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This example loads AFQ data from the Healthy Brain Network (HBN) preprocessed diffusion derivat...">
+
+.. only:: html
+
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_hbn_site_profiles_thumb.png
+    :alt: Harmonize HBN data using ComBat
+
+  :ref:`sphx_glr_auto_examples_plot_hbn_site_profiles.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Harmonize HBN data using ComBat</div>
     </div>
 
 
@@ -90,8 +90,8 @@ Introductory examples.
 .. toctree::
    :hidden:
 
-   /auto_examples/plot_hbn_site_profiles
    /auto_examples/demo_afq_dataset
+   /auto_examples/plot_hbn_site_profiles
    /auto_examples/plot_age_regression
    /auto_examples/plot_als_classification
 

@@ -27,8 +27,9 @@ For more details on this approach in a research setting, please see [2]_.
 """
 import matplotlib.pyplot as plt
 import numpy as np
+import os.path as op
 
-from afqinsight import AFQDataset
+from afqinsight.datasets import download_sarica, load_afq_data
 from afqinsight import make_afq_classifier_pipeline
 
 from groupyr.decomposition import GroupPCA
@@ -36,24 +37,18 @@ from groupyr.decomposition import GroupPCA
 from sklearn.impute import SimpleImputer
 from sklearn.model_selection import cross_validate
 
+workdir = download_sarica()
 
-#############################################################################
-# Fetch data from Sarica et al.
-# -----------------------------
-# As a shortcut, we have incorporated a few studies into the software. In these
-# cases, a :class:`AFQDataset` class instance can be initialized using the
-# :func:`AFQDataset.from_study` static method. This expects the name of one of
-# the studies that are supported (see the method documentation for the list of
-# these studies). By passing `"sarica"`, we request that the software download
-# the data from this study and initialize an object for us from this data.
+afqdata = load_afq_data(
+    fn_nodes=op.join(workdir, "nodes.csv"),
+    fn_subjects=op.join(workdir, "subjects.csv"),
+    dwi_metrics=["md", "fa"],
+    target_cols=["class"],
+    label_encode_cols=["class"],
+)
 
-
-afqdata = AFQDataset.from_study("sarica")
-
-# Examine the data
-# ----------------
-# ``afqdata`` is an ``AFQDataset`` object, with properties corresponding to the tractometry features and phenotypic targets.
-
+# afqdata is a namedtuple. You can access it's fields using dot notation or by
+# unpacking the tuple. To see all of the available fields use `afqdata._fields`
 X = afqdata.X
 y = afqdata.y
 groups = afqdata.groups
@@ -61,14 +56,8 @@ feature_names = afqdata.feature_names
 group_names = afqdata.group_names
 subjects = afqdata.subjects
 
-# Reduce data dimensionality
-# --------------------------
-# Here we reduce computation time by taking the first 10 principal components of
-# each feature group and performing SGL logistic regression on those components.
-# If you want to train an SGL model without group PCA, set ``do_group_pca =
-# False``. This will increase the number of features by an order of magnitude
-# and slow down execution time.
-
+# Here we reduce computation time by taking the first 10 principal components of each feature group and performing SGL logistic regression on those components.
+# If you want to train an SGL model without group PCA, set ``do_group_pca = False``. This will increase the number of features by an order of magnitude and slow down execution time.
 do_group_pca = True
 
 if do_group_pca:
@@ -86,13 +75,6 @@ if do_group_pca:
 else:
     transformer = False
     transformer_kwargs = None
-
-
-# Create the classification pipeline
-# ----------------------------------
-# The core computational machinery is a pipeline. These operate as scikit-learn
-# compatible pipelines, so we can pass them to scikit-learn functions.
-# There are many options that need to be set to configure the pipeline object.
 
 pipe = make_afq_classifier_pipeline(
     imputer_kwargs={"strategy": "median"},  # Use median imputation
@@ -113,17 +95,10 @@ pipe = make_afq_classifier_pipeline(
     tol=1e-2,  # Set a lenient convergence tolerance just for this example
 )
 
-# Fit and cross-validate
-# ----------------------
-# The ``pipe`` object is a scikit-learn pipeline and can be used in other
-# scikit-learn functions
-
+# ``pipe`` is a scikit-learn pipeline and can be used in other scikit-learn functions
 scores = cross_validate(
     pipe, X, y, cv=5, return_train_score=True, return_estimator=True
 )
-
-# Display results
-# ---------------
 
 print(f"Mean train score: {np.mean(scores['train_score']):5.3f}")
 print(f"Mean test score:  {np.mean(scores['test_score']):5.3f}")

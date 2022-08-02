@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Harmonize HBN data using ComBat &mdash; AFQ-Insight 0.3.5 documentation</title>
+  <title>Harmonize HBN data using ComBat &mdash; AFQ-Insight 0.3.4 documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/afqinsight.css" type="text/css" />
       <link rel="stylesheet" href="../_static/sg_gallery.css" type="text/css" />
@@ -23,8 +23,8 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Load and interact with an AFQ dataset" href="demo_afq_dataset.html" />
-    <link rel="prev" title="General examples" href="index.html" /> 
+    <link rel="next" title="Predict age from white matter features" href="plot_age_regression.html" />
+    <link rel="prev" title="Load and interact with an AFQ dataset" href="demo_afq_dataset.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -35,7 +35,7 @@
             <a href="../index.html" class="icon icon-home"> AFQ-Insight
           </a>
               <div class="version">
-                0.3.5
+                0.3.4
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
@@ -49,6 +49,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../user_guide.html">User guide</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">General examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="demo_afq_dataset.html">Load and interact with an AFQ dataset</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Harmonize HBN data using ComBat</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#fetch-the-hbn-data">Fetch the HBN data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#train-test-split">Train / test split</a></li>
@@ -57,7 +58,6 @@
 <li class="toctree-l3"><a class="reference internal" href="#harmonize-the-sites-and-replot">Harmonize the sites and replot</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="demo_afq_dataset.html">Load and interact with an AFQ dataset</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_age_regression.html">Predict age from white matter features</a></li>
 <li class="toctree-l2"><a class="reference internal" href="plot_als_classification.html">Classify ALS diagnosis from white matter features</a></li>
 </ul>
@@ -145,109 +145,30 @@ doi: <a class="reference external" href="https://doi.org/10.1016/j.neuroimage.20
 </div>
 <section id="fetch-the-hbn-data">
 <h2>Fetch the HBN data<a class="headerlink" href="#fetch-the-hbn-data" title="Permalink to this headline"></a></h2>
-<p>As a shortcut, we have incorporated a few studies  into the software. In these
-cases, a <code class="xref py py-class docutils literal notranslate"><span class="pre">AFQDataset</span></code> class instance can be initialized using the
-<code class="xref py py-func docutils literal notranslate"><span class="pre">AFQDataset.from_study()</span></code> static method. This expects the name of one of
-the studies that are supported (see the method documentation for the list of
-these studies). By passing <cite>“hbn”</cite>, we request that the object download the
-HBN dataset from the AWS Open Data program where it has been stored and
-initialize the objects with the subjects and nodes information. Subjects’ age
-is set as the target variable. After dropping subjects that don’t have their
-age recorded, there are 1867 subjects in the dataset.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><a href="../api.html#afqinsight.AFQDataset" title="afqinsight.AFQDataset" class="sphx-glr-backref-module-afqinsight sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">dataset</span></a> <span class="o">=</span> <span class="n">AFQDataset</span><span class="o">.</span><span class="n">from_study</span><span class="p">(</span><span class="s2">&quot;hbn&quot;</span><span class="p">)</span>
+<p>The <code class="xref py py-func docutils literal notranslate"><span class="pre">AFQDataset.from_files()</span></code> static method expects a path to
+nodes.csv and subjects.csv files, but these file paths can be remote
+URLs or AWS S3 URIs. We’ll use S3 URIs to grab the HBN data. After dropping
+participants with null phenotypic values, it has 1,867 participants.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><a href="../api.html#afqinsight.AFQDataset" title="afqinsight.AFQDataset" class="sphx-glr-backref-module-afqinsight sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">dataset</span></a> <span class="o">=</span> <span class="n">AFQDataset</span><span class="o">.</span><span class="n">from_files</span><span class="p">(</span>
+    <span class="n">fn_nodes</span><span class="o">=</span><span class="s2">&quot;s3://fcp-indi/data/Projects/HBN/BIDS_curated/derivatives/afq/combined_tract_profiles.csv&quot;</span><span class="p">,</span>
+    <span class="n">fn_subjects</span><span class="o">=</span><span class="s2">&quot;s3://fcp-indi/data/Projects/HBN/BIDS_curated/derivatives/qsiprep/participants.tsv&quot;</span><span class="p">,</span>
+    <span class="n">dwi_metrics</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;dki_fa&quot;</span><span class="p">,</span> <span class="s2">&quot;dki_md&quot;</span><span class="p">],</span>
+    <span class="n">target_cols</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;age&quot;</span><span class="p">,</span> <span class="s2">&quot;sex&quot;</span><span class="p">,</span> <span class="s2">&quot;scan_site_id&quot;</span><span class="p">],</span>
+    <span class="n">label_encode_cols</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;sex&quot;</span><span class="p">,</span> <span class="s2">&quot;scan_site_id&quot;</span><span class="p">],</span>
+    <span class="n">index_col</span><span class="o">=</span><span class="s2">&quot;subject_id&quot;</span><span class="p">,</span>
+<span class="p">)</span>
 <a href="../api.html#afqinsight.AFQDataset" title="afqinsight.AFQDataset" class="sphx-glr-backref-module-afqinsight sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">dataset</span></a><span class="o">.</span><span class="n">drop_target_na</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><a href="../api.html#afqinsight.AFQDataset" title="afqinsight.AFQDataset" class="sphx-glr-backref-module-afqinsight sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">dataset</span></a><span class="p">)</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>subjects.tsv:   0%|          | 0.00/211k [00:00&lt;?, ?iB/s]
-subjects.tsv:  50%|#####     | 105k/211k [00:00&lt;00:00, 1.02MiB/s]
-subjects.tsv: 100%|##########| 211k/211k [00:00&lt;00:00, 1.50MiB/s]
-
-nodes.csv:   0%|          | 0.00/543M [00:00&lt;?, ?iB/s]
-nodes.csv:   0%|          | 101k/543M [00:00&lt;09:33, 946kiB/s]
-nodes.csv:   0%|          | 836k/543M [00:00&lt;02:04, 4.36MiB/s]
-nodes.csv:   1%|1         | 5.61M/543M [00:00&lt;00:23, 23.3MiB/s]
-nodes.csv:   2%|2         | 12.4M/543M [00:00&lt;00:13, 40.3MiB/s]
-nodes.csv:   3%|3         | 18.8M/543M [00:00&lt;00:10, 48.6MiB/s]
-nodes.csv:   5%|4         | 25.6M/543M [00:00&lt;00:09, 55.2MiB/s]
-nodes.csv:   6%|6         | 32.8M/543M [00:00&lt;00:08, 60.8MiB/s]
-nodes.csv:   7%|7         | 39.8M/543M [00:00&lt;00:07, 63.6MiB/s]
-nodes.csv:   9%|8         | 47.0M/543M [00:00&lt;00:07, 66.3MiB/s]
-nodes.csv:  10%|#         | 54.3M/543M [00:01&lt;00:07, 68.3MiB/s]
-nodes.csv:  11%|#1        | 61.3M/543M [00:01&lt;00:06, 68.9MiB/s]
-nodes.csv:  13%|#2        | 68.3M/543M [00:01&lt;00:06, 69.0MiB/s]
-nodes.csv:  14%|#3        | 75.2M/543M [00:01&lt;00:06, 69.1MiB/s]
-nodes.csv:  15%|#5        | 82.9M/543M [00:01&lt;00:06, 71.4MiB/s]
-nodes.csv:  17%|#6        | 90.5M/543M [00:01&lt;00:06, 72.9MiB/s]
-nodes.csv:  18%|#8        | 98.5M/543M [00:01&lt;00:05, 75.2MiB/s]
-nodes.csv:  20%|#9        | 106M/543M [00:01&lt;00:05, 75.4MiB/s]
-nodes.csv:  21%|##        | 114M/543M [00:01&lt;00:05, 74.4MiB/s]
-nodes.csv:  22%|##2       | 121M/543M [00:01&lt;00:05, 74.4MiB/s]
-nodes.csv:  24%|##3       | 129M/543M [00:02&lt;00:05, 74.0MiB/s]
-nodes.csv:  25%|##5       | 136M/543M [00:02&lt;00:05, 72.6MiB/s]
-nodes.csv:  26%|##6       | 143M/543M [00:02&lt;00:05, 72.8MiB/s]
-nodes.csv:  28%|##7       | 151M/543M [00:02&lt;00:05, 71.1MiB/s]
-nodes.csv:  29%|##9       | 158M/543M [00:02&lt;00:05, 70.2MiB/s]
-nodes.csv:  30%|###       | 165M/543M [00:02&lt;00:05, 69.9MiB/s]
-nodes.csv:  32%|###1      | 172M/543M [00:02&lt;00:05, 70.1MiB/s]
-nodes.csv:  33%|###3      | 179M/543M [00:02&lt;00:05, 70.4MiB/s]
-nodes.csv:  34%|###4      | 187M/543M [00:02&lt;00:04, 72.5MiB/s]
-nodes.csv:  36%|###5      | 194M/543M [00:02&lt;00:04, 70.7MiB/s]
-nodes.csv:  37%|###7      | 202M/543M [00:03&lt;00:04, 72.4MiB/s]
-nodes.csv:  39%|###8      | 209M/543M [00:03&lt;00:04, 72.2MiB/s]
-nodes.csv:  40%|###9      | 217M/543M [00:03&lt;00:04, 73.0MiB/s]
-nodes.csv:  41%|####1     | 224M/543M [00:03&lt;00:04, 73.3MiB/s]
-nodes.csv:  43%|####2     | 232M/543M [00:03&lt;00:04, 73.6MiB/s]
-nodes.csv:  44%|####4     | 239M/543M [00:03&lt;00:04, 73.1MiB/s]
-nodes.csv:  45%|####5     | 246M/543M [00:03&lt;00:04, 73.1MiB/s]
-nodes.csv:  47%|####6     | 254M/543M [00:03&lt;00:04, 71.9MiB/s]
-nodes.csv:  48%|####8     | 261M/543M [00:03&lt;00:03, 72.8MiB/s]
-nodes.csv:  49%|####9     | 269M/543M [00:03&lt;00:03, 72.8MiB/s]
-nodes.csv:  51%|#####     | 276M/543M [00:04&lt;00:03, 70.7MiB/s]
-nodes.csv:  52%|#####2    | 283M/543M [00:04&lt;00:03, 70.0MiB/s]
-nodes.csv:  53%|#####3    | 290M/543M [00:04&lt;00:03, 69.5MiB/s]
-nodes.csv:  55%|#####4    | 297M/543M [00:04&lt;00:03, 68.2MiB/s]
-nodes.csv:  56%|#####6    | 304M/543M [00:04&lt;00:03, 68.3MiB/s]
-nodes.csv:  57%|#####7    | 312M/543M [00:04&lt;00:03, 70.2MiB/s]
-nodes.csv:  59%|#####8    | 319M/543M [00:04&lt;00:03, 69.2MiB/s]
-nodes.csv:  60%|#####9    | 326M/543M [00:04&lt;00:03, 67.9MiB/s]
-nodes.csv:  61%|######1   | 332M/543M [00:04&lt;00:03, 67.5MiB/s]
-nodes.csv:  62%|######2   | 339M/543M [00:05&lt;00:03, 67.4MiB/s]
-nodes.csv:  64%|######3   | 346M/543M [00:05&lt;00:02, 67.8MiB/s]
-nodes.csv:  65%|######5   | 354M/543M [00:05&lt;00:02, 70.9MiB/s]
-nodes.csv:  67%|######6   | 361M/543M [00:05&lt;00:02, 71.3MiB/s]
-nodes.csv:  68%|######7   | 369M/543M [00:05&lt;00:02, 72.1MiB/s]
-nodes.csv:  69%|######9   | 376M/543M [00:05&lt;00:02, 69.0MiB/s]
-nodes.csv:  70%|#######   | 383M/543M [00:05&lt;00:02, 67.0MiB/s]
-nodes.csv:  72%|#######1  | 389M/543M [00:05&lt;00:02, 66.4MiB/s]
-nodes.csv:  73%|#######3  | 397M/543M [00:05&lt;00:02, 69.8MiB/s]
-nodes.csv:  75%|#######4  | 405M/543M [00:05&lt;00:01, 72.4MiB/s]
-nodes.csv:  76%|#######6  | 414M/543M [00:06&lt;00:01, 75.3MiB/s]
-nodes.csv:  78%|#######7  | 421M/543M [00:06&lt;00:01, 75.1MiB/s]
-nodes.csv:  79%|#######9  | 429M/543M [00:06&lt;00:01, 76.7MiB/s]
-nodes.csv:  80%|########  | 437M/543M [00:06&lt;00:01, 76.4MiB/s]
-nodes.csv:  82%|########1 | 445M/543M [00:06&lt;00:01, 77.4MiB/s]
-nodes.csv:  83%|########3 | 453M/543M [00:06&lt;00:01, 78.6MiB/s]
-nodes.csv:  85%|########4 | 461M/543M [00:06&lt;00:01, 78.7MiB/s]
-nodes.csv:  86%|########6 | 469M/543M [00:06&lt;00:00, 79.1MiB/s]
-nodes.csv:  88%|########7 | 477M/543M [00:06&lt;00:00, 78.7MiB/s]
-nodes.csv:  89%|########9 | 485M/543M [00:06&lt;00:00, 78.8MiB/s]
-nodes.csv:  91%|######### | 493M/543M [00:07&lt;00:00, 78.4MiB/s]
-nodes.csv:  92%|#########2| 500M/543M [00:07&lt;00:00, 78.2MiB/s]
-nodes.csv:  94%|#########3| 508M/543M [00:07&lt;00:00, 78.7MiB/s]
-nodes.csv:  95%|#########5| 516M/543M [00:07&lt;00:00, 78.3MiB/s]
-nodes.csv:  97%|#########6| 524M/543M [00:07&lt;00:00, 78.0MiB/s]
-nodes.csv:  98%|#########7| 532M/543M [00:07&lt;00:00, 78.0MiB/s]
-nodes.csv:  99%|#########9| 540M/543M [00:07&lt;00:00, 78.3MiB/s]
-nodes.csv: 100%|##########| 543M/543M [00:07&lt;00:00, 70.5MiB/s]
-AFQDataset(n_samples=1867, n_features=4800, n_targets=3, targets=[&#39;age&#39;, &#39;sex&#39;, &#39;scan_site_id&#39;])
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>AFQDataset(n_samples=1867, n_features=4800, n_targets=3, targets=[&#39;age&#39;, &#39;sex&#39;, &#39;scan_site_id&#39;])
 </pre></div>
 </div>
 </section>
 <section id="train-test-split">
 <h2>Train / test split<a class="headerlink" href="#train-test-split" title="Permalink to this headline"></a></h2>
-<p>We can pass the <code class="xref py py-class docutils literal notranslate"><span class="pre">AFQDataset</span></code> class instance to scikit-learn’s
-<code class="xref py py-func docutils literal notranslate"><span class="pre">train_test_split()</span></code> function, just as we would with an array.</p>
+<p>We can use the dataset in the <code class="xref py py-func docutils literal notranslate"><span class="pre">train_test_split()</span></code> function just as we
+would with an array.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><a href="../api.html#afqinsight.AFQDataset" title="afqinsight.AFQDataset" class="sphx-glr-backref-module-afqinsight sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">dataset_train</span></a><span class="p">,</span> <a href="../api.html#afqinsight.AFQDataset" title="afqinsight.AFQDataset" class="sphx-glr-backref-module-afqinsight sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">dataset_test</span></a> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html#sklearn.model_selection.train_test_split" title="sklearn.model_selection.train_test_split" class="sphx-glr-backref-module-sklearn-model_selection sphx-glr-backref-type-py-function"><span class="n">train_test_split</span></a><span class="p">(</span><a href="../api.html#afqinsight.AFQDataset" title="afqinsight.AFQDataset" class="sphx-glr-backref-module-afqinsight sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">dataset</span></a><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -285,110 +206,110 @@ and metric, optionally grouped by a categorical or continuous variable.</p>
 
   0%|          | 0/24 [00:00&lt;?, ?it/s]
 
-  4%|4         | 1/24 [00:04&lt;01:42,  4.46s/it]
+  4%|4         | 1/24 [00:05&lt;01:56,  5.07s/it]
 
-  8%|8         | 2/24 [00:08&lt;01:38,  4.48s/it]
+  8%|8         | 2/24 [00:10&lt;01:52,  5.13s/it]
 
- 12%|#2        | 3/24 [00:13&lt;01:33,  4.46s/it]
+ 12%|#2        | 3/24 [00:15&lt;01:48,  5.17s/it]
 
- 17%|#6        | 4/24 [00:17&lt;01:29,  4.46s/it]
+ 17%|#6        | 4/24 [00:20&lt;01:41,  5.10s/it]
 
- 21%|##        | 5/24 [00:22&lt;01:24,  4.44s/it]
+ 21%|##        | 5/24 [00:25&lt;01:37,  5.11s/it]
 
- 25%|##5       | 6/24 [00:26&lt;01:20,  4.45s/it]
+ 25%|##5       | 6/24 [00:30&lt;01:32,  5.14s/it]
 
- 29%|##9       | 7/24 [00:31&lt;01:16,  4.47s/it]
+ 29%|##9       | 7/24 [00:35&lt;01:26,  5.11s/it]
 
- 33%|###3      | 8/24 [00:35&lt;01:11,  4.48s/it]
+ 33%|###3      | 8/24 [00:40&lt;01:20,  5.01s/it]
 
- 38%|###7      | 9/24 [00:40&lt;01:07,  4.48s/it]
+ 38%|###7      | 9/24 [00:45&lt;01:14,  4.96s/it]
 
- 42%|####1     | 10/24 [00:44&lt;01:02,  4.48s/it]
+ 42%|####1     | 10/24 [00:50&lt;01:08,  4.91s/it]
 
- 46%|####5     | 11/24 [00:49&lt;00:58,  4.53s/it]
+ 46%|####5     | 11/24 [00:55&lt;01:03,  4.89s/it]
 
- 50%|#####     | 12/24 [00:54&lt;00:55,  4.60s/it]
+ 50%|#####     | 12/24 [00:59&lt;00:58,  4.87s/it]
 
- 54%|#####4    | 13/24 [00:58&lt;00:50,  4.57s/it]
+ 54%|#####4    | 13/24 [01:04&lt;00:53,  4.85s/it]
 
- 58%|#####8    | 14/24 [01:03&lt;00:45,  4.55s/it]
+ 58%|#####8    | 14/24 [01:09&lt;00:48,  4.85s/it]
 
- 62%|######2   | 15/24 [01:07&lt;00:40,  4.53s/it]
+ 62%|######2   | 15/24 [01:14&lt;00:43,  4.85s/it]
 
- 67%|######6   | 16/24 [01:12&lt;00:36,  4.56s/it]
+ 67%|######6   | 16/24 [01:19&lt;00:38,  4.85s/it]
 
- 71%|#######   | 17/24 [01:16&lt;00:32,  4.57s/it]
+ 71%|#######   | 17/24 [01:24&lt;00:33,  4.84s/it]
 
- 75%|#######5  | 18/24 [01:21&lt;00:27,  4.54s/it]
+ 75%|#######5  | 18/24 [01:28&lt;00:29,  4.84s/it]
 
- 79%|#######9  | 19/24 [01:25&lt;00:22,  4.53s/it]
+ 79%|#######9  | 19/24 [01:33&lt;00:24,  4.84s/it]
 
- 83%|########3 | 20/24 [01:30&lt;00:18,  4.53s/it]
+ 83%|########3 | 20/24 [01:38&lt;00:19,  4.82s/it]
 
- 88%|########7 | 21/24 [01:35&lt;00:13,  4.65s/it]
+ 88%|########7 | 21/24 [01:43&lt;00:14,  4.82s/it]
 
- 92%|#########1| 22/24 [01:40&lt;00:09,  4.71s/it]
+ 92%|#########1| 22/24 [01:48&lt;00:09,  4.82s/it]
 
- 96%|#########5| 23/24 [01:45&lt;00:04,  4.80s/it]
+ 96%|#########5| 23/24 [01:53&lt;00:04,  4.82s/it]
 
-100%|##########| 24/24 [01:49&lt;00:00,  4.80s/it]
-100%|##########| 24/24 [01:49&lt;00:00,  4.58s/it]
+100%|##########| 24/24 [01:58&lt;00:00,  4.87s/it]
+100%|##########| 24/24 [01:58&lt;00:00,  4.92s/it]
 
- 50%|#####     | 1/2 [01:50&lt;01:50, 110.85s/it]
+ 50%|#####     | 1/2 [01:58&lt;01:58, 118.89s/it]
 
   0%|          | 0/24 [00:00&lt;?, ?it/s]
 
-  4%|4         | 1/24 [00:04&lt;01:49,  4.74s/it]
+  4%|4         | 1/24 [00:04&lt;01:51,  4.84s/it]
 
-  8%|8         | 2/24 [00:09&lt;01:46,  4.84s/it]
+  8%|8         | 2/24 [00:09&lt;01:47,  4.91s/it]
 
- 12%|#2        | 3/24 [00:14&lt;01:41,  4.81s/it]
+ 12%|#2        | 3/24 [00:14&lt;01:42,  4.90s/it]
 
- 17%|#6        | 4/24 [00:19&lt;01:36,  4.80s/it]
+ 17%|#6        | 4/24 [00:19&lt;01:37,  4.88s/it]
 
- 21%|##        | 5/24 [00:23&lt;01:31,  4.79s/it]
+ 21%|##        | 5/24 [00:24&lt;01:32,  4.87s/it]
 
- 25%|##5       | 6/24 [00:28&lt;01:23,  4.66s/it]
+ 25%|##5       | 6/24 [00:29&lt;01:27,  4.84s/it]
 
- 29%|##9       | 7/24 [00:32&lt;01:17,  4.59s/it]
+ 29%|##9       | 7/24 [00:34&lt;01:22,  4.84s/it]
 
- 33%|###3      | 8/24 [00:37&lt;01:12,  4.54s/it]
+ 33%|###3      | 8/24 [00:38&lt;01:17,  4.84s/it]
 
- 38%|###7      | 9/24 [00:41&lt;01:07,  4.50s/it]
+ 38%|###7      | 9/24 [00:43&lt;01:12,  4.85s/it]
 
- 42%|####1     | 10/24 [00:46&lt;01:03,  4.52s/it]
+ 42%|####1     | 10/24 [00:48&lt;01:07,  4.85s/it]
 
- 46%|####5     | 11/24 [00:50&lt;00:58,  4.50s/it]
+ 46%|####5     | 11/24 [00:53&lt;01:03,  4.86s/it]
 
- 50%|#####     | 12/24 [00:55&lt;00:53,  4.49s/it]
+ 50%|#####     | 12/24 [00:58&lt;00:58,  4.88s/it]
 
- 54%|#####4    | 13/24 [00:59&lt;00:48,  4.45s/it]
+ 54%|#####4    | 13/24 [01:03&lt;00:53,  4.87s/it]
 
- 58%|#####8    | 14/24 [01:03&lt;00:44,  4.45s/it]
+ 58%|#####8    | 14/24 [01:08&lt;00:49,  4.92s/it]
 
- 62%|######2   | 15/24 [01:08&lt;00:40,  4.46s/it]
+ 62%|######2   | 15/24 [01:13&lt;00:44,  4.98s/it]
 
- 67%|######6   | 16/24 [01:12&lt;00:35,  4.48s/it]
+ 67%|######6   | 16/24 [01:18&lt;00:39,  4.95s/it]
 
- 71%|#######   | 17/24 [01:17&lt;00:31,  4.48s/it]
+ 71%|#######   | 17/24 [01:23&lt;00:34,  4.91s/it]
 
- 75%|#######5  | 18/24 [01:21&lt;00:26,  4.47s/it]
+ 75%|#######5  | 18/24 [01:27&lt;00:29,  4.89s/it]
 
- 79%|#######9  | 19/24 [01:26&lt;00:22,  4.47s/it]
+ 79%|#######9  | 19/24 [01:32&lt;00:24,  4.88s/it]
 
- 83%|########3 | 20/24 [01:30&lt;00:17,  4.49s/it]
+ 83%|########3 | 20/24 [01:37&lt;00:19,  4.89s/it]
 
- 88%|########7 | 21/24 [01:35&lt;00:13,  4.52s/it]
+ 88%|########7 | 21/24 [01:42&lt;00:14,  4.88s/it]
 
- 92%|#########1| 22/24 [01:40&lt;00:09,  4.54s/it]
+ 92%|#########1| 22/24 [01:47&lt;00:09,  4.87s/it]
 
- 96%|#########5| 23/24 [01:44&lt;00:04,  4.55s/it]
+ 96%|#########5| 23/24 [01:52&lt;00:04,  4.87s/it]
 
-100%|##########| 24/24 [01:49&lt;00:00,  4.56s/it]
-100%|##########| 24/24 [01:49&lt;00:00,  4.55s/it]
+100%|##########| 24/24 [01:57&lt;00:00,  4.89s/it]
+100%|##########| 24/24 [01:57&lt;00:00,  4.88s/it]
 
-100%|##########| 2/2 [03:40&lt;00:00, 110.42s/it]
-100%|##########| 2/2 [03:40&lt;00:00, 110.48s/it]
+100%|##########| 2/2 [03:57&lt;00:00, 118.49s/it]
+100%|##########| 2/2 [03:57&lt;00:00, 118.55s/it]
 </pre></div>
 </div>
 </section>
@@ -398,7 +319,7 @@ and metric, optionally grouped by a categorical or continuous variable.</p>
 FA and MD profiles. Let’s use neuroComBat to harmonize the site differences
 and then replot the mean bundle profiles.</p>
 <p>N.B. We use the excellent <a class="reference external" href="https://github.com/Warvito/neurocombat_sklearn">neurocombat_sklearn</a> package to apply ComBat to
-our data. We love this library, however, it is not fully compliant with the
+our data. We love this library, however it is not fully compliant with the
 scikit-learn transformer API, so we cannot use the
 <code class="xref py py-func docutils literal notranslate"><span class="pre">AFQDataset.model_fit_transform()</span></code> method to apply this transformer to our
 dataset. No problem! We can simply copy the unharmonized dataset into a new
@@ -442,113 +363,113 @@ job.</p>
 
   0%|          | 0/24 [00:00&lt;?, ?it/s]
 
-  4%|4         | 1/24 [00:04&lt;01:47,  4.66s/it]
+  4%|4         | 1/24 [00:04&lt;01:54,  4.99s/it]
 
-  8%|8         | 2/24 [00:09&lt;01:41,  4.61s/it]
+  8%|8         | 2/24 [00:09&lt;01:49,  4.96s/it]
 
- 12%|#2        | 3/24 [00:13&lt;01:36,  4.59s/it]
+ 12%|#2        | 3/24 [00:14&lt;01:43,  4.94s/it]
 
- 17%|#6        | 4/24 [00:18&lt;01:32,  4.63s/it]
+ 17%|#6        | 4/24 [00:19&lt;01:38,  4.93s/it]
 
- 21%|##        | 5/24 [00:23&lt;01:28,  4.68s/it]
+ 21%|##        | 5/24 [00:24&lt;01:34,  4.98s/it]
 
- 25%|##5       | 6/24 [00:28&lt;01:25,  4.73s/it]
+ 25%|##5       | 6/24 [00:29&lt;01:30,  5.01s/it]
 
- 29%|##9       | 7/24 [00:33&lt;01:21,  4.79s/it]
+ 29%|##9       | 7/24 [00:34&lt;01:25,  5.04s/it]
 
- 33%|###3      | 8/24 [00:37&lt;01:16,  4.78s/it]
+ 33%|###3      | 8/24 [00:40&lt;01:20,  5.04s/it]
 
- 38%|###7      | 9/24 [00:42&lt;01:11,  4.75s/it]
+ 38%|###7      | 9/24 [00:45&lt;01:15,  5.05s/it]
 
- 42%|####1     | 10/24 [00:47&lt;01:05,  4.70s/it]
+ 42%|####1     | 10/24 [00:50&lt;01:10,  5.07s/it]
 
- 46%|####5     | 11/24 [00:51&lt;01:00,  4.64s/it]
+ 46%|####5     | 11/24 [00:55&lt;01:05,  5.07s/it]
 
- 50%|#####     | 12/24 [00:56&lt;00:55,  4.64s/it]
+ 50%|#####     | 12/24 [01:00&lt;01:00,  5.05s/it]
 
- 54%|#####4    | 13/24 [01:00&lt;00:50,  4.63s/it]
+ 54%|#####4    | 13/24 [01:05&lt;00:55,  5.04s/it]
 
- 58%|#####8    | 14/24 [01:05&lt;00:45,  4.59s/it]
+ 58%|#####8    | 14/24 [01:10&lt;00:50,  5.07s/it]
 
- 62%|######2   | 15/24 [01:09&lt;00:41,  4.57s/it]
+ 62%|######2   | 15/24 [01:15&lt;00:45,  5.10s/it]
 
- 67%|######6   | 16/24 [01:14&lt;00:36,  4.57s/it]
+ 67%|######6   | 16/24 [01:20&lt;00:40,  5.12s/it]
 
- 71%|#######   | 17/24 [01:18&lt;00:31,  4.56s/it]
+ 71%|#######   | 17/24 [01:25&lt;00:35,  5.13s/it]
 
- 75%|#######5  | 18/24 [01:23&lt;00:27,  4.57s/it]
+ 75%|#######5  | 18/24 [01:31&lt;00:30,  5.14s/it]
 
- 79%|#######9  | 19/24 [01:28&lt;00:22,  4.57s/it]
+ 79%|#######9  | 19/24 [01:36&lt;00:25,  5.16s/it]
 
- 83%|########3 | 20/24 [01:32&lt;00:18,  4.57s/it]
+ 83%|########3 | 20/24 [01:41&lt;00:20,  5.15s/it]
 
- 88%|########7 | 21/24 [01:37&lt;00:13,  4.64s/it]
+ 88%|########7 | 21/24 [01:46&lt;00:15,  5.10s/it]
 
- 92%|#########1| 22/24 [01:42&lt;00:09,  4.74s/it]
+ 92%|#########1| 22/24 [01:51&lt;00:10,  5.12s/it]
 
- 96%|#########5| 23/24 [01:47&lt;00:04,  4.84s/it]
+ 96%|#########5| 23/24 [01:56&lt;00:05,  5.09s/it]
 
-100%|##########| 24/24 [01:52&lt;00:00,  4.91s/it]
-100%|##########| 24/24 [01:52&lt;00:00,  4.69s/it]
+100%|##########| 24/24 [02:01&lt;00:00,  5.03s/it]
+100%|##########| 24/24 [02:01&lt;00:00,  5.06s/it]
 
- 50%|#####     | 1/2 [01:53&lt;01:53, 113.58s/it]
+ 50%|#####     | 1/2 [02:02&lt;02:02, 122.36s/it]
 
   0%|          | 0/24 [00:00&lt;?, ?it/s]
 
-  4%|4         | 1/24 [00:05&lt;01:55,  5.04s/it]
+  4%|4         | 1/24 [00:04&lt;01:52,  4.88s/it]
 
-  8%|8         | 2/24 [00:10&lt;01:52,  5.10s/it]
+  8%|8         | 2/24 [00:09&lt;01:47,  4.88s/it]
 
- 12%|#2        | 3/24 [00:15&lt;01:45,  5.04s/it]
+ 12%|#2        | 3/24 [00:14&lt;01:41,  4.85s/it]
 
- 17%|#6        | 4/24 [00:19&lt;01:39,  4.95s/it]
+ 17%|#6        | 4/24 [00:19&lt;01:37,  4.87s/it]
 
- 21%|##        | 5/24 [00:24&lt;01:31,  4.81s/it]
+ 21%|##        | 5/24 [00:24&lt;01:32,  4.89s/it]
 
- 25%|##5       | 6/24 [00:29&lt;01:24,  4.71s/it]
+ 25%|##5       | 6/24 [00:29&lt;01:27,  4.89s/it]
 
- 29%|##9       | 7/24 [00:33&lt;01:18,  4.64s/it]
+ 29%|##9       | 7/24 [00:34&lt;01:24,  4.96s/it]
 
- 33%|###3      | 8/24 [00:38&lt;01:13,  4.61s/it]
+ 33%|###3      | 8/24 [00:39&lt;01:20,  5.01s/it]
 
- 38%|###7      | 9/24 [00:42&lt;01:10,  4.69s/it]
+ 38%|###7      | 9/24 [00:44&lt;01:14,  4.99s/it]
 
- 42%|####1     | 10/24 [00:47&lt;01:05,  4.68s/it]
+ 42%|####1     | 10/24 [00:49&lt;01:10,  5.04s/it]
 
- 46%|####5     | 11/24 [00:52&lt;01:00,  4.62s/it]
+ 46%|####5     | 11/24 [00:54&lt;01:05,  5.06s/it]
 
- 50%|#####     | 12/24 [00:56&lt;00:54,  4.58s/it]
+ 50%|#####     | 12/24 [00:59&lt;01:00,  5.07s/it]
 
- 54%|#####4    | 13/24 [01:01&lt;00:50,  4.59s/it]
+ 54%|#####4    | 13/24 [01:04&lt;00:54,  4.98s/it]
 
- 58%|#####8    | 14/24 [01:05&lt;00:45,  4.57s/it]
+ 58%|#####8    | 14/24 [01:09&lt;00:49,  4.94s/it]
 
- 62%|######2   | 15/24 [01:10&lt;00:41,  4.58s/it]
+ 62%|######2   | 15/24 [01:14&lt;00:44,  4.97s/it]
 
- 67%|######6   | 16/24 [01:14&lt;00:36,  4.54s/it]
+ 67%|######6   | 16/24 [01:19&lt;00:39,  5.00s/it]
 
- 71%|#######   | 17/24 [01:19&lt;00:31,  4.52s/it]
+ 71%|#######   | 17/24 [01:24&lt;00:34,  4.97s/it]
 
- 75%|#######5  | 18/24 [01:23&lt;00:27,  4.50s/it]
+ 75%|#######5  | 18/24 [01:29&lt;00:29,  4.93s/it]
 
- 79%|#######9  | 19/24 [01:28&lt;00:22,  4.53s/it]
+ 79%|#######9  | 19/24 [01:34&lt;00:24,  4.92s/it]
 
- 83%|########3 | 20/24 [01:33&lt;00:18,  4.59s/it]
+ 83%|########3 | 20/24 [01:39&lt;00:19,  4.90s/it]
 
- 88%|########7 | 21/24 [01:38&lt;00:14,  4.72s/it]
+ 88%|########7 | 21/24 [01:43&lt;00:14,  4.90s/it]
 
- 92%|#########1| 22/24 [01:42&lt;00:09,  4.79s/it]
+ 92%|#########1| 22/24 [01:48&lt;00:09,  4.90s/it]
 
- 96%|#########5| 23/24 [01:48&lt;00:04,  4.86s/it]
+ 96%|#########5| 23/24 [01:53&lt;00:04,  4.91s/it]
 
-100%|##########| 24/24 [01:53&lt;00:00,  4.94s/it]
-100%|##########| 24/24 [01:53&lt;00:00,  4.71s/it]
+100%|##########| 24/24 [01:58&lt;00:00,  4.90s/it]
+100%|##########| 24/24 [01:58&lt;00:00,  4.94s/it]
 
-100%|##########| 2/2 [03:47&lt;00:00, 113.97s/it]
-100%|##########| 2/2 [03:47&lt;00:00, 113.91s/it]
+100%|##########| 2/2 [04:01&lt;00:00, 120.67s/it]
+100%|##########| 2/2 [04:01&lt;00:00, 120.93s/it]
 </pre></div>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> ( 8 minutes  7.570 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> ( 8 minutes  45.792 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-hbn-site-profiles-py">
 <div class="sphx-glr-download sphx-glr-download-python docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/4089326b1079478b20ded0a482f170dd/plot_hbn_site_profiles.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_hbn_site_profiles.py</span></code></a></p>
@@ -565,8 +486,8 @@ job.</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="index.html" class="btn btn-neutral float-left" title="General examples" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="demo_afq_dataset.html" class="btn btn-neutral float-right" title="Load and interact with an AFQ dataset" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="demo_afq_dataset.html" class="btn btn-neutral float-left" title="Load and interact with an AFQ dataset" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="plot_age_regression.html" class="btn btn-neutral float-right" title="Predict age from white matter features" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

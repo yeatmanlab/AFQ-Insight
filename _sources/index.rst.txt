@@ -3,13 +3,6 @@ AFQ-Insight: Statistical learning for tractometry data
 
 AFQ-Insight is a Python library for statistical learning of tractometry data.
 
-Tractometry assesses the tissue properties of the major white matter connections
-between different brain regions. AFQ-Insight inter-operates with the results of
-tractometry produced by the `pyAFQ <https://yeatmanlab.github.io/pyAFQ>`_
-software library. However, you can also use the output of other tractometry
-pipelines if you convert them into the format produced by pyAFQ.
-
-
 .. toctree::
    :maxdepth: 3
    :hidden:
@@ -53,12 +46,10 @@ reference and a bibtex entry.
 Acknowledgements
 ----------------
 
-*AFQ-Insight* development was supported through a grant from the `Gordon and Betty
+*AFQ-Insight* development is supported through a grant from the `Gordon and Betty
 Moore Foundation <https://www.moore.org/>`_ and from the `Alfred P. Sloan
-Foundation <https://sloan.org/>`_ to the
-`University of Washington eScience Institute <http://escience.washington.edu/>`_,
-NIH Collaborative Research in Computational Neuroscience grant R01EB027585-01
-through the National Institute of Biomedical Imaging and Bioengineering to
-Eleftherios Garyfallidis (Indiana University) and Ariel Rokem (University of
-Washington) and NIH grant RF1MH121868 (PIs: Ariel Rokem, Jason Yeatman and Noah
-Simon) from the National Institute of Mental Health and the BRAIN Initiative Informatics program.
+Foundation <https://sloan.org/>`_ to the `University of Washington eScience
+Institute <http://escience.washington.edu/>`_, as well as NIH Collaborative
+Research in Computational Neuroscience grant R01EB027585-01 through the National
+Institute of Biomedical Imaging and Bioengineering to Eleftherios Garyfallidis
+(Indiana University) and Ariel Rokem (University of Washington).

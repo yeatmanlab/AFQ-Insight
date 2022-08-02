@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Predict age from white matter features &mdash; AFQ-Insight 0.3.5 documentation</title>
+  <title>Predict age from white matter features &mdash; AFQ-Insight 0.3.4 documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/afqinsight.css" type="text/css" />
       <link rel="stylesheet" href="../_static/sg_gallery.css" type="text/css" />
@@ -24,7 +24,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Classify ALS diagnosis from white matter features" href="plot_als_classification.html" />
-    <link rel="prev" title="Load and interact with an AFQ dataset" href="demo_afq_dataset.html" /> 
+    <link rel="prev" title="Harmonize HBN data using ComBat" href="plot_hbn_site_profiles.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -35,7 +35,7 @@
             <a href="../index.html" class="icon icon-home"> AFQ-Insight
           </a>
               <div class="version">
-                0.3.5
+                0.3.4
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
@@ -49,8 +49,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../user_guide.html">User guide</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">General examples</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="plot_hbn_site_profiles.html">Harmonize HBN data using ComBat</a></li>
 <li class="toctree-l2"><a class="reference internal" href="demo_afq_dataset.html">Load and interact with an AFQ dataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plot_hbn_site_profiles.html">Harmonize HBN data using ComBat</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Predict age from white matter features</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#fetch-example-data">Fetch example data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#read-in-the-data">Read in the data</a></li>
@@ -143,13 +143,8 @@ about this format, see also the <a class="reference external" href="https://yeat
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">workdir</span></a> <span class="o">=</span> <span class="n">download_weston_havens</span><span class="p">()</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>subjects.csv:   0%|          | 0.00/938 [00:00&lt;?, ?iB/s]
-subjects.csv: 3.31kiB [00:00, 8.27MiB/s]
-
-nodes.csv:   0%|          | 0.00/5.81M [00:00&lt;?, ?iB/s]
-nodes.csv:  99%|#########8| 5.73M/5.81M [00:00&lt;00:00, 57.3MiB/s]
-nodes.csv: 13.3MiB [00:00, 68.2MiB/s]
-nodes.csv: 16.3MiB [00:00, 67.9MiB/s]
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Downloading https://yeatmanlab.github.io/AFQBrowser-demo/data/nodes.csv to ../../../../.cache/afq-insight/weston_havens_data/nodes.csv.
+Downloading https://yeatmanlab.github.io/AFQBrowser-demo/data/subjects.csv to ../../../../.cache/afq-insight/weston_havens_data/subjects.csv.
 </pre></div>
 </div>
 </section>
@@ -227,13 +222,13 @@ returns variables that we will use below in our analysis of the data.</p>
 <a href="https://matplotlib.org/stable/api/text_api.html#matplotlib.text.Text" title="matplotlib.text.Text" class="sphx-glr-backref-module-matplotlib-text sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">_</span></a> <span class="o">=</span> <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.set_title.html#matplotlib.axes.Axes.set_title" title="matplotlib.axes.Axes.set_title" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">ax</span><span class="o">.</span><span class="n">set_title</span></a><span class="p">(</span><span class="s2">&quot;Group Principal Regression Coefficients (MD only)&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">18</span><span class="p">)</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_age_regression_001.png" srcset="../_images/sphx_glr_plot_age_regression_001.png" alt="Group Principal Regression Coefficients (MD only)" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Mean train score: 0.812
-Mean test score:  -0.472
-Mean fit time:    15.63s
+<img src="../_images/sphx_glr_plot_age_regression_001.png" srcset="../_images/sphx_glr_plot_age_regression_001.png" alt="Group Principal Regression Coefficients (MD only)" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Mean train score: 0.906
+Mean test score:  -0.373
+Mean fit time:    14.73s
 Mean score time:   0.00s
 </pre></div>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> ( 1 minutes  19.747 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> ( 1 minutes  15.113 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-age-regression-py">
 <div class="sphx-glr-download sphx-glr-download-python docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/85ca7ddf2812ce2eb4eb341a2045be18/plot_age_regression.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_age_regression.py</span></code></a></p>
@@ -250,7 +245,7 @@ Mean score time:   0.00s
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="demo_afq_dataset.html" class="btn btn-neutral float-left" title="Load and interact with an AFQ dataset" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="plot_hbn_site_profiles.html" class="btn btn-neutral float-left" title="Harmonize HBN data using ComBat" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="plot_als_classification.html" class="btn btn-neutral float-right" title="Classify ALS diagnosis from white matter features" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
