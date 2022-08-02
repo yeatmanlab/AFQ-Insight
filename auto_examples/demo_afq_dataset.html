@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Load and interact with an AFQ dataset &mdash; AFQ-Insight 0.3.5 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/afqinsight.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/sg_gallery.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/sg_gallery-binder.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/sg_gallery-dataframe.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/sg_gallery-rendered-html.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/js/copybutton.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Predict age from white matter features" href="plot_age_regression.html" />
+    <link rel="prev" title="Harmonize HBN data using ComBat" href="plot_hbn_site_profiles.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> AFQ-Insight
+          </a>
+              <div class="version">
+                0.3.5
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../user_guide.html">User guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">General examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="plot_hbn_site_profiles.html">Harmonize HBN data using ComBat</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Load and interact with an AFQ dataset</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#fetch-example-data">Fetch example data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#read-in-the-data">Read in the data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#train-test-split">Train / test split</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#impute-missing-values">Impute missing values</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#fit-a-lasso-model">Fit a LASSO model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#convert-to-tensorflow-datasets">Convert to tensorflow datasets</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="plot_age_regression.html">Predict age from white matter features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plot_als_classification.html">Classify ALS diagnosis from white matter features</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_help.html">Getting help using <em>AFQ-Insight</em></a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing to <em>AFQ-Insight</em></a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/richford/AFQ-Insight">AFQ-Insight on GitHub</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">AFQ-Insight</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">General examples</a> &raquo;</li>
+      <li>Load and interact with an AFQ dataset</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/auto_examples/demo_afq_dataset.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p>Click <a class="reference internal" href="#sphx-glr-download-auto-examples-demo-afq-dataset-py"><span class="std std-ref">here</span></a>
+to download the full example code</p>
+</div>
+<section class="sphx-glr-example-title" id="load-and-interact-with-an-afq-dataset">
+<span id="sphx-glr-auto-examples-demo-afq-dataset-py"></span><h1>Load and interact with an AFQ dataset<a class="headerlink" href="#load-and-interact-with-an-afq-dataset" title="Permalink to this headline"></a></h1>
+<p>This example loads AFQ data from CSV files and manipulates that data using
+scikit-learn transformers and estimators. First we fetch the Weston-Havens
+dataset described in Yeatman et al <a class="footnote-reference brackets" href="#id3" id="id1">1</a>. This dataset contains tractometry
+features from 77 subjects ages 6-50.</p>
+<p>Next, we split the dataset into a train and test split, impute missing values,
+and fit a LASSO model, all using <code class="xref py py-class docutils literal notranslate"><span class="pre">AFQDataset</span></code> methods. Predictive
+performance for the default LASSO model is abysmal. It is only used here to
+demonstrate the use of scikit-learn estimators. In a research setting, one might
+use more advanced estimators, such as the SGL <a class="footnote-reference brackets" href="#id4" id="id2">2</a>, a gradient boosting machine,
+or a neural network.</p>
+<p>Finally, we convert the AFQDataset to a tensorflow dataset and fit a basic
+one-dimensional CNN to predict age from the features. This last step requires that
+AFQ-Insight has been installed with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">afqinsight</span><span class="p">[</span><span class="n">tf</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>or that tensorflow has been separately installed with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">tensorflow</span>
+</pre></div>
+</div>
+<dl class="footnote brackets">
+<dt class="label" id="id3"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><p>Jason D. Yeatman, Brian A. Wandell, &amp; Aviv A. Mezer, “Lifespan
+maturation and degeneration of human brain white matter” Nature
+Communications, vol. 5:1, pp. 4932, 2014 DOI: 10.1038/ncomms5932</p>
+</dd>
+<dt class="label" id="id4"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd><p>Adam Richie-Halford, Jason Yeatman, Noah Simon, and Ariel Rokem
+“Multidimensional analysis and detection of informative features in human
+brain white matter” PLOS Computational Biology, 2021 DOI:
+10.1371/journal.pcbi.1009136</p>
+</dd>
+</dl>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">afqinsight.nn.tf_models</span> <span class="k">as</span> <span class="nn">nn</span>
+<span class="kn">import</span> <span class="nn">os.path</span> <span class="k">as</span> <span class="nn">op</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+
+<span class="kn">from</span> <span class="nn">afqinsight.datasets</span> <span class="kn">import</span> <span class="n">download_weston_havens</span>
+<span class="kn">from</span> <span class="nn">afqinsight</span> <span class="kn">import</span> <span class="n">AFQDataset</span>
+
+<span class="kn">from</span> <span class="nn">sklearn.impute</span> <span class="kn">import</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.impute.SimpleImputer.html#sklearn.impute.SimpleImputer" title="sklearn.impute.SimpleImputer" class="sphx-glr-backref-module-sklearn-impute sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">SimpleImputer</span></a>
+<span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso" title="sklearn.linear_model.Lasso" class="sphx-glr-backref-module-sklearn-linear_model sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">Lasso</span></a>
+<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.metrics.r2_score.html#sklearn.metrics.r2_score" title="sklearn.metrics.r2_score" class="sphx-glr-backref-module-sklearn-metrics sphx-glr-backref-type-py-function"><span class="n">r2_score</span></a>
+<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html#sklearn.model_selection.train_test_split" title="sklearn.model_selection.train_test_split" class="sphx-glr-backref-module-sklearn-model_selection sphx-glr-backref-type-py-function"><span class="n">train_test_split</span></a>
+</pre></div>
+</div>
+<section id="fetch-example-data">
+<h2>Fetch example data<a class="headerlink" href="#fetch-example-data" title="Permalink to this headline"></a></h2>
+<p>The <code class="xref py py-func docutils literal notranslate"><span class="pre">download_weston_havens()</span></code> function download the data used in this
+example and places it in the <cite>~/.cache/afq-insight/weston_havens</cite> directory.
+If the directory does not exist, it is created. The data follows the format
+expected by the <code class="xref py py-func docutils literal notranslate"><span class="pre">load_afq_data()</span></code> function: a file called <cite>nodes.csv</cite> that
+contains AFQ tract profiles and a file called <cite>subjects.csv</cite> that contains
+information about the subjects. The two files are linked through the
+<cite>subjectID</cite> column that should exist in both of them. For more information
+about this format, see also the <a class="reference external" href="https://yeatmanlab.github.io/AFQ-Browser/dataformat.html">AFQ-Browser documentation</a> (items 2 and 3).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">workdir</span> <span class="o">=</span> <span class="n">download_weston_havens</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="read-in-the-data">
+<h2>Read in the data<a class="headerlink" href="#read-in-the-data" title="Permalink to this headline"></a></h2>
+<p>Next, we read in the data. The <code class="xref py py-func docutils literal notranslate"><span class="pre">AFQDataset.from_files()</span></code> static method
+expects a the filenames of a nodes.csv and subjects.csv file, and returns a
+dataset object.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dataset</span> <span class="o">=</span> <span class="n">AFQDataset</span><span class="o">.</span><span class="n">from_files</span><span class="p">(</span>
+    <span class="n">fn_nodes</span><span class="o">=</span><a href="https://docs.python.org/3/library/os.path.html#os.path.join" title="os.path.join" class="sphx-glr-backref-module-os-path sphx-glr-backref-type-py-function"><span class="n">op</span><span class="o">.</span><span class="n">join</span></a><span class="p">(</span><span class="n">workdir</span><span class="p">,</span> <span class="s2">&quot;nodes.csv&quot;</span><span class="p">),</span>
+    <span class="n">fn_subjects</span><span class="o">=</span><a href="https://docs.python.org/3/library/os.path.html#os.path.join" title="os.path.join" class="sphx-glr-backref-module-os-path sphx-glr-backref-type-py-function"><span class="n">op</span><span class="o">.</span><span class="n">join</span></a><span class="p">(</span><span class="n">workdir</span><span class="p">,</span> <span class="s2">&quot;subjects.csv&quot;</span><span class="p">),</span>
+    <span class="n">dwi_metrics</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;md&quot;</span><span class="p">,</span> <span class="s2">&quot;fa&quot;</span><span class="p">],</span>
+    <span class="n">target_cols</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Age&quot;</span><span class="p">],</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="train-test-split">
+<h2>Train / test split<a class="headerlink" href="#train-test-split" title="Permalink to this headline"></a></h2>
+<p>We can use the dataset in the <code class="xref py py-func docutils literal notranslate"><span class="pre">train_test_split()</span></code> function just as we
+would with an array.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dataset_train</span><span class="p">,</span> <span class="n">dataset_test</span> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html#sklearn.model_selection.train_test_split" title="sklearn.model_selection.train_test_split" class="sphx-glr-backref-module-sklearn-model_selection sphx-glr-backref-type-py-function"><span class="n">train_test_split</span></a><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="impute-missing-values">
+<h2>Impute missing values<a class="headerlink" href="#impute-missing-values" title="Permalink to this headline"></a></h2>
+<p>Next we train an imputer on the training set and use it to transform the
+features in both the training and the test set.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">imputer</span> <span class="o">=</span> <span class="n">dataset_train</span><span class="o">.</span><span class="n">model_fit</span><span class="p">(</span><a href="https://scikit-learn.org/stable/modules/generated/sklearn.impute.SimpleImputer.html#sklearn.impute.SimpleImputer" title="sklearn.impute.SimpleImputer" class="sphx-glr-backref-module-sklearn-impute sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">SimpleImputer</span></a><span class="p">(</span><span class="n">strategy</span><span class="o">=</span><span class="s2">&quot;median&quot;</span><span class="p">))</span>
+<span class="n">dataset_train</span> <span class="o">=</span> <span class="n">dataset_train</span><span class="o">.</span><span class="n">model_transform</span><span class="p">(</span><span class="n">imputer</span><span class="p">)</span>
+<span class="n">dataset_test</span> <span class="o">=</span> <span class="n">dataset_test</span><span class="o">.</span><span class="n">model_transform</span><span class="p">(</span><span class="n">imputer</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="fit-a-lasso-model">
+<h2>Fit a LASSO model<a class="headerlink" href="#fit-a-lasso-model" title="Permalink to this headline"></a></h2>
+<p>Next we fit a LASSO estimator to the training data and print the score of that
+model on the test dataset.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">estimator</span> <span class="o">=</span> <span class="n">dataset_train</span><span class="o">.</span><span class="n">model_fit</span><span class="p">(</span><a href="https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso" title="sklearn.linear_model.Lasso" class="sphx-glr-backref-module-sklearn-linear_model sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">Lasso</span></a><span class="p">())</span>
+<span class="n">y_pred</span> <span class="o">=</span> <span class="n">dataset_test</span><span class="o">.</span><span class="n">model_predict</span><span class="p">(</span><span class="n">estimator</span><span class="p">)</span>
+<span class="n">train_score</span> <span class="o">=</span> <span class="n">dataset_train</span><span class="o">.</span><span class="n">model_score</span><span class="p">(</span><span class="n">estimator</span><span class="p">)</span>
+<span class="n">test_score</span> <span class="o">=</span> <span class="n">dataset_test</span><span class="o">.</span><span class="n">model_score</span><span class="p">(</span><span class="n">estimator</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;LASSO train score:&quot;</span><span class="p">,</span> <span class="n">train_score</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;LASSO test score: &quot;</span><span class="p">,</span> <span class="n">test_score</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="convert-to-tensorflow-datasets">
+<h2>Convert to tensorflow datasets<a class="headerlink" href="#convert-to-tensorflow-datasets" title="Permalink to this headline"></a></h2>
+<p>Next we convert the train and test datasets to tensorflow datasets
+and use one of AFQ-Insight’s built-in one-dimensional CNNs to predict
+age. This part of the example will only work if you have either installed
+AFQ-Insight with tensorflow using:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">afqinsight</span><span class="p">[</span><span class="n">tf</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>or separately install tensorflow using:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">tensorflow</span>
+</pre></div>
+</div>
+<p>This model also performs poorly. It turns out predicting age in
+this dataset requires a bit more work.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tfset_train</span> <span class="o">=</span> <span class="n">dataset_train</span><span class="o">.</span><span class="n">as_tensorflow_dataset</span><span class="p">()</span>
+<span class="n">tfset_test</span> <span class="o">=</span> <span class="n">dataset_test</span><span class="o">.</span><span class="n">as_tensorflow_dataset</span><span class="p">()</span>
+
+<span class="n">batch_size</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">tfset_train</span> <span class="o">=</span> <span class="n">tfset_train</span><span class="o">.</span><span class="n">batch</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>
+<span class="n">tfset_test</span> <span class="o">=</span> <span class="n">tfset_test</span><span class="o">.</span><span class="n">batch</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;CNN Architecture&quot;</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">cnn_lenet</span><span class="p">(</span>
+    <span class="n">input_shape</span><span class="o">=</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">40</span><span class="p">),</span> <span class="n">output_activation</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">n_classes</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+    <span class="n">loss</span><span class="o">=</span><span class="s2">&quot;mean_squared_error&quot;</span><span class="p">,</span>
+    <span class="n">optimizer</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">learning_rate</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">),</span>
+    <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;mean_squared_error&quot;</span><span class="p">],</span>
+<span class="p">)</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">tfset_train</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">validation_data</span><span class="o">=</span><span class="n">tfset_test</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;CNN R^2 score: &quot;</span><span class="p">,</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.metrics.r2_score.html#sklearn.metrics.r2_score" title="sklearn.metrics.r2_score" class="sphx-glr-backref-module-sklearn-metrics sphx-glr-backref-type-py-function"><span class="n">r2_score</span></a><span class="p">(</span><span class="n">dataset_test</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">tfset_test</span><span class="p">)))</span>
+</pre></div>
+</div>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> ( 0 minutes  0.000 seconds)</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-demo-afq-dataset-py">
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/f46a1ae13256cdcd1eb58b8649191ef5/demo_afq_dataset.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">demo_afq_dataset.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/88f5a0bc7b07929bd000246bfdd1402a/demo_afq_dataset.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">demo_afq_dataset.ipynb</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="plot_hbn_site_profiles.html" class="btn btn-neutral float-left" title="Harmonize HBN data using ComBat" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="plot_age_regression.html" class="btn btn-neutral float-right" title="Predict age from white matter features" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, Adam Richie-Halford.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

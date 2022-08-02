@@ -2,7 +2,7 @@
 Installation
 ############
 
-*AFQ-Insight* requires Python 3.6, 3.7, or 3.8. 
+*AFQ-Insight* requires Python >= 3.7. 
 
 Installing the release version
 ------------------------------

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>afqinsight.cross_validate &mdash; AFQ-Insight 0.3.3 documentation</title>
+  <title>afqinsight.cross_validate &mdash; AFQ-Insight 0.3.5 documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/afqinsight.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/sg_gallery.css" type="text/css" />
@@ -32,7 +32,7 @@
             <a href="../../index.html" class="icon icon-home"> AFQ-Insight
           </a>
               <div class="version">
-                0.3.3
+                0.3.5
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -427,6 +427,7 @@
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; import numpy as np</span>
 <span class="sd">    &gt;&gt;&gt; import shutil</span>
 <span class="sd">    &gt;&gt;&gt; import tempfile</span>
 <span class="sd">    &gt;&gt;&gt; from sklearn import datasets, linear_model</span>
@@ -443,8 +444,8 @@
 <span class="sd">    &gt;&gt;&gt; cv_results = cross_validate_checkpoint(lasso, X, y, cv=3, checkpoint=False)</span>
 <span class="sd">    &gt;&gt;&gt; sorted(cv_results.keys())</span>
 <span class="sd">    [&#39;fit_time&#39;, &#39;score_time&#39;, &#39;test_score&#39;]</span>
-<span class="sd">    &gt;&gt;&gt; cv_results[&#39;test_score&#39;]</span>
-<span class="sd">    array([0.33150734, 0.08022311, 0.03531764])</span>
+<span class="sd">    &gt;&gt;&gt; cv_results[&#39;test_score&#39;]  # doctest: +ELLIPSIS, +NORMALIZE_WHITESPACE</span>
+<span class="sd">    array([0.33150..., 0.08022..., 0.03531...])</span>
 
 <span class="sd">    Multiple metric evaluation using ``cross_validate``, an estimator</span>
 <span class="sd">    pipeline, and checkpointing (please refer the ``scoring`` parameter doc</span>

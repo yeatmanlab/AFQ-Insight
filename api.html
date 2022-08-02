@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>API Reference &mdash; AFQ-Insight 0.3.3 documentation</title>
+  <title>API Reference &mdash; AFQ-Insight 0.3.5 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/afqinsight.css" type="text/css" />
       <link rel="stylesheet" href="_static/sg_gallery.css" type="text/css" />
@@ -35,7 +35,7 @@
             <a href="index.html" class="icon icon-home"> AFQ-Insight
           </a>
               <div class="version">
-                0.3.3
+                0.3.5
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -51,10 +51,10 @@
 <li class="toctree-l1"><a class="reference internal" href="auto_examples/index.html">General examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="getting_help.html">Getting help using <em>AFQ-Insight</em></a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#datasets">Datasets</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#pipelines">Pipelines</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#cross-validation">Cross Validation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#dataset-loader">Dataset Loader</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#transformers">Transformers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#cross-validation">Cross Validation</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing to <em>AFQ-Insight</em></a></li>
@@ -87,6 +87,100 @@
              
   <section id="api-reference">
 <h1>API Reference<a class="headerlink" href="#api-reference" title="Permalink to this headline"></a></h1>
+<section id="datasets">
+<h2>Datasets<a class="headerlink" href="#datasets" title="Permalink to this headline"></a></h2>
+<p>This class encapsulates an AFQ dataset and has static methods to read data from csv files
+conforming to the AFQ data standard.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="afqinsight.AFQDataset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">afqinsight.</span></span><span class="sig-name descname"><span class="pre">AFQDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groups</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feature_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subjects</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sessions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">classes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/afqinsight/datasets.html#AFQDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#afqinsight.AFQDataset" title="Permalink to this definition"></a></dt>
+<dd><p>Represent AFQ features and targets.</p>
+<p>The <cite>AFQDataset</cite> class represents tractometry features and, optionally,
+phenotypic targets.</p>
+<p>The simplest way to create a new AFQDataset is to pass in the tractometric
+features and phenotypic targets explicitly.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">AFQDataset</span><span class="p">(</span><span class="n">X</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">1000</span><span class="p">),</span> <span class="n">y</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">50</span><span class="p">))</span>
+<span class="go">AFQDataset(n_samples=50, n_features=1000, n_targets=1)</span>
+</pre></div>
+</div>
+<p>You can keep track of the names of the target variables with the <cite>target_cols</cite> parameter.
+&gt;&gt;&gt; AFQDataset(X=np.random.rand(50, 1000), y=np.random.rand(50), target_cols=[“age”])
+AFQDataset(n_samples=50, n_features=1000, n_targets=1, targets=[‘age’])</p>
+<p>Source Datasets:</p>
+<p>The most common way to create an AFQDataset is to load data from a set of
+csv files that conform to the AFQ data format. For example,</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">os.path</span> <span class="k">as</span> <span class="nn">op</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sarica_dir</span> <span class="o">=</span> <span class="n">download_sarica</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dataset</span> <span class="o">=</span> <span class="n">AFQDataset</span><span class="o">.</span><span class="n">from_files</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">fn_nodes</span><span class="o">=</span><span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sarica_dir</span><span class="p">,</span> <span class="s2">&quot;nodes.csv&quot;</span><span class="p">),</span>
+<span class="gp">... </span>    <span class="n">fn_subjects</span><span class="o">=</span><span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sarica_dir</span><span class="p">,</span> <span class="s2">&quot;subjects.csv&quot;</span><span class="p">),</span>
+<span class="gp">... </span>    <span class="n">dwi_metrics</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;md&quot;</span><span class="p">,</span> <span class="s2">&quot;fa&quot;</span><span class="p">],</span>
+<span class="gp">... </span>    <span class="n">target_cols</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;class&quot;</span><span class="p">],</span>
+<span class="gp">... </span>    <span class="n">label_encode_cols</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;class&quot;</span><span class="p">],</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dataset</span>
+<span class="go">AFQDataset(n_samples=48, n_features=4000, n_targets=1, targets=[&#39;class&#39;])</span>
+</pre></div>
+</div>
+<p>AFQDatasets are indexable and can be sliced.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">dataset</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">10</span><span class="p">]</span>
+<span class="go">AFQDataset(n_samples=10, n_features=4000, n_targets=1, targets=[&#39;class&#39;])</span>
+</pre></div>
+</div>
+<p>You can query the length of the dataset as well as the feature and target
+shapes.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+<span class="go">48</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dataset</span><span class="o">.</span><span class="n">shape</span>
+<span class="go">((48, 4000), (48,))</span>
+</pre></div>
+</div>
+<p>Datasets can be used as expected in scikit-learn’s model selection
+functions. For example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">train_test_split</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">train_data</span><span class="p">,</span> <span class="n">test_data</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">stratify</span><span class="o">=</span><span class="n">dataset</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">train_data</span>
+<span class="go">AFQDataset(n_samples=33, n_features=4000, n_targets=1, targets=[&#39;class&#39;])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">test_data</span>
+<span class="go">AFQDataset(n_samples=15, n_features=4000, n_targets=1, targets=[&#39;class&#39;])</span>
+</pre></div>
+</div>
+<p>You can drop samples from the dataset that have null target values using the
+<cite>drop_target_na</cite> method.
+&gt;&gt;&gt; dataset.y = dataset.y.astype(float)
+&gt;&gt;&gt; dataset.y[:5] = np.nan
+&gt;&gt;&gt; dataset.drop_target_na()
+&gt;&gt;&gt; dataset
+AFQDataset(n_samples=43, n_features=4000, n_targets=1, targets=[‘class’])</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>X</strong><span class="classifier">array-like of shape (n_samples, n_features)</span></dt><dd><p>The feature samples.</p>
+</dd>
+<dt><strong>y</strong><span class="classifier">array-like of shape (n_samples,) or (n_samples, n_targets), optional</span></dt><dd><p>Target values. This will be None if <code class="docutils literal notranslate"><span class="pre">unsupervised</span></code> is True</p>
+</dd>
+<dt><strong>groups</strong><span class="classifier">list of numpy.ndarray, optional</span></dt><dd><p>The feature indices for each feature group. These are typically used
+to keep group collections of “nodes” into white matter bundles.</p>
+</dd>
+<dt><strong>feature_names</strong><span class="classifier">list of tuples, optional</span></dt><dd><p>The multi-indexed columns of X. i.e. the names of the features.</p>
+</dd>
+<dt><strong>group_names</strong><span class="classifier">list of tuples, optional</span></dt><dd><p>The multi-indexed groups of X. i.e. the names of the feature groups.</p>
+</dd>
+<dt><strong>target_cols</strong><span class="classifier">list of strings, optional</span></dt><dd><p>List of column names for the target variables in <cite>y</cite>.</p>
+</dd>
+<dt><strong>subjects</strong><span class="classifier">list, optional</span></dt><dd><p>Subject IDs</p>
+</dd>
+<dt><strong>sessions</strong><span class="classifier">list, optional</span></dt><dd><p>Session IDs.</p>
+</dd>
+<dt><strong>classes</strong><span class="classifier">dict, optional</span></dt><dd><p>Class labels for each label encoded column specified in <code class="docutils literal notranslate"><span class="pre">y</span></code>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
 <section id="pipelines">
 <h2>Pipelines<a class="headerlink" href="#pipelines" title="Permalink to this headline"></a></h2>
 <p>These are AFQ-Insights recommended estimator pipelines.</p>
@@ -94,7 +188,7 @@
 <dt class="sig sig-object py" id="afqinsight.make_afq_regressor_pipeline">
 <span class="sig-prename descclassname"><span class="pre">afqinsight.</span></span><span class="sig-name descname"><span class="pre">make_afq_regressor_pipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">imputer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'simple'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scaler</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'standard'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feature_transformer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ensemble_meta_estimator</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imputer_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scaler_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feature_transformer_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ensemble_meta_estimator_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_cv_estimator</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">memory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pipeline_verbosity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_transformer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_transform_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_transform_inverse_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_transform_check_inverse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">estimator_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/afqinsight/pipeline.html#make_afq_regressor_pipeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#afqinsight.make_afq_regressor_pipeline" title="Permalink to this definition"></a></dt>
 <dd><p>Return the recommended AFQ-specific regression pipeline.</p>
-<p>This function returns a <a class="reference external" href="https://scikit-learn.org/stable/modules/compose.html#pipeline" title="(in scikit-learn v1.0)"><span class="xref std std-ref">Pipeline</span></a> instance with the
+<p>This function returns a <a class="reference external" href="https://scikit-learn.org/stable/modules/compose.html#pipeline" title="(in scikit-learn v1.1)"><span class="xref std std-ref">Pipeline</span></a> instance with the
 following steps:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">imputer</span><span class="p">,</span> <span class="n">scaler</span><span class="p">,</span> <span class="n">feature_transformer</span><span class="p">,</span> <span class="n">estimator</span><span class="p">]</span>
 </pre></div>
@@ -103,8 +197,8 @@ following steps:</p>
 metrics along an entire bundle; <code class="docutils literal notranslate"><span class="pre">scaler</span></code> is optional and scales the
 features of the feature matrix; <code class="docutils literal notranslate"><span class="pre">feature_transformer</span></code> is optional and
 applies a transform featurewise to make data more Gaussian-like;
-and <code class="docutils literal notranslate"><span class="pre">estimator</span></code> is an instance of <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGLCV" title="(in groupyr v0.2.6)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGLCV</span></code></a> if
-<code class="docutils literal notranslate"><span class="pre">use_cv_estimator=True</span></code> or <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGL" title="(in groupyr v0.2.6)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGL</span></code></a> if
+and <code class="docutils literal notranslate"><span class="pre">estimator</span></code> is an instance of <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGLCV" title="(in groupyr v0.2.7)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGLCV</span></code></a> if
+<code class="docutils literal notranslate"><span class="pre">use_cv_estimator=True</span></code> or <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGL" title="(in groupyr v0.2.7)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGL</span></code></a> if
 <code class="docutils literal notranslate"><span class="pre">use_cv_estimator=False</span></code>. The estimator may optionally be wrapped in an
 ensemble meta-estimator specified by <code class="docutils literal notranslate"><span class="pre">ensemble_meta_estimator</span></code> and
 given the keyword arguments in <code class="docutils literal notranslate"><span class="pre">ensemble_meta_estimator_kwargs</span></code>.
@@ -131,30 +225,30 @@ computation during <code class="docutils literal notranslate"><span class="pre">
 <dd class="field-odd"><dl class="simple">
 <dt><strong>imputer</strong><span class="classifier">“simple”, “knn”, or sklearn-compatible transformer, default=”simple”</span></dt><dd><p>The imputer for missing data. String arguments result in the use of
 specific imputers/transformers:
-“simple” yields <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.impute.SimpleImputer.html#sklearn.impute.SimpleImputer" title="(in scikit-learn v1.0)"><code class="docutils literal notranslate"><span class="pre">sklearn.impute.SimpleImputer</span></code></a>;
-“knn” yields <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.impute.KNNImputer.html#sklearn.impute.KNNImputer" title="(in scikit-learn v1.0)"><code class="docutils literal notranslate"><span class="pre">sklearn.impute.KNNImputer</span></code></a>.
+“simple” yields <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.impute.SimpleImputer.html#sklearn.impute.SimpleImputer" title="(in scikit-learn v1.1)"><code class="docutils literal notranslate"><span class="pre">sklearn.impute.SimpleImputer</span></code></a>;
+“knn” yields <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.impute.KNNImputer.html#sklearn.impute.KNNImputer" title="(in scikit-learn v1.1)"><code class="docutils literal notranslate"><span class="pre">sklearn.impute.KNNImputer</span></code></a>.
 Custom transformers are
 allowed as long as they inherit from
-<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html#sklearn.base.TransformerMixin" title="(in scikit-learn v1.0)"><code class="docutils literal notranslate"><span class="pre">sklearn.base.TransformerMixin</span></code></a>.</p>
+<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html#sklearn.base.TransformerMixin" title="(in scikit-learn v1.1)"><code class="docutils literal notranslate"><span class="pre">sklearn.base.TransformerMixin</span></code></a>.</p>
 </dd>
 <dt><strong>scaler</strong><span class="classifier">“standard”, “minmax”, “maxabs”, “robust”, or sklearn-compatible transformer, default=”standard”</span></dt><dd><p>The scaler to use for the feature matrix. String arguments result in
 the use of specific transformers: “standard” yields the
 <code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn:sklearn.preprocessing.StandardScalar</span></code>; “minmax”
-yields the <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.MinMaxScaler.html#sklearn.preprocessing.MinMaxScaler" title="(in scikit-learn v1.0)"><code class="docutils literal notranslate"><span class="pre">sklearn.preprocessing.MinMaxScaler</span></code></a>;
+yields the <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.MinMaxScaler.html#sklearn.preprocessing.MinMaxScaler" title="(in scikit-learn v1.1)"><code class="docutils literal notranslate"><span class="pre">sklearn.preprocessing.MinMaxScaler</span></code></a>;
 “maxabs” yields the
-<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.MaxAbsScaler.html#sklearn.preprocessing.MaxAbsScaler" title="(in scikit-learn v1.0)"><code class="docutils literal notranslate"><span class="pre">sklearn.preprocessing.MaxAbsScaler</span></code></a>; “robust” yields
-the <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.RobustScaler.html#sklearn.preprocessing.RobustScaler" title="(in scikit-learn v1.0)"><code class="docutils literal notranslate"><span class="pre">sklearn.preprocessing.RobustScaler</span></code></a>. Custom
+<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.MaxAbsScaler.html#sklearn.preprocessing.MaxAbsScaler" title="(in scikit-learn v1.1)"><code class="docutils literal notranslate"><span class="pre">sklearn.preprocessing.MaxAbsScaler</span></code></a>; “robust” yields
+the <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.RobustScaler.html#sklearn.preprocessing.RobustScaler" title="(in scikit-learn v1.1)"><code class="docutils literal notranslate"><span class="pre">sklearn.preprocessing.RobustScaler</span></code></a>. Custom
 transformers are allowed as long as they inherit from
-<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html#sklearn.base.TransformerMixin" title="(in scikit-learn v1.0)"><code class="docutils literal notranslate"><span class="pre">sklearn.base.TransformerMixin</span></code></a>.</p>
+<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html#sklearn.base.TransformerMixin" title="(in scikit-learn v1.1)"><code class="docutils literal notranslate"><span class="pre">sklearn.base.TransformerMixin</span></code></a>.</p>
 </dd>
 <dt><strong>feature_transformer</strong><span class="classifier">bool or sklearn-compatible transformer, default=False</span></dt><dd><p>An optional transformer for use on the feature matrix. If True,
-use <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.PowerTransformer.html#sklearn.preprocessing.PowerTransformer" title="(in scikit-learn v1.0)"><code class="docutils literal notranslate"><span class="pre">sklearn.preprocessing.PowerTransformer</span></code></a>. If
+use <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.PowerTransformer.html#sklearn.preprocessing.PowerTransformer" title="(in scikit-learn v1.1)"><code class="docutils literal notranslate"><span class="pre">sklearn.preprocessing.PowerTransformer</span></code></a>. If
 False, skip this step. Custom transformers are allowed as long as
-they inherit from <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html#sklearn.base.TransformerMixin" title="(in scikit-learn v1.0)"><code class="docutils literal notranslate"><span class="pre">sklearn.base.TransformerMixin</span></code></a>.</p>
+they inherit from <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html#sklearn.base.TransformerMixin" title="(in scikit-learn v1.1)"><code class="docutils literal notranslate"><span class="pre">sklearn.base.TransformerMixin</span></code></a>.</p>
 </dd>
 <dt><strong>ensemble_meta_estimator</strong><span class="classifier">“bagging”, “adaboost”, or None</span></dt><dd><p>An optional ensemble meta-estimator to combine the predictions of
 several base estimators. “Adaboost” will result in the use of
-<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostClassifier.html#sklearn.ensemble.AdaBoostClassifier" title="(in scikit-learn v1.0)"><code class="docutils literal notranslate"><span class="pre">sklearn.ensemble.AdaBoostClassifier</span></code></a> for classifier
+<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostClassifier.html#sklearn.ensemble.AdaBoostClassifier" title="(in scikit-learn v1.1)"><code class="docutils literal notranslate"><span class="pre">sklearn.ensemble.AdaBoostClassifier</span></code></a> for classifier
 base estimators or
 <code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.sklearn.ensemble.AdaBoostRegressor</span></code> for regressor
 base estimators. “Bagging” will result in the use of
@@ -168,8 +262,8 @@ for regressor base estimators.</p>
 </dd>
 <dt><strong>feature_transformer_kwargs</strong><span class="classifier">dict, default=None,</span></dt><dd><p>Key-word arguments for the feature_transformer.</p>
 </dd>
-<dt><strong>use_cv_estimator</strong><span class="classifier">bool, default=True,</span></dt><dd><p>If True, use <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGLCV" title="(in groupyr v0.2.6)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGLCV</span></code></a> as the final
-estimator. Otherwise, use <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGL" title="(in groupyr v0.2.6)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGL</span></code></a>.</p>
+<dt><strong>use_cv_estimator</strong><span class="classifier">bool, default=True,</span></dt><dd><p>If True, use <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGLCV" title="(in groupyr v0.2.7)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGLCV</span></code></a> as the final
+estimator. Otherwise, use <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGL" title="(in groupyr v0.2.7)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGL</span></code></a>.</p>
 </dd>
 <dt><strong>memory</strong><span class="classifier">str or object with the joblib.Memory interface, default=None</span></dt><dd><p>Used to cache the fitted transformers of the pipeline. By default,
 no caching is performed. If a string is given, it is the path to
@@ -184,7 +278,7 @@ transformers is advantageous when fitting is time consuming.</p>
 is completed.</p>
 </dd>
 <dt><strong>target_transformer</strong><span class="classifier">object, default=None</span></dt><dd><p>Estimator object such as derived from
-<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html#sklearn.base.TransformerMixin" title="(in scikit-learn v1.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.base.TransformerMixin</span></code></a>. Cannot be set at the same
+<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html#sklearn.base.TransformerMixin" title="(in scikit-learn v1.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.base.TransformerMixin</span></code></a>. Cannot be set at the same
 time as <code class="docutils literal notranslate"><span class="pre">func</span></code> and <code class="docutils literal notranslate"><span class="pre">inverse_func</span></code>. If <code class="docutils literal notranslate"><span class="pre">transformer</span></code> is <code class="docutils literal notranslate"><span class="pre">None</span></code>
 as well as <code class="docutils literal notranslate"><span class="pre">func</span></code> and <code class="docutils literal notranslate"><span class="pre">inverse_func</span></code>, the transformer will be an
 identity transformer. Note that the transformer will be cloned during
@@ -204,15 +298,15 @@ predictions to the same space of the original training labels.</p>
 <dt><strong>target_transform_check_inverse</strong><span class="classifier">bool, default=True</span></dt><dd><p>Whether to check that <code class="docutils literal notranslate"><span class="pre">transform</span></code> followed by <code class="docutils literal notranslate"><span class="pre">inverse_transform</span></code>
 or <code class="docutils literal notranslate"><span class="pre">func</span></code> followed by <code class="docutils literal notranslate"><span class="pre">inverse_func</span></code> leads to the original targets.</p>
 </dd>
-<dt><strong>**estimator_kwargs</strong><span class="classifier">kwargs</span></dt><dd><p>Keyword arguments passed to <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGLCV" title="(in groupyr v0.2.6)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGLCV</span></code></a> if
-<code class="docutils literal notranslate"><span class="pre">use_cv_estimator=True</span></code> or <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGL" title="(in groupyr v0.2.6)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGL</span></code></a> if
+<dt><strong>**estimator_kwargs</strong><span class="classifier">kwargs</span></dt><dd><p>Keyword arguments passed to <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGLCV" title="(in groupyr v0.2.7)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGLCV</span></code></a> if
+<code class="docutils literal notranslate"><span class="pre">use_cv_estimator=True</span></code> or <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.SGL" title="(in groupyr v0.2.7)"><code class="docutils literal notranslate"><span class="pre">groupyr.SGL</span></code></a> if
 <code class="docutils literal notranslate"><span class="pre">use_cv_estimator=False</span></code>.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>pipeline</strong><span class="classifier"><a class="reference external" href="https://scikit-learn.org/stable/modules/compose.html#pipeline" title="(in scikit-learn v1.0)"><span class="xref std std-ref">Pipeline</span></a> instance</span></dt><dd></dd>
+<dt><strong>pipeline</strong><span class="classifier"><a class="reference external" href="https://scikit-learn.org/stable/modules/compose.html#pipeline" title="(in scikit-learn v1.1)"><span class="xref std std-ref">Pipeline</span></a> instance</span></dt><dd></dd>
 </dl>
 </dd>
 </dl>
@@ -222,7 +316,7 @@ or <code class="docutils literal notranslate"><span class="pre">func</span></cod
 <dt class="sig sig-object py" id="afqinsight.make_afq_classifier_pipeline">
 <span class="sig-prename descclassname"><span class="pre">afqinsight.</span></span><span class="sig-name descname"><span class="pre">make_afq_classifier_pipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">imputer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'simple'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scaler</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'standard'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feature_transformer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ensemble_meta_estimator</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imputer_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scaler_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feature_transformer_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ensemble_meta_estimator_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_cv_estimator</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">memory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pipeline_verbosity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_transformer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_transform_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_transform_inverse_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_transform_check_inverse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">estimator_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/afqinsight/pipeline.html#make_afq_classifier_pipeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#afqinsight.make_afq_classifier_pipeline" title="Permalink to this definition"></a></dt>
 <dd><p>Return the recommended AFQ-specific classification pipeline.</p>
-<p>This function returns a <a class="reference external" href="https://scikit-learn.org/stable/modules/compose.html#pipeline" title="(in scikit-learn v1.0)"><span class="xref std std-ref">Pipeline</span></a> instance with the
+<p>This function returns a <a class="reference external" href="https://scikit-learn.org/stable/modules/compose.html#pipeline" title="(in scikit-learn v1.1)"><span class="xref std std-ref">Pipeline</span></a> instance with the
 following steps:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">imputer</span><span class="p">,</span> <span class="n">scaler</span><span class="p">,</span> <span class="n">feature_transformer</span><span class="p">,</span> <span class="n">estimator</span><span class="p">]</span>
 </pre></div>
@@ -232,8 +326,8 @@ metrics along an entire bundle; <code class="docutils literal notranslate"><span
 features of the feature matrix; <code class="docutils literal notranslate"><span class="pre">feature_transformer</span></code> is optional and
 applies a transform featurewise to make data more Gaussian-like;
 and <code class="docutils literal notranslate"><span class="pre">estimator</span></code> is an instance of
-<a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGLCV" title="(in groupyr v0.2.6)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGLCV</span></code></a> if <code class="docutils literal notranslate"><span class="pre">use_cv_estimator=True</span></code> or
-<a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGL" title="(in groupyr v0.2.6)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGL</span></code></a> if <code class="docutils literal notranslate"><span class="pre">use_cv_estimator=False</span></code>. The
+<a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGLCV" title="(in groupyr v0.2.7)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGLCV</span></code></a> if <code class="docutils literal notranslate"><span class="pre">use_cv_estimator=True</span></code> or
+<a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGL" title="(in groupyr v0.2.7)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGL</span></code></a> if <code class="docutils literal notranslate"><span class="pre">use_cv_estimator=False</span></code>. The
 estimator may optionally be wrapped in an ensemble meta-estimator
 specified by <code class="docutils literal notranslate"><span class="pre">ensemble_meta_estimator</span></code> and given the keyword arguments
 in <code class="docutils literal notranslate"><span class="pre">ensemble_meta_estimator_kwargs</span></code>. Additionally, the estimator may
@@ -260,30 +354,30 @@ computation during <code class="docutils literal notranslate"><span class="pre">
 <dd class="field-odd"><dl class="simple">
 <dt><strong>imputer</strong><span class="classifier">“simple”, “knn”, or sklearn-compatible transformer, default=”simple”</span></dt><dd><p>The imputer for missing data. String arguments result in the use of
 specific imputers/transformers:
-“simple” yields <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.impute.SimpleImputer.html#sklearn.impute.SimpleImputer" title="(in scikit-learn v1.0)"><code class="docutils literal notranslate"><span class="pre">sklearn.impute.SimpleImputer</span></code></a>;
-“knn” yields <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.impute.KNNImputer.html#sklearn.impute.KNNImputer" title="(in scikit-learn v1.0)"><code class="docutils literal notranslate"><span class="pre">sklearn.impute.KNNImputer</span></code></a>.
+“simple” yields <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.impute.SimpleImputer.html#sklearn.impute.SimpleImputer" title="(in scikit-learn v1.1)"><code class="docutils literal notranslate"><span class="pre">sklearn.impute.SimpleImputer</span></code></a>;
+“knn” yields <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.impute.KNNImputer.html#sklearn.impute.KNNImputer" title="(in scikit-learn v1.1)"><code class="docutils literal notranslate"><span class="pre">sklearn.impute.KNNImputer</span></code></a>.
 Custom transformers are
 allowed as long as they inherit from
-<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html#sklearn.base.TransformerMixin" title="(in scikit-learn v1.0)"><code class="docutils literal notranslate"><span class="pre">sklearn.base.TransformerMixin</span></code></a>.</p>
+<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html#sklearn.base.TransformerMixin" title="(in scikit-learn v1.1)"><code class="docutils literal notranslate"><span class="pre">sklearn.base.TransformerMixin</span></code></a>.</p>
 </dd>
 <dt><strong>scaler</strong><span class="classifier">“standard”, “minmax”, “maxabs”, “robust”, or sklearn-compatible transformer, default=”standard”</span></dt><dd><p>The scaler to use for the feature matrix. String arguments result in
 the use of specific transformers: “standard” yields the
 <code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn:sklearn.preprocessing.StandardScalar</span></code>; “minmax”
-yields the <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.MinMaxScaler.html#sklearn.preprocessing.MinMaxScaler" title="(in scikit-learn v1.0)"><code class="docutils literal notranslate"><span class="pre">sklearn.preprocessing.MinMaxScaler</span></code></a>;
+yields the <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.MinMaxScaler.html#sklearn.preprocessing.MinMaxScaler" title="(in scikit-learn v1.1)"><code class="docutils literal notranslate"><span class="pre">sklearn.preprocessing.MinMaxScaler</span></code></a>;
 “maxabs” yields the
-<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.MaxAbsScaler.html#sklearn.preprocessing.MaxAbsScaler" title="(in scikit-learn v1.0)"><code class="docutils literal notranslate"><span class="pre">sklearn.preprocessing.MaxAbsScaler</span></code></a>; “robust” yields
-the <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.RobustScaler.html#sklearn.preprocessing.RobustScaler" title="(in scikit-learn v1.0)"><code class="docutils literal notranslate"><span class="pre">sklearn.preprocessing.RobustScaler</span></code></a>. Custom
+<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.MaxAbsScaler.html#sklearn.preprocessing.MaxAbsScaler" title="(in scikit-learn v1.1)"><code class="docutils literal notranslate"><span class="pre">sklearn.preprocessing.MaxAbsScaler</span></code></a>; “robust” yields
+the <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.RobustScaler.html#sklearn.preprocessing.RobustScaler" title="(in scikit-learn v1.1)"><code class="docutils literal notranslate"><span class="pre">sklearn.preprocessing.RobustScaler</span></code></a>. Custom
 transformers are allowed as long as they inherit from
-<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html#sklearn.base.TransformerMixin" title="(in scikit-learn v1.0)"><code class="docutils literal notranslate"><span class="pre">sklearn.base.TransformerMixin</span></code></a>.</p>
+<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html#sklearn.base.TransformerMixin" title="(in scikit-learn v1.1)"><code class="docutils literal notranslate"><span class="pre">sklearn.base.TransformerMixin</span></code></a>.</p>
 </dd>
 <dt><strong>feature_transformer</strong><span class="classifier">bool or sklearn-compatible transformer, default=False</span></dt><dd><p>An optional transformer for use on the feature matrix. If True,
-use <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.PowerTransformer.html#sklearn.preprocessing.PowerTransformer" title="(in scikit-learn v1.0)"><code class="docutils literal notranslate"><span class="pre">sklearn.preprocessing.PowerTransformer</span></code></a>. If
+use <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.PowerTransformer.html#sklearn.preprocessing.PowerTransformer" title="(in scikit-learn v1.1)"><code class="docutils literal notranslate"><span class="pre">sklearn.preprocessing.PowerTransformer</span></code></a>. If
 False, skip this step. Custom transformers are allowed as long as
-they inherit from <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html#sklearn.base.TransformerMixin" title="(in scikit-learn v1.0)"><code class="docutils literal notranslate"><span class="pre">sklearn.base.TransformerMixin</span></code></a>.</p>
+they inherit from <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html#sklearn.base.TransformerMixin" title="(in scikit-learn v1.1)"><code class="docutils literal notranslate"><span class="pre">sklearn.base.TransformerMixin</span></code></a>.</p>
 </dd>
 <dt><strong>ensemble_meta_estimator</strong><span class="classifier">“bagging”, “adaboost”, or None</span></dt><dd><p>An optional ensemble meta-estimator to combine the predictions of
 several base estimators. “Adaboost” will result in the use of
-<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostClassifier.html#sklearn.ensemble.AdaBoostClassifier" title="(in scikit-learn v1.0)"><code class="docutils literal notranslate"><span class="pre">sklearn.ensemble.AdaBoostClassifier</span></code></a> and “bagging”
+<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostClassifier.html#sklearn.ensemble.AdaBoostClassifier" title="(in scikit-learn v1.1)"><code class="docutils literal notranslate"><span class="pre">sklearn.ensemble.AdaBoostClassifier</span></code></a> and “bagging”
 will result in the use of
 <code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.sklearn.ensemble.BaggingClassifier</span></code>.</p>
 </dd>
@@ -295,8 +389,8 @@ will result in the use of
 </dd>
 <dt><strong>ensemble_meta_estimator_kwargs</strong><span class="classifier">dict, default=None,</span></dt><dd><p>Key-word arguments for the ensemble meta-estimator.</p>
 </dd>
-<dt><strong>use_cv_estimator</strong><span class="classifier">bool, default=True,</span></dt><dd><p>If True, use <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGLCV" title="(in groupyr v0.2.6)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGLCV</span></code></a> as the final
-estimator. Otherwise, use <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGL" title="(in groupyr v0.2.6)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGL</span></code></a>.</p>
+<dt><strong>use_cv_estimator</strong><span class="classifier">bool, default=True,</span></dt><dd><p>If True, use <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGLCV" title="(in groupyr v0.2.7)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGLCV</span></code></a> as the final
+estimator. Otherwise, use <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGL" title="(in groupyr v0.2.7)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGL</span></code></a>.</p>
 </dd>
 <dt><strong>memory</strong><span class="classifier">str or object with the joblib.Memory interface, default=None</span></dt><dd><p>Used to cache the fitted transformers of the pipeline. By default,
 no caching is performed. If a string is given, it is the path to
@@ -311,7 +405,7 @@ transformers is advantageous when fitting is time consuming.</p>
 is completed.</p>
 </dd>
 <dt><strong>target_transformer</strong><span class="classifier">object, default=None</span></dt><dd><p>Estimator object such as derived from
-<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html#sklearn.base.TransformerMixin" title="(in scikit-learn v1.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.base.TransformerMixin</span></code></a>. Cannot be set at the same
+<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.base.TransformerMixin.html#sklearn.base.TransformerMixin" title="(in scikit-learn v1.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.base.TransformerMixin</span></code></a>. Cannot be set at the same
 time as <code class="docutils literal notranslate"><span class="pre">func</span></code> and <code class="docutils literal notranslate"><span class="pre">inverse_func</span></code>. If <code class="docutils literal notranslate"><span class="pre">transformer</span></code> is <code class="docutils literal notranslate"><span class="pre">None</span></code>
 as well as <code class="docutils literal notranslate"><span class="pre">func</span></code> and <code class="docutils literal notranslate"><span class="pre">inverse_func</span></code>, the transformer will be an
 identity transformer. Note that the transformer will be cloned during
@@ -331,15 +425,73 @@ predictions to the same space of the original training labels.</p>
 <dt><strong>target_transform_check_inverse</strong><span class="classifier">bool, default=True</span></dt><dd><p>Whether to check that <code class="docutils literal notranslate"><span class="pre">transform</span></code> followed by <code class="docutils literal notranslate"><span class="pre">inverse_transform</span></code>
 or <code class="docutils literal notranslate"><span class="pre">func</span></code> followed by <code class="docutils literal notranslate"><span class="pre">inverse_func</span></code> leads to the original targets.</p>
 </dd>
-<dt><strong>**estimator_kwargs</strong><span class="classifier">kwargs</span></dt><dd><p>Keyword arguments passed to <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGLCV" title="(in groupyr v0.2.6)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGLCV</span></code></a> if
-<code class="docutils literal notranslate"><span class="pre">use_cv_estimator=True</span></code> or <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGL" title="(in groupyr v0.2.6)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGL</span></code></a> if
+<dt><strong>**estimator_kwargs</strong><span class="classifier">kwargs</span></dt><dd><p>Keyword arguments passed to <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGLCV" title="(in groupyr v0.2.7)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGLCV</span></code></a> if
+<code class="docutils literal notranslate"><span class="pre">use_cv_estimator=True</span></code> or <a class="reference external" href="https://richiehalford.org/groupyr/api.html#groupyr.LogisticSGL" title="(in groupyr v0.2.7)"><code class="docutils literal notranslate"><span class="pre">groupyr.LogisticSGL</span></code></a> if
 <code class="docutils literal notranslate"><span class="pre">use_cv_estimator=False</span></code>.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><dl>
-<dt><strong>pipeline</strong><span class="classifier"><a class="reference external" href="https://scikit-learn.org/stable/modules/compose.html#pipeline" title="(in scikit-learn v1.0)"><span class="xref std std-ref">Pipeline</span></a> instance</span></dt><dd></dd>
+<dt><strong>pipeline</strong><span class="classifier"><a class="reference external" href="https://scikit-learn.org/stable/modules/compose.html#pipeline" title="(in scikit-learn v1.1)"><span class="xref std std-ref">Pipeline</span></a> instance</span></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="transformers">
+<h2>Transformers<a class="headerlink" href="#transformers" title="Permalink to this headline"></a></h2>
+<p>These transformers transform tractometry information from the AFQ standard
+data format to feature matrices that are ready for ingestion into
+sklearn-compatible pipelines.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="afqinsight.AFQDataFrameMapper">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">afqinsight.</span></span><span class="sig-name descname"><span class="pre">AFQDataFrameMapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pd_interpolate_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bundle_agg_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">concat_subject_session</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">dataframe_mapper_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/afqinsight/transform.html#AFQDataFrameMapper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#afqinsight.AFQDataFrameMapper" title="Permalink to this definition"></a></dt>
+<dd><p>Map pandas dataframe to sklearn feature matrix.</p>
+<p>This object first converts an AFQ nodes.csv dataframe into a feature
+matrix with rows corresponding to subjects and columns corresponding to
+tract profile values. It interpolates along tracts to fill missing values
+and then maps the dataframe onto a 2D feature matrix for ingestion into
+sklearn-compatible estimators. It also maintains attributes for the
+subject index, feature names, and groups of features.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl>
+<dt><strong>df_mapper_params</strong><span class="classifier">kwargs, default=dict(features=[], default=None)</span></dt><dd><p>Keyword arguments passed to sklearn_pandas.DataFrameMapper. You will
+probably not need to change these defaults.</p>
+</dd>
+<dt><strong>pd_interpolate_params</strong><span class="classifier">kwargs, default=dict(method=”linear”, limit_direction=”both”, limit_area=”inside”)</span></dt><dd><p>Keyword arguments passed to pandas.DataFrame.interpolate. Missing
+values are interpolated within the tract profile so that no data is
+used from other subjects, tracts, or metrics, minimizing the chance
+of train/test leakage. You will probably not need to change these
+defaults.</p>
+</dd>
+<dt><strong>bundle_agg_func</strong><span class="classifier">function, str, list or dict, optional</span></dt><dd><p>If provided, a function to use for aggregating the nodes in each tract.
+If a function, must either work when passed a DataFrame or when passed
+to DataFrame.apply.</p>
+<p>Accepted combinations are:</p>
+<ul class="simple">
+<li><p>function</p></li>
+<li><p>string function name</p></li>
+<li><p>list of functions and/or function names, e.g. [np.sum, ‘mean’]</p></li>
+</ul>
+<p>By default, this mapper will not aggregate but will return values at
+each node.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Attributes</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>subjects_</strong><span class="classifier">list</span></dt><dd><p>List of subject IDs retrieved from pandas dataframe index.</p>
+</dd>
+<dt><strong>groups_</strong><span class="classifier">list of numpy.ndarray</span></dt><dd><p>List of arrays of non-overlapping indices for each group. For
+example, if nine features are grouped into equal contiguous groups of
+three, then groups would be <code class="docutils literal notranslate"><span class="pre">[array([0,</span> <span class="pre">1,</span> <span class="pre">2]),</span> <span class="pre">array([3,</span> <span class="pre">4,</span> <span class="pre">5]),</span>
+<span class="pre">array([6,</span> <span class="pre">7,</span> <span class="pre">8])]</span></code>.</p>
+</dd>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">feature_names_</span></code><span class="classifier">list of tuples</span></dt><dd><p>Return the feature names.</p>
+</dd>
 </dl>
 </dd>
 </dl>
@@ -354,10 +506,10 @@ checkpointing the estimators and scores.</p>
 <dt class="sig sig-object py" id="afqinsight.cross_validate_checkpoint">
 <span class="sig-prename descclassname"><span class="pre">afqinsight.</span></span><span class="sig-name descname"><span class="pre">cross_validate_checkpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">estimator</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">groups</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scoring</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pre_dispatch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'2*n_jobs'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_train_score</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_estimator</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error_score</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">nan</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workdir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_refresh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">serialize_cv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/afqinsight/cross_validate.html#cross_validate_checkpoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#afqinsight.cross_validate_checkpoint" title="Permalink to this definition"></a></dt>
 <dd><p>Evaluate metric(s) by cross-validation and also record fit/score times.</p>
-<p>This is a copy of <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.0)"><code class="docutils literal notranslate"><span class="pre">sklearn.model_selection.cross_validate()</span></code></a>
+<p>This is a copy of <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate" title="(in scikit-learn v1.1)"><code class="docutils literal notranslate"><span class="pre">sklearn.model_selection.cross_validate()</span></code></a>
 that uses <code class="xref py py-func docutils literal notranslate"><span class="pre">_fit_and_score_ckpt()</span></code> to checkpoint scores and estimators
 for each CV split.
-Read more in the <a class="reference external" href="https://scikit-learn.org/stable/modules/cross_validation.html#multimetric-cross-validation" title="(in scikit-learn v1.0)"><span class="xref std std-ref">sklearn user guide</span></a>.</p>
+Read more in the <a class="reference external" href="https://scikit-learn.org/stable/modules/cross_validation.html#multimetric-cross-validation" title="(in scikit-learn v1.1)"><span class="xref std std-ref">sklearn user guide</span></a>.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl>
@@ -369,17 +521,17 @@ Read more in the <a class="reference external" href="https://scikit-learn.org/st
 supervised learning.</p>
 </dd>
 <dt><strong>groups</strong><span class="classifier">array-like of shape (n_samples,), default=None</span></dt><dd><p>Group labels for the samples used while splitting the dataset into
-train/test set. Only used in conjunction with a “Group” <a class="reference external" href="https://scikit-learn.org/stable/glossary.html#term-cv" title="(in scikit-learn v1.0)"><span class="xref std std-term">cv</span></a>
+train/test set. Only used in conjunction with a “Group” <a class="reference external" href="https://scikit-learn.org/stable/glossary.html#term-cv" title="(in scikit-learn v1.1)"><span class="xref std std-term">cv</span></a>
 instance (e.g., <code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn:GroupKFold</span></code>).</p>
 </dd>
-<dt><strong>scoring</strong><span class="classifier">str, callable, list/tuple, or dict, default=None</span></dt><dd><p>A single str (see <a class="reference external" href="https://scikit-learn.org/stable/modules/model_evaluation.html#scoring-parameter" title="(in scikit-learn v1.0)"><span>The scoring parameter: defining model evaluation rules</span></a>) or a callable
-(see <a class="reference external" href="https://scikit-learn.org/stable/modules/model_evaluation.html#scoring" title="(in scikit-learn v1.0)"><span>Defining your scoring strategy from metric functions</span></a>) to evaluate the predictions on the test set.</p>
+<dt><strong>scoring</strong><span class="classifier">str, callable, list/tuple, or dict, default=None</span></dt><dd><p>A single str (see <a class="reference external" href="https://scikit-learn.org/stable/modules/model_evaluation.html#scoring-parameter" title="(in scikit-learn v1.1)"><span>The scoring parameter: defining model evaluation rules</span></a>) or a callable
+(see <a class="reference external" href="https://scikit-learn.org/stable/modules/model_evaluation.html#scoring" title="(in scikit-learn v1.1)"><span>Defining your scoring strategy from metric functions</span></a>) to evaluate the predictions on the test set.</p>
 <p>For evaluating multiple metrics, either give a list of (unique) strings
 or a dict with names as keys and callables as values.</p>
 <p>NOTE that when using custom scorers, each scorer should return a single
 value. Metric functions returning a list/array of values can be wrapped
 into multiple scorers that return one value each.</p>
-<p>See <a class="reference external" href="https://scikit-learn.org/stable/modules/grid_search.html#multimetric-grid-search" title="(in scikit-learn v1.0)"><span>Specifying multiple metrics for evaluation</span></a> for an example.</p>
+<p>See <a class="reference external" href="https://scikit-learn.org/stable/modules/grid_search.html#multimetric-grid-search" title="(in scikit-learn v1.1)"><span>Specifying multiple metrics for evaluation</span></a> for an example.</p>
 <p>If None, the estimator’s score method is used.</p>
 </dd>
 <dt><strong>cv</strong><span class="classifier">int, cross-validation generator or an iterable, default=None</span></dt><dd><p>Determines the cross-validation splitting strategy.
@@ -392,14 +544,14 @@ Possible inputs for cv are:</p>
 </ul>
 <p>For int/None inputs, if the estimator is a classifier and <code class="docutils literal notranslate"><span class="pre">y</span></code> is
 either binary or multiclass,
-<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html#sklearn.model_selection.StratifiedKFold" title="(in scikit-learn v1.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.model_selection.StratifiedKFold</span></code></a> is used. In all
-other cases, <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.KFold.html#sklearn.model_selection.KFold" title="(in scikit-learn v1.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.model_selection.KFold</span></code></a> is used.
-Refer <a class="reference external" href="https://scikit-learn.org/stable/modules/cross_validation.html#cross-validation" title="(in scikit-learn v1.0)"><span class="xref std std-ref">sklearn user guide</span></a> for the
+<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html#sklearn.model_selection.StratifiedKFold" title="(in scikit-learn v1.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.model_selection.StratifiedKFold</span></code></a> is used. In all
+other cases, <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.KFold.html#sklearn.model_selection.KFold" title="(in scikit-learn v1.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.model_selection.KFold</span></code></a> is used.
+Refer <a class="reference external" href="https://scikit-learn.org/stable/modules/cross_validation.html#cross-validation" title="(in scikit-learn v1.1)"><span class="xref std std-ref">sklearn user guide</span></a> for the
 various cross-validation strategies that can be used here.</p>
 </dd>
 <dt><strong>n_jobs</strong><span class="classifier">int, default=None</span></dt><dd><p>The number of CPUs to use to do the computation.
 <code class="docutils literal notranslate"><span class="pre">None</span></code> means 1 unless in a <a class="reference external" href="https://joblib.readthedocs.io/en/latest/parallel.html#joblib.parallel_backend" title="(in joblib v1.2.0.dev0)"><code class="docutils literal notranslate"><span class="pre">joblib.parallel_backend</span></code></a> context.
-<code class="docutils literal notranslate"><span class="pre">-1</span></code> means using all processors. See <a class="reference external" href="https://scikit-learn.org/stable/glossary.html#term-n_jobs" title="(in scikit-learn v1.0)"><span class="xref std std-term">sklearn Glossary</span></a>
+<code class="docutils literal notranslate"><span class="pre">-1</span></code> means using all processors. See <a class="reference external" href="https://scikit-learn.org/stable/glossary.html#term-n_jobs" title="(in scikit-learn v1.1)"><span class="xref std std-term">sklearn Glossary</span></a>
 for more details.</p>
 </dd>
 <dt><strong>verbose</strong><span class="classifier">int, default=0</span></dt><dd><p>The verbosity level.</p>
@@ -488,16 +640,17 @@ is set to <code class="docutils literal notranslate"><span class="pre">True</spa
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_val_score.html#sklearn.model_selection.cross_val_score" title="(in scikit-learn v1.0)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sklearn.model_selection.cross_val_score</span></code></a></dt><dd><p>Run cross-validation for single metric evaluation.</p>
+<dt><a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_val_score.html#sklearn.model_selection.cross_val_score" title="(in scikit-learn v1.1)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sklearn.model_selection.cross_val_score</span></code></a></dt><dd><p>Run cross-validation for single metric evaluation.</p>
 </dd>
-<dt><a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_val_predict.html#sklearn.model_selection.cross_val_predict" title="(in scikit-learn v1.0)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sklearn.model_selection.cross_val_predict</span></code></a></dt><dd><p>Get predictions from each split of cross-validation for diagnostic purposes.</p>
+<dt><a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_val_predict.html#sklearn.model_selection.cross_val_predict" title="(in scikit-learn v1.1)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sklearn.model_selection.cross_val_predict</span></code></a></dt><dd><p>Get predictions from each split of cross-validation for diagnostic purposes.</p>
 </dd>
-<dt><a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.metrics.make_scorer.html#sklearn.metrics.make_scorer" title="(in scikit-learn v1.0)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sklearn.metrics.make_scorer</span></code></a></dt><dd><p>Make a scorer from a performance metric or loss function.</p>
+<dt><a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.metrics.make_scorer.html#sklearn.metrics.make_scorer" title="(in scikit-learn v1.1)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sklearn.metrics.make_scorer</span></code></a></dt><dd><p>Make a scorer from a performance metric or loss function.</p>
 </dd>
 </dl>
 </div>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">shutil</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">shutil</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">tempfile</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">sklearn</span> <span class="kn">import</span> <span class="n">datasets</span><span class="p">,</span> <span class="n">linear_model</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">afqinsight</span> <span class="kn">import</span> <span class="n">cross_validate_checkpoint</span>
@@ -513,8 +666,8 @@ is set to <code class="docutils literal notranslate"><span class="pre">True</spa
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">cv_results</span> <span class="o">=</span> <span class="n">cross_validate_checkpoint</span><span class="p">(</span><span class="n">lasso</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">checkpoint</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">sorted</span><span class="p">(</span><span class="n">cv_results</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
 <span class="go">[&#39;fit_time&#39;, &#39;score_time&#39;, &#39;test_score&#39;]</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">cv_results</span><span class="p">[</span><span class="s1">&#39;test_score&#39;</span><span class="p">]</span>
-<span class="go">array([0.33150734, 0.08022311, 0.03531764])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cv_results</span><span class="p">[</span><span class="s1">&#39;test_score&#39;</span><span class="p">]</span>  
+<span class="go">array([0.33150..., 0.08022..., 0.03531...])</span>
 </pre></div>
 </div>
 <p>Multiple metric evaluation using <code class="docutils literal notranslate"><span class="pre">cross_validate</span></code>, an estimator
@@ -534,152 +687,6 @@ for more information)</p>
 <span class="go">[0.507... 0.602... 0.478...]</span>
 </pre></div>
 </div>
-</dd></dl>
-
-</section>
-<section id="dataset-loader">
-<h2>Dataset Loader<a class="headerlink" href="#dataset-loader" title="Permalink to this headline"></a></h2>
-<p>This function reads data from csv files conforming to the AFQ data standard
-and return feature and target matrices, grouping arrays, and subject IDs.</p>
-<dl class="py function">
-<dt class="sig sig-object py" id="afqinsight.load_afq_data">
-<span class="sig-prename descclassname"><span class="pre">afqinsight.</span></span><span class="sig-name descname"><span class="pre">load_afq_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fn_nodes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'nodes.csv'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fn_subjects</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'subjects.csv'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dwi_metrics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label_encode_cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'subjectID'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unsupervised</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">concat_subject_session</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_bundle_means</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enforce_sub_prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/afqinsight/datasets.html#load_afq_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#afqinsight.load_afq_data" title="Permalink to this definition"></a></dt>
-<dd><p>Load AFQ data from CSV, transform it, return feature matrix and target.</p>
-<p>This function expects a diffusion metric csv file (specified by
-<code class="docutils literal notranslate"><span class="pre">fn_nodes</span></code>) and, optionally, a phenotypic data file (specified by
-<code class="docutils literal notranslate"><span class="pre">fn_subjects</span></code>). The nodes csv file must be a long format dataframe with
-the following columns: “subjectID,” “nodeID,” “tractID,” an optional
-“sessionID”. All other columns are assumed to be diffusion metric columns,
-which can be optionally subset using the <code class="docutils literal notranslate"><span class="pre">dwi_metrics</span></code> parameter.</p>
-<p>For supervised learning problems (with parameter <code class="docutils literal notranslate"><span class="pre">unsupervised=False</span></code>)
-this function will also load phenotypic targets from a subjects csv/tsv
-file. This function will load the subject data, drop subjects that are
-not found in the dwi feature matrix, and optionally label encode
-categorical values.</p>
-<dl class="field-list">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>fn_nodes</strong><span class="classifier">str, default=’nodes.csv’</span></dt><dd><p>Filename for the nodes csv file.</p>
-</dd>
-<dt><strong>fn_subjects</strong><span class="classifier">str, default=’subjects.csv’</span></dt><dd><p>Filename for the subjects csv file.</p>
-</dd>
-<dt><strong>dwi_metrics</strong><span class="classifier">list of strings, optional</span></dt><dd><p>List of diffusion metrics to extract from nodes csv.
-e.g. [“dki_md”, “dki_fa”]</p>
-</dd>
-<dt><strong>target_cols</strong><span class="classifier">list of strings, optional</span></dt><dd><p>List of column names in subjects csv file to use as target variables</p>
-</dd>
-<dt><strong>label_encode_cols</strong><span class="classifier">list of strings, subset of target_cols</span></dt><dd><p>Must be a subset of target_cols. These columns will be encoded using
-<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.LabelEncoder.html#sklearn.preprocessing.LabelEncoder" title="(in scikit-learn v1.0)"><code class="docutils literal notranslate"><span class="pre">sklearn.preprocessing.LabelEncoder</span></code></a>.</p>
-</dd>
-<dt><strong>index_col</strong><span class="classifier">str, default=’subjectID’</span></dt><dd><p>The name of column in the subject csv file to use as the index. This
-should contain subject IDs.</p>
-</dd>
-<dt><strong>unsupervised</strong><span class="classifier">bool, default=False</span></dt><dd><p>If True, do not load target data from the <code class="docutils literal notranslate"><span class="pre">fn_subjects</span></code> file.</p>
-</dd>
-<dt><strong>concat_subject_session</strong><span class="classifier">bool, default=False</span></dt><dd><p>If True, create new subject IDs by concatenating the existing subject
-IDs with the session IDs. This is useful when subjects have multiple
-sessions and you with to disambiguate between them.</p>
-</dd>
-<dt><strong>return_bundle_means</strong><span class="classifier">bool, default=False</span></dt><dd><p>If True, return diffusion metrics averaged along the length of each
-bundle.</p>
-</dd>
-<dt><strong>enforce_sub_prefix</strong><span class="classifier">bool, default=True</span></dt><dd><p>If True, standardize subject IDs to start with the prefix “sub-“.
-This is useful, for example, if the subject IDs in the nodes.csv file
-have the sub prefix but the subject IDs in the subjects.csv file do
-not. Default is True in order to comform to the BIDS standard.</p>
-</dd>
-</dl>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><dl>
-<dt><strong>AFQData</strong><span class="classifier">namedtuple</span></dt><dd><p>A namedtuple with the fields:</p>
-<dl class="simple">
-<dt>X<span class="classifier">array-like of shape (n_samples, n_features)</span></dt><dd><p>The feature samples.</p>
-</dd>
-<dt>y<span class="classifier">array-like of shape (n_samples,) or (n_samples, n_targets), optional</span></dt><dd><p>Target values. This will be None if <code class="docutils literal notranslate"><span class="pre">unsupervised</span></code> is True</p>
-</dd>
-<dt>groups<span class="classifier">list of numpy.ndarray</span></dt><dd><p>feature indices for each feature group</p>
-</dd>
-<dt>feature_names<span class="classifier">list of tuples</span></dt><dd><p>The multi-indexed columns of X</p>
-</dd>
-<dt>group_names<span class="classifier">list of tuples</span></dt><dd><p>The multi-indexed groups of X</p>
-</dd>
-<dt>subjects<span class="classifier">list</span></dt><dd><p>Subject IDs</p>
-</dd>
-<dt>sessions<span class="classifier">list</span></dt><dd><p>Session IDs.</p>
-</dd>
-<dt>classes<span class="classifier">dict</span></dt><dd><p>Class labels for each column specified in <code class="docutils literal notranslate"><span class="pre">label_encode_cols</span></code>.
-This will be None if <code class="docutils literal notranslate"><span class="pre">unsupervised</span></code> is True</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</dd>
-</dl>
-<div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<dl class="simple">
-<dt><a class="reference internal" href="#afqinsight.AFQDataFrameMapper" title="afqinsight.transform.AFQDataFrameMapper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform.AFQDataFrameMapper</span></code></a></dt><dd></dd>
-</dl>
-</div>
-</dd></dl>
-
-</section>
-<section id="transformers">
-<h2>Transformers<a class="headerlink" href="#transformers" title="Permalink to this headline"></a></h2>
-<p>These transformers transform tractometry information from the AFQ standard
-data format to feature matrices that are ready for ingestion into
-sklearn-compatible pipelines.</p>
-<dl class="py class">
-<dt class="sig sig-object py" id="afqinsight.AFQDataFrameMapper">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">afqinsight.</span></span><span class="sig-name descname"><span class="pre">AFQDataFrameMapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pd_interpolate_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bundle_agg_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">concat_subject_session</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">dataframe_mapper_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/afqinsight/transform.html#AFQDataFrameMapper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#afqinsight.AFQDataFrameMapper" title="Permalink to this definition"></a></dt>
-<dd><p>Map pandas dataframe to sklearn feature matrix.</p>
-<p>This object first converts an AFQ nodes.csv dataframe into a feature
-matrix with rows corresponding to subjects and columns corresponding to
-tract profile values. It interpolates along tracts to fill missing values
-and then maps the dataframe onto a 2D feature matrix for ingestion into
-sklearn-compatible estimators. It also maintains attributes for the
-subject index, feature names, and groups of features.</p>
-<dl class="field-list">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl>
-<dt><strong>df_mapper_params</strong><span class="classifier">kwargs, default=dict(features=[], default=None)</span></dt><dd><p>Keyword arguments passed to sklearn_pandas.DataFrameMapper. You will
-probably not need to change these defaults.</p>
-</dd>
-<dt><strong>pd_interpolate_params</strong><span class="classifier">kwargs, default=dict(method=”linear”, limit_direction=”both”, limit_area=”inside”)</span></dt><dd><p>Keyword arguments passed to pandas.DataFrame.interpolate. Missing
-values are interpolated within the tract profile so that no data is
-used from other subjects, tracts, or metrics, minimizing the chance
-of train/test leakage. You will probably not need to change these
-defaults.</p>
-</dd>
-<dt><strong>bundle_agg_func</strong><span class="classifier">function, str, list or dict, optional</span></dt><dd><p>If provided, a function to use for aggregating the nodes in each tract.
-If a function, must either work when passed a DataFrame or when passed
-to DataFrame.apply.</p>
-<p>Accepted combinations are:</p>
-<ul class="simple">
-<li><p>function</p></li>
-<li><p>string function name</p></li>
-<li><p>list of functions and/or function names, e.g. [np.sum, ‘mean’]</p></li>
-</ul>
-<p>By default, this mapper will not aggregate but will return values at
-each node.</p>
-</dd>
-</dl>
-</dd>
-<dt class="field-even">Attributes</dt>
-<dd class="field-even"><dl class="simple">
-<dt><strong>subjects_</strong><span class="classifier">list</span></dt><dd><p>List of subject IDs retrieved from pandas dataframe index.</p>
-</dd>
-<dt><strong>groups_</strong><span class="classifier">list of numpy.ndarray</span></dt><dd><p>List of arrays of non-overlapping indices for each group. For
-example, if nine features are grouped into equal contiguous groups of
-three, then groups would be <code class="docutils literal notranslate"><span class="pre">[array([0,</span> <span class="pre">1,</span> <span class="pre">2]),</span> <span class="pre">array([3,</span> <span class="pre">4,</span> <span class="pre">5]),</span>
-<span class="pre">array([6,</span> <span class="pre">7,</span> <span class="pre">8])]</span></code>.</p>
-</dd>
-<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">feature_names_</span></code><span class="classifier">list of tuples</span></dt><dd><p>Return the feature names.</p>
-</dd>
-</dl>
-</dd>
-</dl>
 </dd></dl>
 
 </section>
