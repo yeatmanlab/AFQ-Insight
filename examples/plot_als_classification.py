@@ -25,11 +25,15 @@ For more details on this approach in a research setting, please see [2]_.
    DOI: 10.1371/journal.pcbi.1009136
 
 """
+import os.path as op
 import matplotlib.pyplot as plt
 import numpy as np
 
 from afqinsight import AFQDataset
 from afqinsight import make_afq_classifier_pipeline
+from afqinsight.datasets import download_sarica
+from afqinsight.plot import plot_tract_profiles
+
 
 from groupyr.decomposition import GroupPCA
 
@@ -40,15 +44,23 @@ from sklearn.model_selection import cross_validate
 #############################################################################
 # Fetch data from Sarica et al.
 # -----------------------------
-# As a shortcut, we have incorporated a few studies into the software. In these
-# cases, a :class:`AFQDataset` class instance can be initialized using the
-# :func:`AFQDataset.from_study` static method. This expects the name of one of
-# the studies that are supported (see the method documentation for the list of
-# these studies). By passing `"sarica"`, we request that the software download
-# the data from this study and initialize an object for us from this data.
+# The :func:`download_sarica` function downloads the data used in this
+# example and places it in the `~/.cache/afq-insight/sarica` directory.
+# If the directory does not exist, it is created. The data follows the format
+# expected by the :func:`load_afq_data` function: a file called `nodes.csv` that
+# contains AFQ tract profiles and a file called `subjects.csv` that contains
+# information about the subjects. The two files are linked through the
+# `subjectID` column that should exist in both of them. For more information
+# about this format, see also the `AFQ-Browser documentation
+# <https://yeatmanlab.github.io/AFQ-Browser/dataformat.html>`_ (items 2 and 3).
 
-
-afqdata = AFQDataset.from_study("sarica")
+workdir = download_sarica()
+afqdata = AFQDataset.from_files(
+    fn_nodes=op.join(workdir, "nodes.csv"),
+    fn_subjects=op.join(workdir, "subjects.csv"),
+    dwi_metrics=["md", "fa"],
+    target_cols=["class"],
+)
 
 # Examine the data
 # ----------------
@@ -60,6 +72,19 @@ groups = afqdata.groups
 feature_names = afqdata.feature_names
 group_names = afqdata.group_names
 subjects = afqdata.subjects
+
+# Visualize the data
+# ----------------
+# We can visualize the data using the :func:`plot_tract_profiles` function. We
+# tell the function to use the `y` variable that we created as a grouping
+# variable, so that we get separate tract profile lines for the participants
+# with ALS and the controls. These plots are produced with means and 95% confidence intervals, separately for mean diffusivity and for fractional anisotropy.
+
+plot_tract_profiles(
+    afqdata,
+    group_by=y,
+)
+
 
 # Reduce data dimensionality
 # --------------------------
