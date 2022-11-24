@@ -79,11 +79,11 @@ cis = np.zeros((lcst_fa.shape[-1], 2))
 
 for ii, column in enumerate(lcst_fa.columns):
     feature, node, tract = column
-    this = pd.DataFrame({"group":y, feature:lcst_fa[column]})
+    this = pd.DataFrame({"group": y, feature: lcst_fa[column]})
     model = OLS.from_formula(f"{feature} ~ C(group)", this)
     fit = model.fit()
     coefs[ii] = fit.params.loc["C(group)[T.1]"]
-    cis[ii] = fit.conf_int(alpha = 0.05).loc["C(group)[T.1]"].values
+    cis[ii] = fit.conf_int(alpha=0.05).loc["C(group)[T.1]"].values
     pvals[ii] = anova_lm(fit, typ=2)['PR(>F)'][0]
 
 # Correct for multiple comparison
@@ -107,8 +107,8 @@ reject_idx = np.where(reject)
 # together with their estimated 95% confidence interval.
 
 fig, ax = plt.subplots(2, 1)
-ax[0].plot(np.mean(lcst_fa.iloc[afqdata.y==0], 0).values)
-ax[0].plot(np.mean(lcst_fa.iloc[afqdata.y==1], 0).values)
+ax[0].plot(np.mean(lcst_fa.iloc[afqdata.y == 0], 0).values)
+ax[0].plot(np.mean(lcst_fa.iloc[afqdata.y == 1], 0).values)
 ax[0].plot(reject_idx, np.zeros(len(reject_idx)), "k*")
 
 ax[1].plot(coefs)
