@@ -1,6 +1,6 @@
 """
 =================================================
-Use parametric statiscs for group comparison
+Use parametric statistics for group comparison
 =================================================
 
 As a contrast to the approach presented in other examples, we also present a
