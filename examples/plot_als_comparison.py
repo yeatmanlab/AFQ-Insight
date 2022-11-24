@@ -69,7 +69,7 @@ cis = np.zeros((lcst_fa.shape[-1], 2))
 
 # Fit models
 # ----------------
-# Next, we fit a model in each node of the CST for the FA as a function of
+# Next, we fit a model for each node of the CST for the FA as a function of
 # group. The initializer `OLS.from_formula` takes
 # `R-style formulas <https://www.statsmodels.org/dev/example_formulas.html>`_
 # as its model specification. Here, we are using the `"group"` variable as a
@@ -84,7 +84,7 @@ for ii, column in enumerate(lcst_fa.columns):
     fit = model.fit()
     coefs[ii] = fit.params.loc["C(group)[T.1]"]
     cis[ii] = fit.conf_int(alpha=0.05).loc["C(group)[T.1]"].values
-    pvals[ii] = anova_lm(fit, typ=2)['PR(>F)'][0]
+    pvals[ii] = anova_lm(fit, typ=2)["PR(>F)"][0]
 
 # Correct for multiple comparison
 # --------------------------------
@@ -113,4 +113,4 @@ ax[0].plot(reject_idx, np.zeros(len(reject_idx)), "k*")
 
 ax[1].plot(coefs)
 ax[1].fill_between(range(100), cis[:, 0], cis[:, 1], alpha=0.5)
-ax[1].plot(range(100), np.zeros(100), 'k--')
+ax[1].plot(range(100), np.zeros(100), "k--")
