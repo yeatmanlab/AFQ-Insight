@@ -28,6 +28,8 @@ from statsmodels.api import OLS
 from statsmodels.stats.anova import anova_lm
 from statsmodels.stats.multitest import multipletests
 
+from sklearn.impute import SimpleImputer
+
 #############################################################################
 # Fetch data from Sarica et al.
 # -----------------------------
@@ -53,6 +55,7 @@ feature_names = afqdata.feature_names
 group_names = afqdata.group_names
 subjects = afqdata.subjects
 
+X = SimpleImputer(strategy="median").fit_transform(X)
 
 # Filtering the data
 # ----------------
