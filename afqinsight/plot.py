@@ -181,6 +181,8 @@ def plot_tract_profiles(
             )
         group_by = np.ones(X.shape[0])
         group_by_name = None
+    else:
+        group_by = np.asarray(group_by)
 
     figs = {}
 
