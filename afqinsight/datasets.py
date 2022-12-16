@@ -213,9 +213,12 @@ def load_afq_data(
     --------
     transform.AFQDataFrameMapper
     """
-    nodes = pd.read_csv(
-        fn_nodes, converters={"subjectID": str, "nodeID": int, "tractID": str}
-    )
+    if isinstance(fn_nodes, pd.DataFrame):
+        nodes = fn_nodes
+    else:
+        nodes = pd.read_csv(
+            fn_nodes, converters={"subjectID": str, "nodeID": int, "tractID": str}
+        )
     unnamed_cols = [col for col in nodes.columns if "Unnamed:" in col]
     nodes.drop(unnamed_cols, axis="columns", inplace=True)
 
@@ -269,15 +272,17 @@ def load_afq_data(
                 "load data for an unsupervised learning "
                 "problem, please set `unsupervised=True`."
             )
-
-        # Read using sep=None, engine="python" to allow for both csv and tsv
-        targets = pd.read_csv(
-            fn_subjects,
-            sep=None,
-            engine="python",
-            index_col=index_col,
-            converters={index_col: str},
-        )
+        if isinstance(fn_subjects, pd.DataFrame):
+            targets = fn_subjects
+        else:
+            # Read using sep=None, engine="python" to allow for both csv and tsv
+            targets = pd.read_csv(
+                fn_subjects,
+                sep=None,
+                engine="python",
+                index_col=index_col,
+                converters={index_col: str},
+            )
 
         # Drop unnamed columns
         unnamed_cols = [col for col in targets.columns if "Unnamed:" in col]
