@@ -141,7 +141,6 @@ class ModelBuilder:
         project_name=None,
         **tuner_kwargs,
     ):
-
         self.tuner_type = tuner_type
         self.layers = layers
         self.input_shape = input_shape
