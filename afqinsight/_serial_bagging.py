@@ -24,7 +24,6 @@ from sklearn.ensemble._bagging import (
 from sklearn.ensemble._base import _partition_estimators
 from sklearn.utils import check_random_state, check_array, indices_to_mask, resample
 from sklearn.utils.random import sample_without_replacement
-from sklearn.utils.metaestimators import available_if
 from sklearn.utils.validation import (
     check_is_fitted,
     _check_sample_weight,
@@ -609,7 +608,6 @@ class SerialBaggingClassifier(BaggingClassifier):
         else:
             return np.log(self.predict_proba(X))
 
-    @available_if(delegate="base_estimator")
     def decision_function(self, X):
         """Average of the decision functions of the base classifiers.
 
