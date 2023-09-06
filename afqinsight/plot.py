@@ -263,7 +263,7 @@ def plot_tract_profiles(
                 y=metric,
                 hue=hue,
                 data=df_stat,
-                ci=ci,
+                errorbar=("ci", 95.0),
                 palette=palette,
                 ax=ax,
                 linewidth=1.0,

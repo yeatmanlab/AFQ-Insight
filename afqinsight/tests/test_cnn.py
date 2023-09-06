@@ -150,7 +150,6 @@ def test_random_cnn():
 
 
 def test_fail_cnn():
-
     with pytest.raises(ValueError):
         # passing in wrong shape of X (not 2d):
         model = CNN(100, 6, 5, 64)
