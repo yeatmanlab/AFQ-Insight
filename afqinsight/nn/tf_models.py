@@ -307,3 +307,27 @@ def cnn_resnet(input_shape, n_classes, output_activation="softmax", verbose=Fals
         model.summary()
 
     return model
+
+
+def autoencoder(input_shape, n_hidden=None, verbose=False):
+    """
+    Fully connected autoencoder
+    """
+    ip = Input(shape=input_shape)
+    if n_hidden is None:
+        n_hidden = input_shape[0] // 8
+
+    fc = Flatten()(ip)
+    fc = Dense(input_shape, activation="relu")(fc)
+    fc = Dense(input_shape // 2, activation="relu")(fc)
+    fc = Dense(input_shape // 4, activation="relu")(fc)
+    fc = Dense(n_hidden, activation="relu")(fc)
+    fc = Dense(input_shape // 4, activation="relu")(fc)
+    fc = Dense(input_shape // 2, activation="relu")(fc)
+    out = Dense(input_shape)(fc)
+
+    model = Model([ip], [out])
+    if verbose:
+        model.summary()
+
+    return model
