@@ -664,7 +664,7 @@ class AFQDataset:
             "weston-havens": dict(dwi_metrics=["md", "fa"], target_cols=["Age"]),
             "hbn": dict(
                 dwi_metrics=["dki_md", "dki_fa"],
-                target_cols=["age", "sex", "scan_site_id"],
+                target_cols=["age", "sex", "scan_site_id", "dl_qc_score"],
                 label_encode_cols=["sex", "scan_site_id"],
                 index_col="subject_id",
             ),
