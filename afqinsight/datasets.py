@@ -22,7 +22,7 @@ torch_msg = (
     "afqinsight[torch]`, or by separately installing these packages with "
     "`pip install torch`."
 )
-torch, HAS_TORCH, _ = optional_package("torch", torch_msg)
+torch, HAS_TORCH, _ = optional_package("torch", trip_msg=torch_msg)
 
 tf_msg = (
     "To use AFQ-Insight's tensorflow classes, you will need to have tensorflow "
@@ -30,7 +30,7 @@ tf_msg = (
     "afqinsight[tensorflow]`, or by separately installing these packages with "
     "`pip install tensorflow`."
 )
-tf, _, _ = optional_package("tensorflow", tf_msg)
+tf, _, _ = optional_package("tensorflow", trip_msg=tf_msg)
 
 __all__ = ["AFQDataset", "load_afq_data", "bundles2channels"]
 _DATA_DIR = op.join(op.expanduser("~"), ".cache", "afq-insight")

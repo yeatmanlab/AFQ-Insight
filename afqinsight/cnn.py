@@ -18,8 +18,8 @@ keras_msg = (
     "with `pip install tensorflow keras-tuner`."
 )
 
-kt, _, _ = optional_package("keras_tuner", keras_msg)
-tf, has_tf, _ = optional_package("tensorflow", keras_msg)
+kt, _, _ = optional_package("keras_tuner", trip_msg=keras_msg)
+tf, has_tf, _ = optional_package("tensorflow", trip_msg=keras_msg)
 
 if has_tf:
     from tensorflow.keras.models import Sequential

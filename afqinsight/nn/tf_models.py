@@ -9,7 +9,7 @@ keras_msg = (
     "tensorflow`."
 )
 
-tf, has_tf, _ = optional_package("tensorflow", keras_msg)
+tf, has_tf, _ = optional_package("tensorflow", trip_msg=keras_msg)
 
 if has_tf:
     from tensorflow.keras.models import Model
