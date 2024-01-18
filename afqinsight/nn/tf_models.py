@@ -13,7 +13,7 @@ tf, has_tf, _ = optional_package("tensorflow", trip_msg=keras_msg)
 
 if has_tf:
     from tensorflow.keras.models import Model
-    from tensorflow.keras.layers import Dense, Flatten, Dropout, Input
+    from tensorflow.keras.layers import Dense, Flatten, Dropout, Input, Reshape
     from tensorflow.keras.layers import MaxPooling1D, Conv1D
     from tensorflow.keras.layers import LSTM, Bidirectional
     from tensorflow.keras.layers import (
@@ -309,22 +309,23 @@ def cnn_resnet(input_shape, n_classes, output_activation="softmax", verbose=Fals
     return model
 
 
-def autoencoder(input_shape, n_hidden=None, verbose=False):
+def autoencoder(input_shape, encoding_dim=None, verbose=False):
     """
     Fully connected autoencoder
     """
     ip = Input(shape=input_shape)
-    if n_hidden is None:
-        n_hidden = input_shape[0] // 8
+    if encoding_dim is None:
+        encoding_dim = (input_shape[0] * input_shape[1]) // 8
 
     fc = Flatten()(ip)
-    fc = Dense(input_shape, activation="relu")(fc)
-    fc = Dense(input_shape // 2, activation="relu")(fc)
-    fc = Dense(input_shape // 4, activation="relu")(fc)
-    fc = Dense(n_hidden, activation="relu")(fc)
-    fc = Dense(input_shape // 4, activation="relu")(fc)
-    fc = Dense(input_shape // 2, activation="relu")(fc)
-    out = Dense(input_shape)(fc)
+    fc = Dense(input_shape[0] * input_shape[1], activation="relu")(fc)
+    fc = Dense((input_shape[0] * input_shape[1]) // 2, activation="relu")(fc)
+    fc = Dense((input_shape[0] * input_shape[1]) // 4, activation="relu")(fc)
+    fc = Dense(encoding_dim, activation="relu")(fc)
+    fc = Dense((input_shape[0] * input_shape[1]) // 4, activation="relu")(fc)
+    fc = Dense((input_shape[0] * input_shape[1]) // 2, activation="relu")(fc)
+    pre_out = Dense((input_shape[0] * input_shape[1]))(fc)
+    out = Reshape(input_shape)(pre_out)
 
     model = Model([ip], [out])
     if verbose:
