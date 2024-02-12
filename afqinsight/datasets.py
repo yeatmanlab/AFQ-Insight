@@ -763,7 +763,7 @@ class AFQDataset:
         This method modifies the ``X``, ``y``, and ``subjects`` attributes in-place.
         """
         if self.y is not None:
-            nan_mask = np.isnan(self.y)
+            nan_mask = np.isnan(self.y.astype(float))
             if len(self.y.shape) > 1:
                 nan_mask = nan_mask.astype(int).sum(axis=1).astype(bool)
 
