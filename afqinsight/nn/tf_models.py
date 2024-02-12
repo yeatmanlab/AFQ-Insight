@@ -14,7 +14,7 @@ tf, has_tf, _ = optional_package("tensorflow", trip_msg=keras_msg)
 if has_tf:
     from tensorflow.keras.models import Model
     from tensorflow.keras.layers import Dense, Flatten, Dropout, Input, Reshape
-    from tensorflow.keras.layers import MaxPooling1D, Conv1D
+    from tensorflow.keras.layers import MaxPooling1D, Conv1D, Conv1DTranspose
     from tensorflow.keras.layers import LSTM, Bidirectional
     from tensorflow.keras.layers import (
         BatchNormalization,
@@ -23,6 +23,7 @@ if has_tf:
         concatenate,
         Activation,
         add,
+        Layer,
     )
 else:
     # Since all model building functions start with Input, we make Input the
@@ -309,7 +310,7 @@ def cnn_resnet(input_shape, n_classes, output_activation="softmax", verbose=Fals
     return model
 
 
-def autoencoder(input_shape, encoding_dim=None, verbose=False):
+def fc_autoencoder(input_shape, encoding_dim=None, verbose=False):
     """
     Fully connected autoencoder
     """
@@ -328,6 +329,28 @@ def autoencoder(input_shape, encoding_dim=None, verbose=False):
     out = Reshape(input_shape)(pre_out)
 
     model = Model([ip], [out])
+    if verbose:
+        model.summary()
+    return model
+
+
+def cnn_autoencoder(input_shape, verbose=False):
+    """
+    Convolutional autoencoder
+    """
+    ip = Input(shape=input_shape)
+    # Encoder
+    x = Conv1D(32, (3), activation="relu", padding="same")(ip)
+    x = MaxPooling1D((2), padding="same")(x)
+    x = Conv1D(32, (3), activation="relu", padding="same")(x)
+    x = MaxPooling1D((2), padding="same")(x)
+
+    # Decoder
+    x = Conv1DTranspose(32, (3), strides=2, activation="relu", padding="same")(x)
+    x = Conv1DTranspose(32, (3), strides=2, activation="relu", padding="same")(x)
+    x = Conv1D(1, (3), activation="sigmoid", padding="same")(x)
+
+    model = Model([ip], [x])
     if verbose:
         model.summary()
 
