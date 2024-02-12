@@ -377,6 +377,7 @@ def _fc_vae_encoder(input_shape, encoding_dim=None, verbose=False):
     Encoder section for a fully connected variational autoencoder
     """
     ip = Input(shape=input_shape)
+
     if encoding_dim is None:
         encoding_dim = (input_shape[0] * input_shape[1]) // 8
 
@@ -388,21 +389,22 @@ def _fc_vae_encoder(input_shape, encoding_dim=None, verbose=False):
     z_mean = Dense(encoding_dim, activation="relu")(fc)
     z_log_var = Dense(encoding_dim, name="z_mean")(fc)
     z = _Sampling()([z_mean, z_log_var])
-    return Model(ip, [z_mean, z_log_var, z], name="encoder")
+    return Model([ip], [z_mean, z_log_var, z], name="encoder")
 
 
 def _fc_vae_decoder(input_shape, encoding_dim=None, verbose=False):
     """
     Decoder section for a fully connected variational autoencoder
     """
-
+    ip = Input(shape=(encoding_dim,))
+    fc = Flatten()(ip)
     fc = Dense((input_shape[0] * input_shape[1]) // 4, activation="relu")(fc)
     fc = Dense((input_shape[0] * input_shape[1]) // 2, activation="relu")(fc)
     pre_out = Dense((input_shape[0] * input_shape[1]))(fc)
-    out = Reshape(input_shape)(pre_out)
+    return Reshape(input_shape)(pre_out)
 
 
-def _VAE(Model):
+class _VAE(Model):
     """
     A variational autoencoder class
     """
@@ -451,6 +453,9 @@ def fc_vae(input_shape, encoding_dim=None, verbose=False):
     """
     Fully connected variational autoencoder.
     """
+    if encoding_dim is None:
+        encoding_dim = (input_shape[0] * input_shape[1]) // 8
+
     encoder = _fc_vae_encoder(input_shape, encoding_dim, verbose)
     decoder = _fc_vae_decoder(input_shape, encoding_dim, verbose)
     return _VAE(encoder, decoder)
