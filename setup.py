@@ -1,4 +1,5 @@
 """Statistical learning for tractometry data, especially within the AFQ software ecosystem."""
+
 from setuptools import setup
 import string
 import os.path as op
