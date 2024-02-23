@@ -1,4 +1,5 @@
 """Generate samples of synthetic data sets or extract AFQ data."""
+
 import hashlib
 import numpy as np
 import os
@@ -705,9 +706,11 @@ class AFQDataset:
             target_cols=self.target_cols,
             group_names=self.group_names,
             subjects=np.array(self.subjects)[indices].tolist(),
-            sessions=np.array(self.sessions)[indices].tolist()
-            if self.sessions is not None
-            else None,
+            sessions=(
+                np.array(self.sessions)[indices].tolist()
+                if self.sessions is not None
+                else None
+            ),
             classes=self.classes,
         )
 

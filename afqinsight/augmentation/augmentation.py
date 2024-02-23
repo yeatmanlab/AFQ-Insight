@@ -13,6 +13,7 @@ References
 augmentation for time series classification with neural networks," PLOS ONE
 16(7): e0254841. DOI: https://doi.org/10.1371/journal.pone.0254841
 """
+
 import numpy as np
 from tqdm import tqdm
 
