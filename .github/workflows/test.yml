@@ -30,7 +30,7 @@ jobs:
           pydocstyle
       - name: Test
         run: |
-          cd && mkdir for_test && cd for_test && pytest --pyargs AFQ --cov-report term-missing --cov=AFQ
+          cd && mkdir for_test && cd for_test && pytest --pyargs afqinsight --cov-report term-missing --cov=afqinsight
       - name: Coveralls
         run: |
           coveralls
