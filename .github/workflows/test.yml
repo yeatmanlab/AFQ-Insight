@@ -30,12 +30,11 @@ jobs:
           pydocstyle
       - name: Test
         run: |
-          cp $(python -c 'import site; print(site.getsitepackages()[0])')/afqinsight/_version.py afqinsight/_version.py
-          tox
+          cd && mkdir for_test && cd for_test && pytest --pyargs AFQ --cov-report term-missing --cov=AFQ
       - name: Coveralls
         run: |
           coveralls
-        if: matrix.python-version == 3.8
+        if: matrix.python-version == 3.10
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
