@@ -384,7 +384,7 @@ class SerialBaggingClassifier(BaggingClassifier):
         # Validate max_features
         if isinstance(self.max_features, numbers.Integral):
             max_features = self.max_features
-        elif isinstance(self.max_features, np.float):
+        elif isinstance(self.max_features, float):
             max_features = self.max_features * self.n_features_in_
         else:
             raise ValueError("max_features must be int or float")
@@ -898,7 +898,7 @@ class SerialBaggingRegressor(BaggingRegressor):
         # Validate max_features
         if isinstance(self.max_features, numbers.Integral):
             max_features = self.max_features
-        elif isinstance(self.max_features, np.float):  # pragma: no cover
+        elif isinstance(self.max_features, float):  # pragma: no cover
             max_features = self.max_features * self.n_features_in_
         else:  # pragma: no cover
             raise ValueError("max_features must be int or float")
