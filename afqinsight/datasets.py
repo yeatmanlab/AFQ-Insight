@@ -1,4 +1,5 @@
 """Generate samples of synthetic data sets or extract AFQ data."""
+
 import hashlib
 import numpy as np
 import os
@@ -22,7 +23,7 @@ torch_msg = (
     "afqinsight[torch]`, or by separately installing these packages with "
     "`pip install torch`."
 )
-torch, HAS_TORCH, _ = optional_package("torch", torch_msg)
+torch, HAS_TORCH, _ = optional_package("torch", trip_msg=torch_msg)
 
 tf_msg = (
     "To use AFQ-Insight's tensorflow classes, you will need to have tensorflow "
@@ -30,7 +31,7 @@ tf_msg = (
     "afqinsight[tensorflow]`, or by separately installing these packages with "
     "`pip install tensorflow`."
 )
-tf, _, _ = optional_package("tensorflow", tf_msg)
+tf, _, _ = optional_package("tensorflow", trip_msg=tf_msg)
 
 __all__ = ["AFQDataset", "load_afq_data", "bundles2channels"]
 _DATA_DIR = op.join(op.expanduser("~"), ".cache", "afq-insight")
@@ -310,7 +311,7 @@ def load_afq_data(
         else:
             classes = None
 
-        y = np.squeeze(y.to_numpy())
+        y = np.squeeze(y.to_numpy().astype(float))
 
     return AFQData(
         X=X,
@@ -663,7 +664,7 @@ class AFQDataset:
             "weston-havens": dict(dwi_metrics=["md", "fa"], target_cols=["Age"]),
             "hbn": dict(
                 dwi_metrics=["dki_md", "dki_fa"],
-                target_cols=["age", "sex", "scan_site_id"],
+                target_cols=["age", "sex", "scan_site_id", "dl_qc_score"],
                 label_encode_cols=["sex", "scan_site_id"],
                 index_col="subject_id",
             ),
@@ -705,9 +706,11 @@ class AFQDataset:
             target_cols=self.target_cols,
             group_names=self.group_names,
             subjects=np.array(self.subjects)[indices].tolist(),
-            sessions=np.array(self.sessions)[indices].tolist()
-            if self.sessions is not None
-            else None,
+            sessions=(
+                np.array(self.sessions)[indices].tolist()
+                if self.sessions is not None
+                else None
+            ),
             classes=self.classes,
         )
 
@@ -763,7 +766,7 @@ class AFQDataset:
         This method modifies the ``X``, ``y``, and ``subjects`` attributes in-place.
         """
         if self.y is not None:
-            nan_mask = np.isnan(self.y)
+            nan_mask = np.isnan(self.y.astype(float))
             if len(self.y.shape) > 1:
                 nan_mask = nan_mask.astype(int).sum(axis=1).astype(bool)
 

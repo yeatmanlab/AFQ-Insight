@@ -7,17 +7,16 @@ Testing for the serial bagging ensemble module (afqinsight._serial_bagging).
 
 import numpy as np
 import joblib
+import pytest
 
 from afqinsight._serial_bagging import SerialBaggingClassifier, SerialBaggingRegressor
 
 from sklearn.base import BaseEstimator
 
-from sklearn.utils._testing import assert_array_equal
-from sklearn.utils._testing import assert_array_almost_equal
-from sklearn.utils._testing import assert_raises
-from sklearn.utils._testing import assert_warns
-from sklearn.utils._testing import assert_warns_message
-from sklearn.utils._testing import assert_raise_message
+from numpy.testing import assert_array_equal
+from numpy.testing import assert_array_almost_equal
+from numpy.testing import assert_raises
+from numpy.testing import assert_warns
 from sklearn.utils._testing import ignore_warnings
 
 from sklearn.dummy import DummyClassifier, DummyRegressor
@@ -213,7 +212,6 @@ def test_sparse_regression():
         X_train_sparse = sparse_format(X_train)
         X_test_sparse = sparse_format(X_test)
         for params in parameter_sets:
-
             # Trained on sparse format
             sparse_classifier = SerialBaggingRegressor(
                 base_estimator=CustomSVR(), random_state=1, **params
@@ -241,6 +239,9 @@ class DummySizeEstimator(BaseEstimator):
     def fit(self, X, y):
         self.training_size_ = X.shape[0]
         self.training_hash_ = joblib.hash(X)
+
+    def predict(self, X):
+        return np.zeros(X.shape[0])
 
 
 def test_bootstrap_samples():
@@ -505,15 +506,14 @@ def test_parallel_classification():
     assert_array_almost_equal(decisions1, decisions2)
 
     X_err = np.hstack((X_test, np.zeros((X_test.shape[0], 1))))
-    assert_raise_message(
+    with pytest.raises(
         ValueError,
         "Number of features of the model "
         "must match the input. Model n_features is {0} "
         "and input n_features is {1} "
         "".format(X_test.shape[1], X_err.shape[1]),
-        ensemble.decision_function,
-        X_err,
-    )
+    ):
+        ensemble.decision_function(X_err)
 
     ensemble = SerialBaggingClassifier(
         SVC(decision_function_shape="ovr"), n_jobs=1, random_state=0
@@ -690,14 +690,11 @@ def test_warm_start_equal_n_estimators():
     y_pred = clf.predict(X_test)
     # modify X to nonsense values, this should not change anything
     X_train += 1.0
+    with pytest.warns(
+        UserWarning, match="Warm-start fitting without increasing n_estimators does not"
+    ):
+        clf.fit(X_train, y_train)
 
-    assert_warns_message(
-        UserWarning,
-        "Warm-start fitting without increasing n_estimators does not",
-        clf.fit,
-        X_train,
-        y_train,
-    )
     assert_array_equal(y_pred, clf.predict(X_test))
 
 

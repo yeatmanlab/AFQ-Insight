@@ -9,12 +9,12 @@ keras_msg = (
     "tensorflow`."
 )
 
-tf, has_tf, _ = optional_package("tensorflow", keras_msg)
+tf, has_tf, _ = optional_package("tensorflow", trip_msg=keras_msg)
 
 if has_tf:
     from tensorflow.keras.models import Model
-    from tensorflow.keras.layers import Dense, Flatten, Dropout, Input
-    from tensorflow.keras.layers import MaxPooling1D, Conv1D
+    from tensorflow.keras.layers import Dense, Flatten, Dropout, Input, Reshape
+    from tensorflow.keras.layers import MaxPooling1D, Conv1D, Conv1DTranspose
     from tensorflow.keras.layers import LSTM, Bidirectional
     from tensorflow.keras.layers import (
         BatchNormalization,
@@ -23,7 +23,10 @@ if has_tf:
         concatenate,
         Activation,
         add,
+        Layer,
     )
+    from tensorflow.keras.losses import binary_crossentropy
+
 else:
     # Since all model building functions start with Input, we make Input the
     # tripwire instance for cases where tensorflow is not installed.
@@ -307,3 +310,162 @@ def cnn_resnet(input_shape, n_classes, output_activation="softmax", verbose=Fals
         model.summary()
 
     return model
+
+
+def fc_autoencoder(input_shape, encoding_dim=None, verbose=False):
+    """
+    Fully connected autoencoder
+    """
+    ip = Input(shape=input_shape)
+    if encoding_dim is None:
+        encoding_dim = (input_shape[0] * input_shape[1]) // 8
+
+    fc = Flatten()(ip)
+    fc = Dense(input_shape[0] * input_shape[1], activation="relu")(fc)
+    fc = Dense((input_shape[0] * input_shape[1]) // 2, activation="relu")(fc)
+    fc = Dense((input_shape[0] * input_shape[1]) // 4, activation="relu")(fc)
+    fc = Dense(encoding_dim, activation="relu")(fc)
+    fc = Dense((input_shape[0] * input_shape[1]) // 4, activation="relu")(fc)
+    fc = Dense((input_shape[0] * input_shape[1]) // 2, activation="relu")(fc)
+    pre_out = Dense((input_shape[0] * input_shape[1]))(fc)
+    out = Reshape(input_shape)(pre_out)
+
+    model = Model([ip], [out])
+    if verbose:
+        model.summary()
+    return model
+
+
+def cnn_autoencoder(input_shape, encoding_dim=8, verbose=False):
+    """
+    Convolutional autoencoder
+    """
+    ip = Input(shape=input_shape)
+    # Encoder
+    x = Conv1D(32, 3, activation="relu", padding="same")(ip)
+    x = MaxPooling1D(2, padding="same")(x)
+    x = Conv1D(16, 3, activation="relu", padding="same")(x)
+    x = MaxPooling1D(2, padding="same")(x)
+    shape = x.shape
+    # Latent
+    x = Flatten()(x)
+    x = Dense(encoding_dim, activation="relu")(x)
+    # Decoder
+    x = Reshape(shape)(x)
+    x = Conv1DTranspose(32, 3, strides=2, activation="relu", padding="same")(x)
+    x = Conv1DTranspose(16, 3, strides=2, activation="relu", padding="same")(x)
+    x = Conv1DTranspose(1, 3, activation="sigmoid", padding="same")(x)
+
+    model = Model([ip], [x])
+    if verbose:
+        model.summary()
+
+    return model
+
+
+class _Sampling(Layer):
+    """
+    Sample the latent layer of a VAE
+    """
+
+    def call(self, inputs):
+        z_mean, z_log_var = inputs
+        batch = tf.shape(z_mean)[0]
+        dim = tf.shape(z_mean)[1]
+        epsilon = tf.random.normal(shape=(batch, dim))
+        return z_mean + tf.exp(0.5 * z_log_var) * epsilon
+
+
+def _fc_vae_encoder(input_shape, encoding_dim=None, verbose=False):
+    """
+    Encoder section for a fully connected variational autoencoder
+    """
+    ip = Input(shape=input_shape)
+
+    if encoding_dim is None:
+        encoding_dim = (input_shape[0] * input_shape[1]) // 8
+
+    fc = Flatten()(ip)
+    fc = Dense(input_shape[0] * input_shape[1], activation="relu")(fc)
+    fc = Dense((input_shape[0] * input_shape[1]) // 2, activation="relu")(fc)
+    fc = Dense((input_shape[0] * input_shape[1]) // 4, activation="relu")(fc)
+
+    z_mean = Dense(encoding_dim, activation="relu")(fc)
+    z_log_var = Dense(encoding_dim, name="z_mean")(fc)
+    z = _Sampling()([z_mean, z_log_var])
+    return Model([ip], [z_mean, z_log_var, z], name="encoder")
+
+
+def _fc_vae_decoder(input_shape, encoding_dim=None, verbose=False):
+    """
+    Decoder section for a fully connected variational autoencoder
+    """
+    ip = Input(shape=(encoding_dim,))
+    fc = Flatten()(ip)
+    fc = Dense((input_shape[0] * input_shape[1]) // 4, activation="relu")(fc)
+    fc = Dense((input_shape[0] * input_shape[1]) // 2, activation="relu")(fc)
+    pre_out = Dense((input_shape[0] * input_shape[1]))(fc)
+    out = Reshape(input_shape)(pre_out)
+    return Model([ip], [out], name="decoder")
+
+
+class _VAE(Model):
+    """
+    A variational autoencoder class
+    """
+
+    def __init__(self, encoder, decoder, **kwargs):
+        super().__init__(**kwargs)
+        self.encoder = encoder
+        self.decoder = decoder
+        self.total_loss_tracker = tf.keras.metrics.Mean(name="total_loss")
+        self.reconstruction_loss_tracker = tf.keras.metrics.Mean(
+            name="reconstruction_loss"
+        )
+        self.kl_loss_tracker = tf.keras.metrics.Mean(name="kl_loss")
+
+    @property
+    def metrics(self):
+        return [
+            self.total_loss_tracker,
+            self.reconstruction_loss_tracker,
+            self.kl_loss_tracker,
+        ]
+
+    def call(self, inputs):
+        z_mean, z_log_var, z = self.encoder(inputs)
+        reconstructed = self.decoder(z)
+        return reconstructed
+
+    def train_step(self, data):
+        with tf.GradientTape() as tape:
+            z_mean, z_log_var, z = self.encoder(data)
+            reconstruction = self.decoder(z)
+            reconstruction_loss = tf.reduce_mean(
+                tf.reduce_sum(binary_crossentropy(data, reconstruction), axis=1)
+            )
+            kl_loss = -0.5 * (1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var))
+            kl_loss = tf.reduce_mean(tf.reduce_sum(kl_loss, axis=1))
+            total_loss = reconstruction_loss + kl_loss
+        grads = tape.gradient(total_loss, self.trainable_weights)
+        self.optimizer.apply_gradients(zip(grads, self.trainable_weights))
+        self.total_loss_tracker.update_state(total_loss)
+        self.reconstruction_loss_tracker.update_state(reconstruction_loss)
+        self.kl_loss_tracker.update_state(kl_loss)
+        return {
+            "loss": self.total_loss_tracker.result(),
+            "reconstruction_loss": self.reconstruction_loss_tracker.result(),
+            "kl_loss": self.kl_loss_tracker.result(),
+        }
+
+
+def fc_vae(input_shape, encoding_dim=None, verbose=False):
+    """
+    Fully connected variational autoencoder.
+    """
+    if encoding_dim is None:
+        encoding_dim = (input_shape[0] * input_shape[1]) // 8
+
+    encoder = _fc_vae_encoder(input_shape, encoding_dim, verbose)
+    decoder = _fc_vae_decoder(input_shape, encoding_dim, verbose)
+    return _VAE(encoder, decoder)
