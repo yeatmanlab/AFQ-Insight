@@ -505,19 +505,18 @@ def test_parallel_classification():
     decisions2 = ensemble.decision_function(X_test)
     assert_array_almost_equal(decisions1, decisions2)
 
-    X_err = np.hstack((X_test, np.zeros((X_test.shape[0], 1))))
-    with pytest.raises(
-        ValueError,
-        "Number of features of the model "
-        "must match the input. Model n_features is {0} "
-        "and input n_features is {1} "
-        "".format(X_test.shape[1], X_err.shape[1]),
-    ):
+    with pytest.raises(ValueError) as excinfo:
+        X_err = np.hstack((X_test, np.zeros((X_test.shape[0], 1))))
         ensemble.decision_function(X_err)
 
-    ensemble = SerialBaggingClassifier(
-        SVC(decision_function_shape="ovr"), n_jobs=1, random_state=0
-    ).fit(X_train, y_train)
+    expected_error_msg = (
+        "Number of features of the model must match the input. "
+        "Model n_features is {0} and input n_features is {1}".format(
+            X_test.shape[1], X_err.shape[1]
+        )
+    )
+
+    assert expected_error_msg in str(excinfo.value)
 
     decisions3 = ensemble.decision_function(X_test)
     assert_array_almost_equal(decisions1, decisions3)
