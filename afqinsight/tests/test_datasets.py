@@ -536,7 +536,7 @@ def test_load_afq_data(dwi_metrics):
     )
 
     means_ref = (
-        nodes.groupby(["subjectID", "tractID"])
+        nodes.groupby(["subjectID", "tractID", "sessionID"])
         .agg("mean")
         .drop("nodeID", axis="columns")
         .unstack("tractID")

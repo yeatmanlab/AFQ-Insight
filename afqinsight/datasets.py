@@ -311,7 +311,7 @@ def load_afq_data(
         else:
             classes = None
 
-        y = np.squeeze(y.to_numpy()).astype(float)
+        y = np.squeeze(y.to_numpy().astype(float))
 
     return AFQData(
         X=X,
