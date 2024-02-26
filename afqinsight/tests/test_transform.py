@@ -63,7 +63,7 @@ def test_AFQDataFrameMapper_mean(concat_subject_session):
     subjects = transformer.subjects_
 
     X_ref = (
-        nodes.groupby(["subjectID", "tractID"])
+        nodes.groupby(["subjectID", "tractID", "sessionID"])
         .agg("mean")
         .drop("nodeID", axis="columns")
         .unstack("tractID")
