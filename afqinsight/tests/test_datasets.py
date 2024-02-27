@@ -518,7 +518,7 @@ def test_load_afq_data(dwi_metrics):
     ]
 
     assert np.allclose(X, X_ref, equal_nan=True)  # nosec
-    assert np.allclose(y, y_ref)  # nosec
+    assert np.array_equal(y, y_ref)  # nosec
     assert np.allclose(groups, groups_ref)  # nosec
     assert feature_names == cols_ref  # nosec
     assert group_names == [tup[0:2] for tup in cols_ref if tup[2] == 0]  # nosec
@@ -536,7 +536,7 @@ def test_load_afq_data(dwi_metrics):
     )
 
     means_ref = (
-        nodes.groupby(["subjectID", "tractID"])
+        nodes.groupby(["subjectID", "tractID", "sessionID"])
         .agg("mean")
         .drop("nodeID", axis="columns")
         .unstack("tractID")
