@@ -25,6 +25,7 @@ For more details on this approach in a research setting, please see [2]_.
    DOI: 10.1371/journal.pcbi.1009136
 
 """
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -55,7 +56,7 @@ afqdata = AFQDataset.from_study("sarica")
 # ``afqdata`` is an ``AFQDataset`` object, with properties corresponding to the tractometry features and phenotypic targets.
 
 X = afqdata.X
-y = afqdata.y
+y = afqdata.y.astype(float)  # SGL expects float targets
 groups = afqdata.groups
 feature_names = afqdata.feature_names
 group_names = afqdata.group_names
@@ -100,9 +101,9 @@ pipe = make_afq_classifier_pipeline(
     feature_transformer=transformer,  # See note above about group PCA
     feature_transformer_kwargs=transformer_kwargs,
     scaler="standard",  # Standard scale the features before regression
-    groups=groups_pca
-    if do_group_pca
-    else groups,  # SGL will use the original feature groups or the PCA feature groups depending on the choice above
+    groups=(
+        groups_pca if do_group_pca else groups
+    ),  # SGL will use the original feature groups or the PCA feature groups depending on the choice above
     verbose=0,  # Be quiet!
     pipeline_verbosity=False,  # No really, be quiet!
     tuning_strategy="bayes",  # Use BayesSearchCV to determine the optimal hyperparameters
