@@ -1,3 +1,7 @@
+v0.4 (February 26, 2024)
+========================
+  * Upgrade Python dependencies.
+
 v0.3.5 (August 02, 2022)
 ========================
   * Use the new from_dataset method to initialize objects in examples.  (#123)
