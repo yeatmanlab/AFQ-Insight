@@ -273,7 +273,7 @@ def make_base_afq_pipeline(
                 else:
                     ensembler_kwargs = {}
 
-                ensembler_kwargs["base_estimator"] = base_estimator
+                ensembler_kwargs["estimator"] = base_estimator
 
                 if isinstance(ensemble_meta_estimator, str):
                     if ensemble_meta_estimator.lower() == "bagging":
