@@ -36,9 +36,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import numpy as np
-import tables
 import warnings
 from scipy import sparse
+from dipy.utils.optpkg import optional_package
+
+
+tables_msg = (
+    "To use AFQ-Insight's h5io classes, you will need to have tables "
+    "installed. You can do this by installing afqinsight with `pip install "
+    "afqinsight[tables]`, or by separately installing these packages with "
+    "`pip install tables`."
+)
+tables, HAS_TABLES, _ = optional_package("tables", trip_msg=tables_msg)
+
 
 try:
     import pandas as pd
