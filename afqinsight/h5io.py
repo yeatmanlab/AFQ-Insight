@@ -36,7 +36,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 import numpy as np
-import tables
 import warnings
 from scipy import sparse
 from dipy.utils.optpkg import optional_package
