@@ -10,8 +10,10 @@ from groupyr.transform import GroupExtractor
 from tqdm.auto import tqdm
 
 from .utils import BUNDLE_MAT_2_PYTHON
+from .tools import tractutils as tu
 from .datasets import AFQDataset
-
+import logging
+logger = logging.getLogger(__name__)
 
 POSITIONS = OrderedDict(
     {
@@ -331,3 +333,85 @@ def plot_tract_profiles(
         figs[metric] = fig
 
     return figs
+
+
+def plot_profiles_by_group(
+    tracto_df:pd.DataFrame,
+    var_df:pd.DataFrame,
+    center_cut=True,
+    test_plot=False,
+    scalar_to_plot='dki_fa',
+    var_to_plot:str=None,
+    palette='viridis',
+    ):
+    """Plot tractometry profiles grouped by variable of interest
+
+    Parameters
+    ----------
+    tracto_df : pd.DataFrame
+        tractometry data
+    var_df : pd.DataFrame
+        dataframe with categorical or pseudocontinuous variable of interest
+    center_cut : bool, optional
+        whether to cut the extremes of the tract out, by default True
+    test_plot : bool, optional
+        whether to subsample the data to get quick plot, by default False
+    scalar_to_plot : str, optional
+        scalar to plot (y axis), by default 'dki_fa'
+    var_to_plot : str, optional
+        variable of interest name if `var_df` contains several variables, by default None
+
+    Returns
+    -------
+    sns.FacetGrid
+        FacetGrid
+    """
+    
+    if var_to_plot is None:
+        available = list(set(var_df.columns) - set(['subjectID','sessionID']))
+        if len(available)>1:
+            raise ValueError(f"Please specify `var_to_plot` as there are "
+                             f"several options available in `var_df`.")
+        var_to_plot = available[0]
+    else:
+        if var_to_plot not in var_df.columns:
+            raise ValueError(f"{var_to_plot=} not available in `var_df` columns.")
+    
+    tracto_df = tu.optimize(tracto_df)
+    tracto_df = tracto_df[['subjectID','sessionID','tractID','nodeID',scalar_to_plot]]
+    
+    if test_plot:
+        tracto_df = tu.tracto_subsample(tracto_df)
+        dpi = 150
+    else:
+        dpi = 300
+        
+    if center_cut:
+        tracto_df = tu.center_cut(tracto_df)
+    
+    df = tu.merge_profiles_varinterest(tracto_df, var_df)
+    df = tu.beautify(df)
+    
+    available_tracts = df.tractID.unique()
+    tract_order = [v for k,v in tu.BUNDLE_DICT.items() if k in available_tracts]
+    col_wrap = min(5, len(available_tracts))
+    g = sns.FacetGrid(
+        data=df,
+        col_wrap=col_wrap,
+        col='tractID_b', col_order=tract_order,
+        hue=var_to_plot, #hue_order=list(reversed(df[var_to_plot].cat.categories)),
+        margin_titles=True, palette=palette,
+        sharey='row',
+        height=3.5, aspect=0.9,
+        legend_out=True,
+        # subplot_kws=dict(figsize=(3.5,10))
+        )
+    g.map(sns.lineplot, 'nodeID', scalar_to_plot, estimator=np.nanmean, errorbar=('se',1))
+    g.set_titles(col_template='{col_name}', row_template='{row_name}')
+    g.add_legend(title=var_to_plot)
+    g.fig.suptitle(f'{scalar_to_plot.upper()} values along select WM tracts for {var_to_plot}', y=1)
+    g.tight_layout()
+    g.fig.set_dpi(dpi)
+    
+    return g
+    
