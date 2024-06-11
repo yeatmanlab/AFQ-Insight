@@ -19,11 +19,14 @@ tract (the left corticospinal tract) and in one feature (FA).
    DOI: 10.1002/hbm.23412
 
 """
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
 from afqinsight import AFQDataset
+from afqinsight.parametric import node_wise_regression
+from afqinsight.plot import plot_regression_profiles
 from statsmodels.api import OLS
 from statsmodels.stats.anova import anova_lm
 from statsmodels.stats.multitest import multipletests
@@ -42,78 +45,59 @@ from sklearn.impute import SimpleImputer
 
 afqdata = AFQDataset.from_study("sarica")
 
-# Examine the data
-# ----------------
-# ``afqdata`` is an ``AFQDataset`` object, with properties corresponding to the
-# tractometry features and phenotypic targets. In this case, y includes only the
-# group to which the subjects belong, encoded as 0 (patients) or 1 (controls).
+# Specify the tracts of interest
+# ------------------------------
+# Many times we have a specific set of tracts we want to analyze. We can specify
+# those tracts using a list with each tract of interest
 
-X = afqdata.X
-y = afqdata.y
-groups = afqdata.groups
-feature_names = afqdata.feature_names
-group_names = afqdata.group_names
-subjects = afqdata.subjects
+tracts = ["Left Arcuate", "Right Arcuate", "Left Corticospinal", "Right Corticospinal"]
 
-X = SimpleImputer(strategy="median").fit_transform(X)
-
-# Filtering the data
-# ----------------
-# We start by filtering the data down to only the FA estimates in the left
-# corticospinal tract. We can do that by creating a Pandas dataframe and then
-# using the column labels that `afqdataset` has generated from the data.
-
-data = pd.DataFrame(columns=afqdata.feature_names, data=X)
-lcst_fa = data.filter(like="Left Corticospinal").filter(like="fa")
-
-pvals = np.zeros(lcst_fa.shape[-1])
-coefs = np.zeros(lcst_fa.shape[-1])
-cis = np.zeros((lcst_fa.shape[-1], 2))
-
-# Fit models
-# ----------------
-# Next, we fit a model for each node of the CST for the FA as a function of
-# group. The initializer `OLS.from_formula` takes
-# `R-style formulas <https://www.statsmodels.org/dev/example_formulas.html>`_
-# as its model specification. Here, we are using the `"group"` variable as a
-# categorical variable in the model. Much more complex linear models (including
-# linear mixed effects model) are possible for datasets with more complex
-# phenotypical data.
-
-for ii, column in enumerate(lcst_fa.columns):
-    feature, node, tract = column
-    this = pd.DataFrame({"group": y, feature: lcst_fa[column]})
-    model = OLS.from_formula(f"{feature} ~ C(group)", this)
-    fit = model.fit()
-    coefs[ii] = fit.params.loc["C(group)[T.1]"]
-    cis[ii] = fit.conf_int(alpha=0.05).loc["C(group)[T.1]"].values
-    pvals[ii] = anova_lm(fit, typ=2)["PR(>F)"][0]
-
-# Correct for multiple comparison
-# --------------------------------
+# Set up plot, run linear models, and show the results
+# ----------------------------------------------------
+# With the next few lines of code, we fit a linear model in order to predict
+# group differences in the diffusion properties of our tracts of interest. The
+# function `node_wise_regression` does this by looping through each node of a
+# tract and predicting our diffusion metric, in this case FA, as a function of
+# group. The initializer `OLS.from_formula` takes `R-style formulas
+# <https://www.statsmodels.org/dev/example_formulas.html>`_ as its model specification.
+# Here, we are using the `"group"` variable as a categorical variable in the model.
+# We can also specify linear-mixed effects models for more complex phenotypic data
+# by passing in the appropriate model formula and setting `lme=True`.
+#
 # Because we conducted 100 comparisons, we need to correct the p-values that
 # we obtained for the potential for a false discovery. There are multiple
 # ways to conduct multuple comparison correction, and we will not get into
-# the considerations in selecting a method here. For the example, we chose the
-# Benjamini/Hochberg FDR controlling method. This returns a boolean array for
+# the considerations in selecting a method here. The function `node_wise_regression`
+# uses Benjamini/Hochberg FDR controlling method. This returns a boolean array for
 # the p-values that are rejected at a specified alpha level (after correction),
 # as well as an array of the corrected p-values.
 
-reject, pval_corrected, _, _ = multipletests(pvals, alpha=0.05, method="fdr_bh")
-reject_idx = np.where(reject)
+num_cols = 2
 
-# Visualize
-# ----------
-# Using Matplotlib, we can visualize the results. The top figure shows the tract
-# profiles of the two groups, with stars indicating the nodes at which the null
-# hypothesis is rejected. The bottom figure shows the model coefficients
-# together with their estimated 95% confidence interval.
+# Define the figure and its grid
+fig, axes = plt.subplots(nrows=2, ncols=num_cols, figsize=(10, 6))
 
-fig, ax = plt.subplots(2, 1)
-ax[0].plot(np.mean(lcst_fa.iloc[afqdata.y == 0], 0).values)
-ax[0].plot(np.mean(lcst_fa.iloc[afqdata.y == 1], 0).values)
-ax[0].plot(reject_idx, np.zeros(len(reject_idx)), "k*")
 
-ax[1].plot(coefs)
-ax[1].fill_between(range(100), cis[:, 0], cis[:, 1], alpha=0.5)
-ax[1].plot(range(100), np.zeros(100), "k--")
+# Loop through the data and generate plots
+for i, tract in enumerate(tracts):
+
+    # fit node-wise regression for each tract based on model formula
+    tract_dict = node_wise_regression(afqdata, tract, "fa", "fa ~ C(group)")
+
+    row = i // num_cols
+    col = i % num_cols
+
+    axes[row][col].set_title(tract)
+
+    # Visualize
+    # ----------
+    # We can visualize the results with the `plot_regression_profiles` function.
+    # Each subplot shows the tract profiles of the two groups while controlling for
+    # any covariates, with stars indicating the nodes at which the null hypothesis is rejected.
+    plot_regression_profiles(tract_dict, axes[row][col])
+
+# Adjust layout to prevent overlap
+plt.tight_layout()
+
+# Show the plot
+plt.show()
