@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import seaborn as sns
 import statsmodels.formula.api as smf
 
 from sklearn.impute import SimpleImputer
@@ -97,14 +96,7 @@ def node_wise_regression(
 
     """
 
-    X = afq_dataset.X
-    y = afq_dataset.y
-    groups = afq_dataset.groups
-    feature_names = afq_dataset.feature_names
-    group_names = afq_dataset.group_names
-    subjects = afq_dataset.subjects
-
-    X = SimpleImputer(strategy="median").fit_transform(X)
+    X = SimpleImputer(strategy="median").fit_transform(afq_dataset.X)
 
     tract_data = (
         pd.DataFrame(columns=afq_dataset.feature_names, data=X)

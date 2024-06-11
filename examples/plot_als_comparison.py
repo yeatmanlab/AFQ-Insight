@@ -21,17 +21,10 @@ tract (the left corticospinal tract) and in one feature (FA).
 """
 
 import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
 
 from afqinsight import AFQDataset
 from afqinsight.parametric import node_wise_regression
 from afqinsight.plot import plot_regression_profiles
-from statsmodels.api import OLS
-from statsmodels.stats.anova import anova_lm
-from statsmodels.stats.multitest import multipletests
-
-from sklearn.impute import SimpleImputer
 
 #############################################################################
 # Fetch data from Sarica et al.
