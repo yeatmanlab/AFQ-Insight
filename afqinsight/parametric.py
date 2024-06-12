@@ -97,6 +97,7 @@ def node_wise_regression(
     """
 
     X = SimpleImputer(strategy="median").fit_transform(afq_dataset.X)
+    afqdata.target_cols[0] = group
 
     tract_data = (
         pd.DataFrame(columns=afq_dataset.feature_names, data=X)
@@ -140,14 +141,14 @@ def node_wise_regression(
             fits[column] = fit
 
         # pull out coefficients, CIs, and p-values from our model
-        coefs_default[ii] = fit.params.filter(regex="Intercept", axis=0)[0]
-        coefs_treat[ii] = fit.params.filter(regex=group, axis=0)[0]
+        coefs_default[ii] = fit.params.filter(regex="Intercept", axis=0).iloc[0]
+        coefs_treat[ii] = fit.params.filter(regex=group, axis=0).iloc[0]
 
         cis_default[ii] = (
             fit.conf_int(alpha=0.05).filter(regex="Intercept", axis=0).values
         )
         cis_treat[ii] = fit.conf_int(alpha=0.05).filter(regex=group, axis=0).values
-        pvals[ii] = fit.pvalues.filter(regex=group, axis=0)[0]
+        pvals[ii] = fit.pvalues.filter(regex=group, axis=0).iloc[0]
 
     # Correct p-values for multiple comparisons
     reject, pval_corrected, _, _ = multipletests(pvals, alpha=0.05, method="fdr_bh")
