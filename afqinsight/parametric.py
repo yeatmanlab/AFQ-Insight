@@ -27,7 +27,6 @@ def node_wise_regression(
 
     Parameters
     ----------
-
     afq_dataset: AFQDataset
         Loaded AFQDataset object
     tract: str
