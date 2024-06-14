@@ -97,7 +97,7 @@ def node_wise_regression(
     """
 
     X = SimpleImputer(strategy="median").fit_transform(afq_dataset.X)
-    afqdata.target_cols[0] = group
+    afq_dataset.target_cols[0] = group
 
     tract_data = (
         pd.DataFrame(columns=afq_dataset.feature_names, data=X)
