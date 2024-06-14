@@ -334,11 +334,10 @@ def plot_tract_profiles(
 
 
 def plot_regression_profiles(model_dict, ax):
-    """Plot parametric tract profiles based on node-wise linear models
+    """Plot parametric tract profiles based on node-wise linear models.
 
     Parameters
     ----------
-
     model_dict: dict
         Dictionary returned by parametric.node_wise_regression containing information about
         parametric model fits over the length of a tract
@@ -348,12 +347,10 @@ def plot_regression_profiles(model_dict, ax):
 
     Returns
     -------
-
     ax: matplotlib.axes
         A matplotlib axes with plotted parametric tract profiles
 
     """
-
     # Add beta-weight for group to intercept (mean control)
     combo_coefs = model_dict["reference_coefs"] + model_dict["group_coefs"]
 

@@ -1,3 +1,5 @@
+"""Perform linear modeling at leach node along the tract."""
+
 import numpy as np
 import pandas as pd
 import statsmodels.formula.api as smf
@@ -17,6 +19,7 @@ def node_wise_regression(
     rand_eff="subjectID",
 ):
     """Model group differences using node-wise regression along the length of the tract.
+
        Returns a list of beta-weights, confidence intervals, p-values, and rejection criteria
        based on multiple-comparison correction.
 
@@ -27,7 +30,6 @@ def node_wise_regression(
 
     afq_dataset: AFQDataset
         Loaded AFQDataset object
-
     tract: str
         String specifying the tract to model
 
@@ -51,7 +53,6 @@ def node_wise_regression(
 
     Returns
     -------
-
     tract_dict: dict
         A dictionary with the following key-value pairs:
 
@@ -95,7 +96,6 @@ def node_wise_regression(
             A list of the statsmodels object fit along the length of the nodes
 
     """
-
     X = SimpleImputer(strategy="median").fit_transform(afq_dataset.X)
     afq_dataset.target_cols[0] = group
 
