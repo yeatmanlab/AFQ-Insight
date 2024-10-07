@@ -331,3 +331,48 @@ def plot_tract_profiles(
         figs[metric] = fig
 
     return figs
+
+
+def plot_regression_profiles(model_dict, ax):
+    """Plot parametric tract profiles based on node-wise linear models.
+
+    Parameters
+    ----------
+    model_dict: dict
+        Dictionary returned by parametric.node_wise_regression containing information about
+        parametric model fits over the length of a tract
+
+    ax: matplotlib.axes
+        A matplotlib axes for a subplot where the tract profiles will be plotted
+
+    Returns
+    -------
+    ax: matplotlib.axes
+        A matplotlib axes with plotted parametric tract profiles
+
+    """
+    # Add beta-weight for group to intercept (mean control)
+    combo_coefs = model_dict["reference_coefs"] + model_dict["group_coefs"]
+
+    # Generate 95% CI around group mean by adding to control intercept
+    combo_conf_int = np.zeros(model_dict["reference_CI"].shape)
+    combo_conf_int[:, 0] = model_dict["reference_coefs"] + model_dict["group_CI"][:, 0]
+    combo_conf_int[:, 1] = model_dict["reference_coefs"] + model_dict["group_CI"][:, 1]
+
+    # Plot regression based tract profiles
+    ax.plot(model_dict["reference_coefs"])
+    ax.plot(combo_coefs)
+    ax.plot(model_dict["reject_idx"], np.zeros(len(model_dict["reject_idx"])), "k*")
+
+    ax.fill_between(
+        range(100),
+        model_dict["reference_CI"][:, 0],
+        model_dict["reference_CI"][:, 1],
+        alpha=0.5,
+    )  # Adding fill_between
+
+    ax.fill_between(
+        range(100), combo_conf_int[:, 0], combo_conf_int[:, 1], alpha=0.5
+    )  # Adding fill_between
+
+    return ax
