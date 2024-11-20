@@ -113,9 +113,9 @@ def test_classifier_pipeline_steps(
         else:
             assert isinstance(pipeline.named_steps["estimate"], EnsembleStep)  # nosec
             ensemble_params = pipeline.named_steps["estimate"].get_params()
-            correct_params = EnsembleStep(base_estimator=EstimatorStep()).get_params()
-            ensemble_base_est = ensemble_params.pop("base_estimator")
-            correct_params.pop("base_estimator")
+            correct_params = EnsembleStep(estimator=EstimatorStep()).get_params()
+            ensemble_base_est = ensemble_params.pop("estimator")
+            correct_params.pop("estimator")
             assert ensemble_params == correct_params  # nosec
             assert isinstance(ensemble_base_est, EstimatorStep)  # nosec
     else:
@@ -132,9 +132,9 @@ def test_classifier_pipeline_steps(
                 pipeline.named_steps["estimate"].regressor, EnsembleStep
             )
             ensemble_params = pipeline.named_steps["estimate"].regressor.get_params()
-            correct_params = EnsembleStep(base_estimator=EstimatorStep()).get_params()
-            ensemble_base_est = ensemble_params.pop("base_estimator")
-            correct_params.pop("base_estimator")
+            correct_params = EnsembleStep(estimator=EstimatorStep()).get_params()
+            ensemble_base_est = ensemble_params.pop("estimator")
+            correct_params.pop("estimator")
             assert ensemble_params == correct_params  # nosec
             assert isinstance(ensemble_base_est, EstimatorStep)  # nosec
 
